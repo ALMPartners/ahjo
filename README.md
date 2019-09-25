@@ -132,7 +132,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 
 
 | Parameter  | Required | Description | Type | Deafult Value |
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- |
 | allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
 | url_of_remote_git_repository | No | URL of project's remote repository. | str | |
 | git_table | Yes | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | str | |
