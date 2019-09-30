@@ -15,13 +15,17 @@ from ahjo.action import execute_action
 # load logging config
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo.complete')
+console_logger = getLogger('ahjo.console')
 
 try:
     sys.path.append(os.getcwd())
     import ahjo_actions
     logger.info('Succesfully loaded ahjo_actions.py')
-except ImportError:
-    logger.error('Failed to load ahjo_actions.py')
+except ModuleNotFoundError as import_err:
+    logger.info('ahjo_actions.py not found')
+except:
+    console_logger.exception('Error while loading ahjo_actions.py')
+    raise
 
 def main():
     parser = argparse.ArgumentParser()
