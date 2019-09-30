@@ -58,6 +58,60 @@ Project C:\projects\project_1 created.
 ```
 
 # Usage
+
+## Usage example
+
+Before running actions:
+
+1. Install ahjo (see "Install Quide")
+2. Initialize project using ahjo-init-project (see "Project Initialization")
+3. Have your development database server running (Sql Server for the example)
+4. Fill database connection information to the config-file
+
+To create the database without objects run in the project root:
+```
+ahjo init config_devevelopment.jsonc
+```
+After the command there should be a empty database at the server, as configured in config_dev.jsonc. This step is usually run only once, and is not required if the database already exists in the server.
+
+After tables are defined using alembic (see alembic's documentation for creating new version scripts), the tables can be deployed using:
+
+```
+ahjo deploy config_devevelopment.jsonc
+```
+
+This command also runs all the sql scripts that are defined in database/procedures or database/views.
+
+Conventionally scripts under database/data include row inserts for dimension tables, and database/testdata for mock data insertion scripts. To populate the dimension tables do:
+
+```
+ahjo data config_devevelopment.jsonc
+```
+
+To run test sql on top of mock data:
+
+```
+ahjo testdata config_devevelopment.jsonc
+ahjo test config_devevelopment.jsonc
+```
+
+To run all the previous commands at once, a single (multi-)action "complete-build" can be used:
+
+```
+ahjo complete-build config_devevelopment.jsonc
+```
+
+To deploy your project to production you need a new config-file. For production environment some actions can be quite hazard, like "downgrade". To exclude such actions set "allowed_actions" to a list:
+
+```
+"allowed_actions": ["deploy", "data"]
+```
+
+Now running "downgrade" using this configuration is not possible.
+
+To add your own actions (f.e. for more complex testing), modify ahjo_actions.py.
+
+## Script and arguments
 ```
 ahjo <action> <config_filename>
 ```
@@ -131,7 +185,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 
 
 
-| Parameter  | Required | Description | Type | Deafult Value |
+| Parameter  | Required | Description | Type | Default Value |
 | --- | --- | --- | --- | --- |
 | allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
 | url_of_remote_git_repository | No | URL of project's remote repository. | str | |
