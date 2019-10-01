@@ -18,8 +18,11 @@ Database tooling is currently based on sqlalchemy/alembic and tsql scripts. Supp
 # Install Guide
 There are two ways to install Ahjo.
 
-## Install Guide 1 - pypi
-Pypi package is incoming!
+## Install Guide 1 - PyPI
+Install Ahjo from [Python Package Index](https://pypi.org/) with the following command:
+```
+pip install ahjo
+```
 
 
 ## Install Guide 2 - Clone and install
@@ -36,7 +39,7 @@ Pypi package is incoming!
 pip install [--user] [-e] .\ahjo
 ```
 
-# Project initialization
+# Project Initialization
 Create a new project by running the following command:
 ```
 ahjo-init-project
@@ -59,55 +62,62 @@ Project C:\projects\project_1 created.
 
 # Usage
 
-## Usage example
+## Usage Example
 
 Before running actions:
 
-1. Install ahjo (see "Install Quide")
+1. Install Ahjo (see "Install Guide")
 2. Initialize project using ahjo-init-project (see "Project Initialization")
 3. Have your development database server running (Sql Server for the example)
 4. Fill database connection information to the config-file
 
-To create the database without objects run in the project root:
+To create a database without objects, run the following command in the project root:
 ```
-ahjo init config_devevelopment.jsonc
+ahjo init config_development.jsonc
 ```
-After the command there should be a empty database at the server, as configured in config_dev.jsonc. This step is usually run only once, and is not required if the database already exists in the server.
+After the command, there should be a empty database at the server, as configured in config_development.jsonc. This step is usually run only once, and is not required if the database already exists in the server.
 
 After tables are defined using alembic (see alembic's documentation for creating new version scripts), the tables can be deployed using:
 
 ```
-ahjo deploy config_devevelopment.jsonc
+ahjo deploy config_development.jsonc
 ```
 
-This command also runs all the sql scripts that are defined in database/procedures or database/views.
+This command also runs all the SQL scripts that are defined in directories database/functions, database/procedures and database/views.
 
-Conventionally scripts under database/data include row inserts for dimension tables, and database/testdata for mock data insertion scripts. To populate the dimension tables do:
-
-```
-ahjo data config_devevelopment.jsonc
-```
-
-To run test sql on top of mock data:
+Conventionally scripts under database/data include row inserts for dimension tables, and database/testdata for mock data insertion scripts. To populate the dimension tables run:
 
 ```
-ahjo testdata config_devevelopment.jsonc
-ahjo test config_devevelopment.jsonc
+ahjo data config_development.jsonc
+```
+
+To run test SQL on top of mock data:
+
+```
+ahjo testdata config_development.jsonc
+ahjo test config_development.jsonc
 ```
 
 To run all the previous commands at once, a single (multi-)action "complete-build" can be used:
 
 ```
-ahjo complete-build config_devevelopment.jsonc
+ahjo complete-build config_development.jsonc
 ```
 
-To deploy your project to production you need a new config-file. For production environment some actions can be quite hazard, like "downgrade". To exclude such actions set "allowed_actions" to a list:
+To deploy your project to production you need a new config-file. In production environment actions like "downgrade" can be quite hazard. To exclude such actions set "allowed_actions" to a list:
 
 ```
 "allowed_actions": ["deploy", "data"]
 ```
 
-Now running "downgrade" using this configuration is not possible.
+Now running "downgrade" is not possible using production configuration.
+
+```
+ahjo downgrade config_production.jsonc
+[2019-10-01 12:58:12] Starting to execute "downgrade"
+Action downgrade is not permitted, allowed actions: deploy, data
+------
+```
 
 To add your own actions (f.e. for more complex testing), modify ahjo_actions.py.
 
@@ -124,7 +134,7 @@ Pre-defined actions include:
 
 * init
     * Creates the database. 
-        * Database is created with module [create_db.py](./ahjo/operations/database/create_db.py). Required configurations are *target_database_name*, *target_server_hostname* and *sql_port*. For optional configurations, see config file cheat sheet below.
+        * Database is created with module [create_db.py](./ahjo/operations/tsql/create_db.py). Required configurations are *target_database_name*, *target_server_hostname* and *sql_port*. For optional configurations, see config file cheat sheet below.
 
 * structure
     * Creates database structure, that is schemas, tables and constraints. 
@@ -164,17 +174,17 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
     "BACKEND": {
         "allowed_actions": "ALL",
         //Git repository and git version table information
-        "url_of_remote_git_repository": "https:\\\\bitbucket.org\\almp\\kp_rep\\",
+        "url_of_remote_git_repository": "https:\\\\github.com\\user\\projectx\\",
         "git_table": "git_version",
         "git_table_schema": "dbo",
         //Database connection information
-        "sql_port": 14330,
+        "sql_port": 1433,
         "sql_driver": "SQL Server",
-        "target_database_name": "KP_REP",
+        "target_database_name": "PROJECTX",
         "target_server_hostname": "localhost",
         // Database file location
-        "database_data_path": "/var/opt/mssql/data/KP_REP.mdf",
-        "database_log_path": "/var/opt/mssql/data/KP_REP.ldf",
+        "database_data_path": "/var/opt/mssql/data/PROJECTX.mdf",
+        "database_log_path": "/var/opt/mssql/data/PROJECTX.ldf",
         //Alembic
         //the table that alembic creates automatically for migration version handling
         "alembic_version_table": "alembic_version",
@@ -209,7 +219,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | alembic_version_table_schema | No | Schema of Alembic version table. | str | "dbo" |
 
 ## Using Alembic with Ahjo
-Alembic upgrade HEAD is used in deploy action, but for many use cases other alembic commands are needed. For these needs Ahjo comes with a env.py file that enables running Alembic commands without running Ahjo.
+Alembic upgrade HEAD is used in deploy action, but for many use cases other alembic commands are needed. For these needs Ahjo comes with a [env.py](./ahjo/resources/files/env.py) file that enables running Alembic commands without running Ahjo.
 
 The env.py modifications provide logging integration to Ahjo, default naming schema and possibility to run alembic according to project configuration. The engines are created according to configuration, and there is no need for storing plain-text connection strings in the project.
 
@@ -218,7 +228,7 @@ Usage example:
 alembic -x main_config=config_development.jsonc downgrade -1
 ```
 
-The env.py is created in initialize-project command, an it can be also found under this repository at ahjo/resources/files/env.py
+The [env.py](./ahjo/resources/files/env.py) is created in initialize-project command.
 
 # Logging
 Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file ahjo.log.
