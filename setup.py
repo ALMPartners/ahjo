@@ -4,7 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 '''Ahjo package setup'''
-from setuptools import setup, find_packages
+from os import path
+
+from setuptools import find_packages, setup
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    readme = f.read()
 
 setup(
     name="ahjo",
@@ -12,6 +18,8 @@ setup(
     author="ALM Partners Oy",
     author_email="aleksi.korpinen@almpartners.fi",
     description="Database deployment framework",
+    long_description=readme,
+    long_description_content_type='text/markdown',
     keywords="ahjo",
     url="https://github.com/ALMPartners/ahjo",
     packages=find_packages(),
@@ -23,10 +31,10 @@ setup(
     },
     include_package_data=True,
     install_requires=[
-        'commentjson',
-        'alembic',
-        'pyodbc',
-        'sqlalchemy',
+        'commentjson>=0.7.1',
+        'alembic>=1.0.6',
+        'pyodbc>=4.0.22',
+        'sqlalchemy>=1.3.0',
     ],
     classifiers=[
         "Intended Audience :: Developers",

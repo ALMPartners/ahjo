@@ -10,3 +10,6 @@ _build/
 
 # pylint
 .pylintrc
+
+build/
+dist/
