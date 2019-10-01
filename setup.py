@@ -13,7 +13,7 @@ setup(
     author_email="aleksi.korpinen@almpartners.fi",
     description="Database deployment framework",
     keywords="ahjo",
-    url="https://bitbucket.org/almp/ahjo/src/",
+    url="https://github.com/ALMPartners/ahjo",
     packages=find_packages(),
     entry_points={
         'console_scripts': [
@@ -31,6 +31,8 @@ setup(
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License", # 2.0 is the only OSI approved Apache license
-        'Topic :: Database',
+        "Topic :: Database",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ],
 )
