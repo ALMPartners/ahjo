@@ -6,11 +6,14 @@
 */
 
 SELECT 
-    SCHEMA_NAME(s.schema_id) as SCHEMA_NAME
-    ,s.name as view_name
-    ,CONVERT(varchar(200), e.value) as value
-    ,CONVERT(varchar(200), e.name) as meta_name 
-FROM sys.views as s 
-    LEFT JOIN sys.extended_properties AS e ON e.major_id = s.object_id AND minor_id = 0 
-WHERE SCHEMA_NAME(s.schema_id) in (?)
-ORDER BY SCHEMA_NAME, view_name
+    SCHEMA_NAME(s.[schema_id]) AS [schema_name]
+    ,s.[name] AS [view_name]
+    ,CONVERT(varchar(200), e.[value]) AS [value]
+    ,CONVERT(varchar(200), e.[name]) AS [meta_name]
+    ,'view' AS [object_type]
+FROM sys.views AS s 
+    LEFT JOIN sys.extended_properties AS e 
+		ON e.[major_id] = s.[object_id] 
+		AND e.[minor_id] = 0 
+WHERE SCHEMA_NAME(s.[schema_id]) IN (?)
+ORDER BY [schema_name], [view_name]

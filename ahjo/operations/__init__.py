@@ -23,6 +23,7 @@ from ahjo.operations.tsql import (
     create_db_permissions,
     create_db_structure,
     update_csv_object_properties,
+    update_db_object_properties,
     deploy_sqlfiles,
     drop_sqlfile_objects
 )

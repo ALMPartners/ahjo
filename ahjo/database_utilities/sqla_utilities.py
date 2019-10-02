@@ -6,7 +6,7 @@
 """Utility functions for sqlalchemy
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import URL
 
 MASTER_DB = {'mssql+pyodbc' : 'master', 'postgresql': 'postgres'}
@@ -124,3 +124,10 @@ def execute_try_catch(engine, query, variables=None, throw=False):
             trans.rollback()
             if throw is True:
                 raise
+
+
+def get_schema_names(engine):
+    """Return schema names from database."""
+    inspector = inspect(engine)
+    db_list = inspector.get_schema_names()
+    return db_list

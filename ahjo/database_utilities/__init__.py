@@ -11,7 +11,8 @@ from ahjo.database_utilities.sqla_utilities import (
     create_sqlalchemy_url,
     create_sqlalchemy_engine,
     execute_query,
-    execute_try_catch
+    execute_try_catch,
+    get_schema_names
 )
 from ahjo.database_utilities.sqlcmd import (
     invoke_sqlcmd,

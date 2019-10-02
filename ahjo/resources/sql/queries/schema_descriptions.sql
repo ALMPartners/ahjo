@@ -6,10 +6,12 @@
 */
 
 SELECT 
-    distinct s.name as schema_name
-    ,CONVERT(varchar(200), e.value) as value
-    ,CONVERT(varchar(200), e.name) as meta_name 
-FROM sys.schemas s 
-    LEFT JOIN sys.extended_properties e ON e.major_id = s.schema_id 
-WHERE s.name in (?)
-ORDER BY schema_name
+    DISTINCT s.[name] AS [schema_name]
+    ,CONVERT(VARCHAR(200), e.[value]) AS [value]
+    ,CONVERT(VARCHAR(200), e.[name]) AS [meta_name]
+    ,'schema' AS [object_type]
+FROM sys.schemas AS s 
+    LEFT JOIN sys.extended_properties AS e 
+        ON e.[major_id] = s.[schema_id] 
+WHERE s.[name] IN (?)
+ORDER BY [schema_name]
