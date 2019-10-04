@@ -56,14 +56,14 @@ def create_db(engine, db_name, db_path, log_path, init_size, max_size, file_grow
 
     def create_database():
         '''Create database and alter its collation, compatibility level and recovery.'''
-        db_file = path.splitext(path.basename(db_path))[0] + '_dat'
-        log_file = path.splitext(path.basename(log_path))[0] + '_log'
-        init_size_str = f'{init_size}MB'
-        max_size_str = f'{max_size}MB'
-        file_growth_str = f'{file_growth}MB'
         # If filepaths are not given - do not specify database/log files and their size
         create_query = f"CREATE DATABASE {db_name}"
         if db_path is not None and log_path is not None:
+            db_file = path.splitext(path.basename(db_path))[0] + '_dat'
+            log_file = path.splitext(path.basename(log_path))[0] + '_log'
+            init_size_str = f'{init_size}MB'
+            max_size_str = f'{max_size}MB'
+            file_growth_str = f'{file_growth}MB'
             create_query = create_query + f"""
                 ON (
                 NAME = {db_file},
