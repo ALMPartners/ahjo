@@ -8,8 +8,10 @@ _build/
 *.suo
 *.egg-info/
 
-# pylint
+# dev
 .pylintrc
+.venv/
+.tox/
 
 build/
 dist/

@@ -22,7 +22,7 @@ setup(
     long_description_content_type='text/markdown',
     keywords="ahjo",
     url="https://github.com/ALMPartners/ahjo",
-    packages=find_packages(),
+    packages=find_packages('src'),
     entry_points={
         'console_scripts': [
             'ahjo = ahjo.scripts.master:main',
@@ -30,6 +30,7 @@ setup(
         ]
     },
     include_package_data=True,
+    package_dir={'': 'src'},
     install_requires=[
         'commentjson>=0.7.1',
         'alembic>=1.0.6',
