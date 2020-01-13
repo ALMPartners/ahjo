@@ -11,21 +11,27 @@ from logging.config import fileConfig
 
 import ahjo.scripts.master_actions
 from ahjo.action import execute_action
+from ahjo.operation_manager import format_message
 
 # load logging config
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo.complete')
 console_logger = getLogger('ahjo.console')
 
-try:
-    sys.path.append(os.getcwd())
-    import ahjo_actions
-    logger.info('Succesfully loaded ahjo_actions.py')
-except ModuleNotFoundError as import_err:
-    logger.info('ahjo_actions.py not found')
-except:
-    console_logger.exception('Error while loading ahjo_actions.py')
-    raise
+
+console_logger.info('------')
+if os.path.exists('ahjo_actions.py') or os.path.exists('/ahjo_actions'):
+    logger.info(format_message('ahjo_actions found'))
+    try:
+        sys.path.append(os.getcwd())
+        import ahjo_actions
+        console_logger.info(format_message('Succesfully loaded ahjo_actions'))
+    except:
+        console_logger.exception(format_message('Error while loading ahjo_actions'))
+        raise
+else:
+    console_logger.info(format_message('ahjo_actions not found'))
+
 
 def main():
     parser = argparse.ArgumentParser()
