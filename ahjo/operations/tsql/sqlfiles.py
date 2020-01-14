@@ -14,7 +14,7 @@ from ahjo.operation_manager import OperationManager
 console_logger = getLogger('ahjo.console')
 
 
-def deploy_sqlfiles(conn_info, directory, message, display_output=False):
+def deploy_sqlfiles(conn_info, directory, message, display_output=False, variable=None):
     """Run every SQL script file found in given directory and print the executed file names.
     If any file in directory cannot be deployed after multiple tries, raise an exeption and
     list failed files to user.
@@ -29,6 +29,8 @@ def deploy_sqlfiles(conn_info, directory, message, display_output=False):
         Message passed to OperationManager.
     display_output : bool
         Indicator to print script output.
+    variable : str
+        Variable passed to SQL script.
 
     Raises
     ------
@@ -40,7 +42,7 @@ def deploy_sqlfiles(conn_info, directory, message, display_output=False):
             console_logger.error("Directory not found: " + directory)
             return False
         files = [path.join(directory, f) for f in listdir(directory) if f.endswith('.sql')]
-        failed, errors = sql_file_loop(deploy_tsql_from_file, conn_info, display_output, file_list=files, max_loop=len(files))
+        failed, errors = sql_file_loop(deploy_tsql_from_file, conn_info, display_output, variable, file_list=files, max_loop=len(files))
         if len(failed) > 0:
             error_msg = "Failed to deploy the following files:\n{}".format('\n'.join(failed))
             error_msg = error_msg + ''.join(errors)
@@ -78,5 +80,3 @@ def drop_sqlfile_objects(engine, object_type, directory, message):
             error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed))
             error_msg = error_msg + ''.join(errors)
             raise RuntimeError(error_msg)
-
-

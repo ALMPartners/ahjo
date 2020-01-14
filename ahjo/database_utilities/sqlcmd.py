@@ -79,7 +79,7 @@ def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
     return output
 
 
-def deploy_tsql_from_file(file, conn_info, display_output):
+def deploy_tsql_from_file(file, conn_info, display_output, variable):
     '''Run single TSQL script file.
 
     Parameters
@@ -91,7 +91,7 @@ def deploy_tsql_from_file(file, conn_info, display_output):
     display_output : bool
         Indicator to print script output.
     '''
-    output = invoke_sqlcmd(conn_info, infile=file)
+    output = invoke_sqlcmd(conn_info, infile=file, variable=variable)
     console_logger.info(path.basename(file))
     if display_output:
         console_logger.info(output.decode('utf-8'))
