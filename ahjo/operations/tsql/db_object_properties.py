@@ -73,6 +73,9 @@ DB_OBJECTS = {
 
 def update_db_object_properties(engine, ahjo_path, schema_list):
     """Update database object descriptions (CSV) to database.
+    If schema_list is None, all schemas are updated.
+    If schema_list is empty list, nothing is updated.
+    Else schemas of schema_list are updated.
 
     Arguments
     ---------
@@ -86,6 +89,9 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
     with OperationManager('Updating metadata'):
         if schema_list is None:
             schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
+        elif len(schema_list) == 0:
+            console_logger.info('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
+            return
         for key, entry in DB_OBJECTS.items():
             if path.exists(entry['csv']):
                 with open(entry['csv'], encoding='utf-8') as csv_file:
@@ -141,6 +147,10 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
     """Write metadata to csv file.
     If project doesn't have docs directory, create it.
 
+    If schema_list is None, all schemas are written to csv.
+    If schema_list is empty list, nothing is written to csv.
+    Else schemas of schema_list are written to csv.
+
     Arguments
     ---------
     engine : sqlalchemy.engine.Engine
@@ -155,6 +165,9 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
             makedirs(DOCS_DIR, exist_ok=True)
         if schema_list is None:
             schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
+        elif len(schema_list) == 0:
+            console_logger.info('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
+            return
         for _, entry in DB_OBJECTS.items():
             meta_query_path = path.join(ahjo_path, entry['meta_query'])
             meta_query_result = prepare_and_exec_query(engine, query_path=meta_query_path, param_list=schema_list)
