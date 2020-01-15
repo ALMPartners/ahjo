@@ -10,7 +10,6 @@ This file can be broken to multiple files, as long as every action is imported t
 'master.py' and create_multiaction-calls are made after the parts are already defined.
 """
 from logging import getLogger
-from os import path
 
 import ahjo.operations as op
 from ahjo.action import action, create_multiaction, registered_actions

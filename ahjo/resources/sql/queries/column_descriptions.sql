@@ -11,10 +11,11 @@ SELECT
     ,c.[COLUMN_NAME] AS [column_name]
     ,g.[value] AS [value]
     ,g.[meta_name] AS [meta_name]
+	,'column' AS [object_type]
 	,CASE g.[object_type] 
 		WHEN 'V' THEN 'view'
 		ELSE 'table' 
-	END AS [object_type]
+	END AS [parent_type]
 FROM  INFORMATION_SCHEMA.COLUMNS AS c 
 LEFT JOIN 
 		(SELECT 

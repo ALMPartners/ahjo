@@ -25,6 +25,7 @@ from ahjo.database_utilities import execute_query, get_schema_names
 from ahjo.operation_manager import OperationManager
 
 console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo.complete')
 
 EXCLUDED_SCHEMAS = ['db_accessadmin', 'db_backupoperator', 'db_datareader', 'db_datawriter',
                     'db_ddladmin', 'db_denydatareader', 'db_denydatawriter', 'db_owner',
@@ -64,7 +65,7 @@ DB_OBJECTS = {
     'column': {
         'meta_query': 'resources/sql/queries/column_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'columns.csv'),
-        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'col_name', 3: 'meta_value', 4: 'meta_type', 5: 'object_type'},
+        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'col_name', 3: 'meta_value', 4: 'meta_type', 5: 'object_type', 6: 'parent_type'},
         'key_cols': [0, 1, 2]
     }
 }
@@ -110,9 +111,10 @@ def exec_update_extended_properties(engine, object_descriptions, object_metadata
     """Loop object descriptions and update them to database by calling either
     procedure sp_addextendedproperty or sp_updateextendedproperty."""
     for object_name, object_desc in object_descriptions.items():
-        object_meta = object_metadata[object_name]
         try:
+            object_meta = object_metadata[object_name]
             object_type = object_meta.get('object_type')
+            parent_type = object_meta.get('parent_type')
             if object_meta.get('meta_value') is None:
                 procedure_call = 'EXEC sp_addextendedproperty '
             else:
@@ -120,17 +122,18 @@ def exec_update_extended_properties(engine, object_descriptions, object_metadata
             procedure_call += '@name=?, @value=?, @level0type=?, @level0name=?'
             params = ['Description', object_desc.get('meta_value'), 'schema', object_desc.get('schema_name')]
             if object_type in ('view', 'table', 'function', 'procedure', 'column'):
+                level1type = parent_type if parent_type is not None else object_type
                 procedure_call += ', @level1type=?, @level1name=?'
-                params.extend([object_type, object_desc.get('object_name')])
+                params.extend([level1type, object_desc.get('object_name')])
                 if object_type == 'column':
                     procedure_call += ', @level2type=?, @level2name=?'
                     params.extend(['column', object_desc.get('col_name')])
             execute_query(engine, procedure_call, tuple(params))
         except Exception as err:
             console_logger.info(f"Failed to update {object_name} description")
-            console_logger.info("Row data: " + ', '.join(object_desc.values()))
-            console_logger.info("Error message:")
-            console_logger.info(err)
+            logger.info("Row data: " + ', '.join(object_desc.values()))
+            logger.info("Error message:")
+            logger.info(err)
             console_logger.info("------")
 
 
