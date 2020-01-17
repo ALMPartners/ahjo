@@ -14,7 +14,7 @@ from logging import getLogger
 import ahjo.operations as op
 from ahjo.action import action, create_multiaction, registered_actions
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 
 @action('init-config', False)
@@ -54,11 +54,11 @@ def structure_action(context):
     success2 = op.deploy_sqlfiles(context.get_conn_info(), './database/tables/', 'Creating tables')
     success3 = op.deploy_sqlfiles(context.get_conn_info(), './database/constraints/', 'Creating constraints')
     if success1 is False and success2 is False and success3 is False:
-        console_logger.error('Failed to create database structure using primary method, attempting alternate method.')
+        logger.error('Failed to create database structure using primary method, attempting alternate method.')
         try:
             op.create_db_structure(context.get_conn_info())
         except:
-            console_logger.error('Failed to create database structure using alternate method. File database/create_db_structure.sql does not exist.' \
+            logger.error('Failed to create database structure using alternate method. File database/create_db_structure.sql does not exist.' \
                 '\nRefer to the Ahjo documentation for creating database structure.\n------')
 
 

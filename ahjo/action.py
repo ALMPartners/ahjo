@@ -10,7 +10,7 @@ from ahjo.interface_methods import are_you_sure
 from ahjo.context import Context
 from ahjo.operation_manager import OperationManager
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 # dict containing information of all defined actions
 # action register makes it possible to handle user-defined actions
@@ -69,7 +69,7 @@ class ActionRegisteration:
 
     def notify_dependencies(self):
         for dep in self.dependencies:
-            console_logger.info("Note ! this command ("+self.name+") assumes that the "+ dep +" action has been successfully completed already")
+            logger.info("Note ! this command ("+self.name+") assumes that the "+ dep +" action has been successfully completed already")
 
 
 def create_multiaction(action_name, subactions):
@@ -119,14 +119,14 @@ def check_action_validity(action_name, registered_actions, allowed_actions):
         Is the action valid or not?
     """
     if action_name not in allowed_actions and 'ALL' not in allowed_actions:
-        console_logger.error("Action " + action_name + " is not permitted, allowed actions: " + ', '.join(allowed_actions))
+        logger.error("Action " + action_name + " is not permitted, allowed actions: " + ', '.join(allowed_actions))
         return False
     if len(registered_actions) == 0:
-        console_logger.error("No actions defined")
+        logger.error("No actions defined")
         return False
     if registered_actions.get(action_name) is None:
-        console_logger.error("No action " + action_name + " found.")
-        console_logger.error("Available actions: " + ', '.join(registered_actions.keys()))
+        logger.error("No action " + action_name + " found.")
+        logger.error("Available actions: " + ', '.join(registered_actions.keys()))
         return False
     return True
 
@@ -142,7 +142,7 @@ def execute_action(action_name, config_filename, *args, **kwargs):
     config_filename: str
         The name of the config file for context creation.
     """
-    console_logger.info("")
+    logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
         # environment
         context = Context(config_filename)

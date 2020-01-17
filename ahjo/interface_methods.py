@@ -9,13 +9,13 @@ from re import sub
 
 import commentjson as cjson
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 
 def load_json_conf(conf_file, key='BACKEND'):
     f_path = Path(conf_file)
     if not f_path.is_file():
-        console_logger.error("No such file: " + f_path.absolute().as_posix())
+        logger.error("No such file: " + f_path.absolute().as_posix())
         return None
     with open(f_path, encoding='utf-8') as f:
         raw_data = f.read()
@@ -39,14 +39,14 @@ def are_you_sure(message):
     Boolean
         True if the action is going to happen, False if the user does not permit the action.
     """
-    console_logger.info(message)
-    console_logger.info('Are you sure you want to proceed?')
+    logger.info(message)
+    logger.info('Are you sure you want to proceed?')
     choise = input('[Y/N] (N): ')
     if choise == 'y' or choise == 'Y':
-        console_logger.info('confirmed')
+        logger.info('confirmed')
         return True
     else:
-        console_logger.info('cancelled')
+        logger.info('cancelled')
         return False
 
 

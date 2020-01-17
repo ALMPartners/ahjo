@@ -11,9 +11,9 @@ from logging import getLogger
 from sqlalchemy import Table, Column, String, MetaData
 
 from ahjo.database_utilities import execute_query
-from ahjo.operation_manager import OperationManager, console_logger, file_logger
+from ahjo.operation_manager import OperationManager
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 
 def _sqla_git_table(engine, git_table_schema, git_table):
@@ -22,8 +22,8 @@ def _sqla_git_table(engine, git_table_schema, git_table):
     git_table_meta = MetaData(engine)
     git_version_table = Table(
         git_table, git_table_meta,
-        Column('Repository', String(50), primary_key = True),
-        Column('Branch', String(50), primary_key = True),
+        Column('Repository', String(50), primary_key=True),
+        Column('Branch', String(50), primary_key=True),
         Column('Commit_hash', String(50)),
         schema=git_table_schema
     )
@@ -37,7 +37,7 @@ def update_git_version(engine, git_table_schema, git_table, repository=None):
     git_table_name = git_table_schema + "." + git_table
 
     with OperationManager("Updating GIT version table"):
-        console_logger.info(f'GIT version table: {git_table_name}')
+        logger.info(f'GIT version table: {git_table_name}')
         try:
              # get the repository info and commit info
             if repository is None:
@@ -47,8 +47,8 @@ def update_git_version(engine, git_table_schema, git_table, repository=None):
                     repository = ''
             branch, commit = _get_git_commit_info()
         except Exception as error:
-            console_logger.info('Failed to retrieve GIT commit hash. See log for detailed error message.')
-            file_logger.info(error)
+            logger.error('Failed to retrieve GIT commit hash. See log for detailed error message.')
+            logger.debug(error)
             return
 
         _update_git_db_record(engine, git_table_schema, git_table, repository, branch, commit)
@@ -60,25 +60,25 @@ def _update_git_db_record(engine, git_table_schema, git_table, repository, branc
     git_version_table, meta = _sqla_git_table(engine, git_table_schema, git_table)
     
     if not engine.dialect.has_table(engine, git_table, schema=git_table_schema):
-        console_logger.info(f'Table {git_table_schema + "." + git_table} not found. Creating the table.')
+        logger.info(f'Table {git_table_schema + "." + git_table} not found. Creating the table.')
         try:
             meta.create_all()
         except Exception as error:
-            console_logger.info('GIT version table creation failed. See log for detailed error message.')
-            file_logger.info(error)
+            logger.info('GIT version table creation failed. See log for detailed error message.')
+            logger.debug(error)
             return
     try:
-        console_logger.info(f"Repository: {repository}")
-        console_logger.info(f"Branch: {branch}")
-        console_logger.info(f"Version: {commit}")
+        logger.info(f"Repository: {repository}")
+        logger.info(f"Branch: {branch}")
+        logger.info(f"Version: {commit}")
         engine.execute(git_version_table.delete())
-        update_query = git_version_table.insert().values(Repository=repository, 
-                                                        Branch=branch, 
-                                                        Commit_hash=commit)
+        update_query = git_version_table.insert().values(Repository=repository,
+                                                         Branch=branch,
+                                                         Commit_hash=commit)
         engine.execute(update_query)
     except Exception as error:
-        console_logger.error('Failed to update GIT version table. See log for detailed error message.')
-        file_logger.info(error)
+        logger.error('Failed to update GIT version table. See log for detailed error message.')
+        logger.debug(error)
 
 
 def _get_git_commit_info():
@@ -100,9 +100,9 @@ def print_git_version(engine, git_table_schema, git_table):
             git_version_query = git_version_table.select()
             result = execute_query(engine=engine, query=git_version_query)[0]
             repository, branch, version = result
-            console_logger.info(f"Repository: {repository}")
-            console_logger.info(f"Branch: {branch}")
-            console_logger.info(f"Version: {version}")
+            logger.info(f"Repository: {repository}")
+            logger.info(f"Branch: {branch}")
+            logger.info(f"Version: {version}")
         except Exception as error:
-            console_logger.error('Failed to read GIT version table. See log for detailed error message.')
-            file_logger.info(error)
+            logger.error('Failed to read GIT version table. See log for detailed error message.')
+            logger.debug(error)

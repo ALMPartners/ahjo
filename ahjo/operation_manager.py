@@ -8,8 +8,7 @@ from datetime import datetime
 from logging import getLogger
 from traceback import format_exception
 
-console_logger = getLogger('ahjo.console')
-file_logger = getLogger('ahjo.complete')
+logger = getLogger('ahjo')
 
 
 class OperationManager:
@@ -20,12 +19,12 @@ class OperationManager:
         self.message = message
 
     def __enter__(self):
-        console_logger.info(format_message(self.message))
+        logger.info(format_message(self.message))
 
     def __exit__(self, exc_type, exc_value, traceback):
         if traceback is not None:
-            file_logger.info(''.join(format_exception(exc_type, exc_value, traceback)))
-        console_logger.info('------')
+            logger.error(''.join(format_exception(exc_type, exc_value, traceback)))
+        logger.info('------')
 
 
 def format_message(mssg):

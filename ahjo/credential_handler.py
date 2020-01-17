@@ -9,7 +9,7 @@ from getpass import getpass
 from logging import getLogger
 from pathlib import Path
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 
 def obfuscate_credentials(credentials):
@@ -91,8 +91,8 @@ def get_credentials(usrn_file_path=None, pw_file_path=None, cred_key='cred', usr
             if username is not None and password is not None:
                 pass
             else:
-                console_logger.info("Credentials are not yet defined.")
-                console_logger.info(f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
+                logger.info("Credentials are not yet defined.")
+                logger.info(f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
                 username = input(usrn_prompt)
                 new_password = getpass(pw_prompt)
                 username, password = obfuscate_credentials((username, new_password))

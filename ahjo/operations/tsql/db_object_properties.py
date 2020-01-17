@@ -24,8 +24,7 @@ from os import makedirs, path
 from ahjo.database_utilities import execute_query, get_schema_names
 from ahjo.operation_manager import OperationManager
 
-console_logger = getLogger('ahjo.console')
-logger = getLogger('ahjo.complete')
+logger = getLogger('ahjo')
 
 EXCLUDED_SCHEMAS = ['db_accessadmin', 'db_backupoperator', 'db_datareader', 'db_datawriter',
                     'db_ddladmin', 'db_denydatareader', 'db_denydatawriter', 'db_owner',
@@ -90,8 +89,9 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
         if schema_list is None:
             schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
-            console_logger.info('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
+            logger.info('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
             return
+        logger.debug(f'Updating metadata for schemas {", ".join(schema_list)}')
         for key, entry in DB_OBJECTS.items():
             if path.exists(entry['csv']):
                 with open(entry['csv'], encoding='utf-8') as csv_file:
@@ -110,7 +110,7 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
                     )
                 exec_update_extended_properties(engine, object_descriptions, object_metadata)
             else:
-                console_logger.info(f"Cannot update {key} metadata. File {entry['csv']} does not exist")
+                logger.info(f"Cannot update {key} metadata. File {entry['csv']} does not exist")
 
 
 def exec_update_extended_properties(engine, object_descriptions, object_metadata):
@@ -136,11 +136,11 @@ def exec_update_extended_properties(engine, object_descriptions, object_metadata
                     params.extend(['column', object_desc.get('col_name')])
             execute_query(engine, procedure_call, tuple(params))
         except Exception as err:
-            console_logger.info(f"Failed to update {object_name} description")
-            logger.info("Row data: " + ', '.join(object_desc.values()))
-            logger.info("Error message:")
-            logger.info(err)
-            console_logger.info("------")
+            logger.info(f"Failed to update {object_name} description")
+            logger.debug("Row data: " + ', '.join(object_desc.values()))
+            logger.debug("Error message:")
+            logger.debug(err)
+            logger.info("------")
 
 
 def update_csv_object_properties(engine, ahjo_path, schema_list):
@@ -166,8 +166,9 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
         if schema_list is None:
             schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
-            console_logger.info('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
+            logger.info('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
             return
+        logger.debug(f'Fetching metadata for schemas {", ".join(schema_list)}')
         for _, entry in DB_OBJECTS.items():
             meta_query_path = path.join(ahjo_path, entry['meta_query'])
             meta_query_result = prepare_and_exec_query(engine, query_path=meta_query_path, param_list=schema_list)
@@ -183,7 +184,7 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
             with open(entry['csv'], 'w+', encoding='utf-8', newline='') as csv_file:
                 writer = csv.writer(csv_file, delimiter=";")
                 writer.writerows(filtered_meta)
-        console_logger.info('Metadata fetched')
+        logger.debug('Metadata fetched')
 
 
 def prepare_and_exec_query(engine, query_path, param_list):

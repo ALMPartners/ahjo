@@ -9,7 +9,7 @@ from logging import getLogger
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 
 def run_alembic(alembic_args, config_filename):
@@ -35,4 +35,4 @@ def print_alembic_version(engine, alembic_version_table):
     with OperationManager('Checking alembic version from database'):
         alembic_version_query = f"SELECT * FROM {alembic_version_table}"
         alembic_version = execute_query(engine=engine, query=alembic_version_query)[0][0]
-        console_logger.info("Alembic version: " + alembic_version)
+        logger.info("Alembic version: " + alembic_version)

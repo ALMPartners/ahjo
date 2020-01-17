@@ -13,7 +13,7 @@ from logging import getLogger
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 QUERIES = {
     'get_login_session' : 'SELECT session_id FROM sys.dm_exec_sessions WHERE login_name = ?',
@@ -54,7 +54,7 @@ def create_db_login(engine, login_name, login_password, default_db):
         if len(login) > 0:
             execute_query(engine, f'DROP LOGIN {login_name}')
         if login_password == 'SALASANA':
-            console_logger.info(f'Creating login {login_name} with default password.')
+            logger.info(f'Creating login {login_name} with default password.')
         create_query = f"""CREATE LOGIN {login_name} WITH PASSWORD='{login_password}',
             DEFAULT_DATABASE=[{default_db}], DEFAULT_LANGUAGE=[us_english],
             CHECK_EXPIRATION=OFF, CHECK_POLICY=OFF"""

@@ -11,7 +11,7 @@ from ahjo.database_utilities import (create_conn_info,
                                      create_sqlalchemy_engine,
                                      create_sqlalchemy_url)
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 AHJO_PATH = path.dirname(__file__)
 
@@ -95,5 +95,5 @@ def merge_config_files(config_filename):
                 merged_configs = merge_nested_dicts(config_data, local_data)
                 return merged_configs
         except Exception as err:
-            console_logger.info(f'Error while opening file {local_path}: {err}')
+            logger.error(f'Could not open file {local_path}: {err}')
     return config_data

@@ -12,7 +12,7 @@ from os import path
 
 from ahjo.database_utilities.sqla_utilities import execute_try_catch
 
-console_logger = getLogger('ahjo.console')
+logger = getLogger('ahjo')
 
 
 def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
@@ -92,9 +92,9 @@ def deploy_tsql_from_file(file, conn_info, display_output, variable):
         Indicator to print script output.
     '''
     output = invoke_sqlcmd(conn_info, infile=file, variable=variable)
-    console_logger.info(path.basename(file))
+    logger.info(path.basename(file))
     if display_output:
-        console_logger.info(output.decode('utf-8'))
+        logger.info(output.decode('utf-8'))
 
 
 def drop_tsql_from_file(file, engine, object_type):
