@@ -142,7 +142,7 @@ Pre-defined actions include:
 
 * deploy
     * Runs alembic migrations, creates views, procedures and functions. 
-        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, updates current GIT commit to GIT version table.
+        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update object descriptions to database. Finally, updates current GIT commit to GIT version table.
 
 * data
     * Runs data insertion scripts.
@@ -203,7 +203,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | git_table_schema | No | Schema of git hash table. | str | "dbo" |
 | sql_port | Yes | Port number of target database server. | int | |
 | sql_driver | No | Name of ODBC driver. | str | |
-| sql_dialect | No | Dialect used by SQL ALchemy. | str | 'mssql+pyodbc' |
+| sql_dialect | No | Dialect used by SQL Alchemy. | str | 'mssql+pyodbc' |
 | target_server_hostname | Yes | Host name of target database server. | str | |
 | target_database_name | Yes | Name of target database. | str | |
 | database_data_path | No | Path of database data file. | str | |
@@ -211,7 +211,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | database_init_size | No | Initial size (MB) of database data file. | int | 100 |
 | database_max_size | No | Maximum size (MB) of database data file. | int | 10000 |
 | database_file_growth | No | The size (MB) of how much database data file will grow when it runs out of space. | int | 500 |
-| database_compatibility_level | No | Compatibility level of database. | int | 140 |
+| database_compatibility_level | No | Compatibility level of database. | int | Depends on server. SQL Server 2017 default is 140. |
 | database_collation | No | Collation of database. | str | "Latin1_General_CS_AS" |
 | username_file | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
 | password_file | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |

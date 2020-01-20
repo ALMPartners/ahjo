@@ -13,14 +13,11 @@ robotframework/*.xml
 robotframework/*.png
 
 # config stuff
-config_local.json*
-config_production.json*
+config_*.json*
+!config_development.jsonc
 
 # package stuff
 *.egg-info
-
-# pylint
-.pylintrc
 
 # tableau
 /apps/tableau/~*
@@ -28,3 +25,7 @@ config_production.json*
 
 # logs
 *.log
+*.log.*
+
+# Jupyter
+.ipynb_checkpoints/
