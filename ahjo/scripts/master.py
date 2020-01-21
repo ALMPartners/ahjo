@@ -19,7 +19,7 @@ logger = getLogger('ahjo')
 
 
 logger.info('------')
-if os.path.exists('ahjo_actions.py') or os.path.exists('/ahjo_actions'):
+if os.path.exists('ahjo_actions.py') or os.path.exists('./ahjo_actions'):
     logger.debug(format_message('ahjo_actions found'))
     try:
         sys.path.append(os.getcwd())
