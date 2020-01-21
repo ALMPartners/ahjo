@@ -39,7 +39,7 @@ def deploy_sqlfiles(conn_info, directory, message, display_output=False, variabl
     """
     with OperationManager(message):
         if not Path(directory).is_dir():
-            logger.info("Directory not found: " + directory)
+            logger.warning("Directory not found: " + directory)
             return False
         files = [path.join(directory, f) for f in listdir(directory) if f.endswith('.sql')]
         failed, errors = sql_file_loop(deploy_tsql_from_file, conn_info, display_output, variable, file_list=files, max_loop=len(files))
@@ -72,7 +72,7 @@ def drop_sqlfile_objects(engine, object_type, directory, message):
     """
     with OperationManager(message):
         if not Path(directory).is_dir():
-            logger.info("Directory not found: "+ directory)
+            logger.warning("Directory not found: "+ directory)
             return
         files = [path.join(directory, f) for f in listdir(directory) if f.endswith('.sql')]
         failed, errors = sql_file_loop(drop_tsql_from_file, engine, object_type, file_list=files, max_loop=len(files))

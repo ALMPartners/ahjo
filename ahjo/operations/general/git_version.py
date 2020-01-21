@@ -64,7 +64,7 @@ def _update_git_db_record(engine, git_table_schema, git_table, repository, branc
         try:
             meta.create_all()
         except Exception as error:
-            logger.info('GIT version table creation failed. See log for detailed error message.')
+            logger.warning('GIT version table creation failed. See log for detailed error message.')
             logger.debug(error)
             return
     try:

@@ -89,7 +89,7 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
         if schema_list is None:
             schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
-            logger.info('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
+            logger.warning('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
             return
         logger.debug(f'Updating metadata for schemas {", ".join(schema_list)}')
         for key, entry in DB_OBJECTS.items():
@@ -110,7 +110,7 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
                     )
                 exec_update_extended_properties(engine, object_descriptions, object_metadata)
             else:
-                logger.info(f"Cannot update {key} metadata. File {entry['csv']} does not exist")
+                logger.warning(f"Cannot update {key} metadata. File {entry['csv']} does not exist")
 
 
 def exec_update_extended_properties(engine, object_descriptions, object_metadata):
@@ -136,7 +136,7 @@ def exec_update_extended_properties(engine, object_descriptions, object_metadata
                     params.extend(['column', object_desc.get('col_name')])
             execute_query(engine, procedure_call, tuple(params))
         except Exception as err:
-            logger.info(f"Failed to update {object_name} description")
+            logger.warning(f"Failed to update {object_name} description")
             logger.debug("Row data: " + ', '.join(object_desc.values()))
             logger.debug("Error message:")
             logger.debug(err)
@@ -166,7 +166,7 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
         if schema_list is None:
             schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
-            logger.info('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
+            logger.warning('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
             return
         logger.debug(f'Fetching metadata for schemas {", ".join(schema_list)}')
         for _, entry in DB_OBJECTS.items():
