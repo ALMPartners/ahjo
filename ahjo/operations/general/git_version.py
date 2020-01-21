@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019 ALM Partners Oy
+# Copyright 2019, 2020 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 """Module for git version operations."""
