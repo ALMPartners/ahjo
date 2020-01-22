@@ -33,7 +33,7 @@ def create_db_login(engine, login_name, login_password, default_db):
         login_name = config_dict.get('DJANGO', {}).get('KP_REP_DB_USRNAME', '$')
         login_password = config_dict.get('DJANGO', {}).get('KP_REP_DB_PW', '$')
         default_db = config_dict.get('DJANGO', {}).get('KP_REP_DB_NAME', '$')
-        daop.create_db_login(context.engine, login_name, login_password, default_db)
+        op.create_db_login(context.engine, login_name, login_password, default_db)
 
     Arguments
     ---------

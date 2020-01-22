@@ -157,12 +157,17 @@ Pre-defined actions include:
 
 * downgrade
     * Reverts the database back to basic structure.
-        * Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Runs *alembic downgrade base*.
+        * Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Runs `alembic downgrade base`.
 
 * version
     * Prints the alembic- and git-version currently in the database.
         * Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
-    
+* update-csv-obj-prop
+    * Write objects and their available descriptions (Sql Server extended properties) to CSV files under *./docs* directory.
+        * Documented schemas are listed in *metadata_allowed_schemas*.
+* update-db-obj-prop
+    * Update object descriptions from CSV files under *./docs* directory to database (Sql Server extended properties).
+        * Updated schemas are listed in *metadata_allowed_schemas*.
 * test
     * Runs tests and returns the results.
         * Runs all SQL scripts under *./database/tests*.
@@ -217,6 +222,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | password_file | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
 | alembic_version_table | No | Name of Alembic version table. Table holds the current revision number. | str | "alembic_version" |
 | alembic_version_table_schema | No | Schema of Alembic version table. | str | "dbo" |
+| metadata_allowed_schemas | No | List of schemas that object descriptions will be written to CSV files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
 
 ## Using Alembic with Ahjo
 Alembic upgrade HEAD is used in deploy action, but for many use cases other alembic commands are needed. For these needs Ahjo comes with a [env.py](./ahjo/resources/files/env.py) file that enables running Alembic commands without running Ahjo.

@@ -68,6 +68,11 @@ class ActionRegisteration:
         return True
 
     def notify_dependencies(self):
+        """Notify user if action is dependent of other actions.
+        Do not notify user when action 'complete-build' is run.
+        """
+        if self.name == 'complete-build':
+            return
         for dep in self.dependencies:
             logger.info("Note ! this command ("+self.name+") assumes that the "+ dep +" action has been successfully completed already")
 

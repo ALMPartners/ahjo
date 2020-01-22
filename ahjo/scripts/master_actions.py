@@ -108,7 +108,7 @@ def downgrade_action(context):
     op.downgrade_db_to_alembic_base(context.config_filename)
 
 
-@action('test', False, ["testdata"])
+@action('test', False)
 def test_action(context):
     op.deploy_sqlfiles(context.get_conn_info(), './database/tests/', "Running tests", display_output=True)
 
