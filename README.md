@@ -1,6 +1,8 @@
 Ahjo Framework
 ====================
 
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ahjo) ![PyPI](https://img.shields.io/pypi/v/ahjo)
+
 # Description
 
 Ahjo is a database project framework and a deployment script. It is made to unify database project deployment and development practices and to give basic tooling for such projects. 
