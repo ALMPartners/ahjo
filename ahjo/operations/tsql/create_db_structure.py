@@ -16,4 +16,3 @@ def create_db_structure(conn_info):
     """
     with OperationManager('Creating structure'):
         invoke_sqlcmd(conn_info, infile='database/create_db_structure.sql')
-

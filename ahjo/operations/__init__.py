@@ -14,7 +14,8 @@ from ahjo.operations.general import (
     print_git_version,
     create_local_config_base,
     create_new_project,
-    populate_project
+    populate_project,
+    bulk_insert_into_database
 )
 
 from ahjo.operations.tsql import (
