@@ -42,10 +42,11 @@ def deploy_sqlfiles(conn_info, directory, message, display_output=False, variabl
             logger.warning("Directory not found: " + directory)
             return False
         files = [path.join(directory, f) for f in listdir(directory) if f.endswith('.sql')]
-        failed, errors = sql_file_loop(deploy_tsql_from_file, conn_info, display_output, variable, file_list=files, max_loop=len(files))
+        failed = sql_file_loop(deploy_tsql_from_file, conn_info, display_output, variable, file_list=files, max_loop=len(files))
         if len(failed) > 0:
-            error_msg = "Failed to deploy the following files:\n{}".format('\n'.join(failed))
-            error_msg = error_msg + ''.join(errors)
+            error_msg = "Failed to deploy the following files:\n{}".format('\n'.join(failed.keys()))
+            for fail_messages in failed.values():
+                error_msg = error_msg + ''.join(fail_messages)
             raise RuntimeError(error_msg)
         return True
 
@@ -75,8 +76,9 @@ def drop_sqlfile_objects(engine, object_type, directory, message):
             logger.warning("Directory not found: "+ directory)
             return
         files = [path.join(directory, f) for f in listdir(directory) if f.endswith('.sql')]
-        failed, errors = sql_file_loop(drop_tsql_from_file, engine, object_type, file_list=files, max_loop=len(files))
+        failed = sql_file_loop(drop_tsql_from_file, engine, object_type, file_list=files, max_loop=len(files))
         if len(failed) > 0:
-            error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed))
-            error_msg = error_msg + ''.join(errors)
+            error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed.keys()))
+            for fail_messages in failed.values():
+                error_msg = error_msg + ''.join(fail_messages)
             raise RuntimeError(error_msg)

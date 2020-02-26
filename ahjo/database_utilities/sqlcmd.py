@@ -5,10 +5,11 @@
 
 """Utility functions for executing tsql using sqlcmd.exe
 """
-from subprocess import PIPE, Popen, list2cmdline
-from re import search
+from collections import defaultdict
 from logging import getLogger
 from os import path
+from re import search
+from subprocess import PIPE, Popen, list2cmdline
 
 from ahjo.database_utilities.sqla_utilities import execute_try_catch
 
@@ -129,9 +130,8 @@ def sql_file_loop(command, *args, file_list, max_loop=10):
     copy of file_list. If command succeeds, drop the the file from copy of file_list. If command
     fails, keep the file in copy of file_list and execute the command again in next loop.
 
-    When max_loop is reached and there are files in copy of file_list, return the copy of file_list
-    and list of RuntimeErrors that surfaces during executions.
-    Else return empty list and list of RuntimeErrors that surfaces during executions.
+    When max_loop is reached and there are files in copy of file_list, return the remaining
+    file names and related errors that surfaced during executions. Else return empty dict.
 
     Parameters
     ----------
@@ -146,14 +146,12 @@ def sql_file_loop(command, *args, file_list, max_loop=10):
 
     Returns
     -------
-    list
-        List of failed files.
-    list
-        List of RuntimeErrors that surface during executions.
+    dict
+        Failed files and related errors. Empty if no fails.
     '''
     copy_list = file_list.copy()
     copy_list_loop = copy_list.copy()
-    error_set = set()
+    errors = defaultdict(set)
     for _ in range(max_loop):
         for file in copy_list_loop:
             try:
@@ -161,11 +159,11 @@ def sql_file_loop(command, *args, file_list, max_loop=10):
                 copy_list.remove(file)
             except Exception as error:
                 error_str = '\n------\n' + str(error)
-                error_set.add(error_str)
+                errors[file].add(error_str)
         copy_list_loop = copy_list.copy()
     if len(copy_list) > 0:
-        return copy_list, list(error_set)
-    return [], list(error_set)
+        return {f: list(errors[f]) for f in copy_list}
+    return {}
 
 
 def _add_cmdline_quotes(cmd_str):
