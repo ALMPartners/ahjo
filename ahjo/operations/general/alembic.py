@@ -4,35 +4,57 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Module for Alembic related operations"""
+from os import path
+from argparse import Namespace
 from logging import getLogger
 
+from alembic import command
+from alembic.config import Config
+
+from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 
 logger = getLogger('ahjo')
 
 
-def run_alembic(alembic_args, config_filename):
-    """Runs alembic in the same python-process by calling alembic's entrypoint in python.
-    This way alembic shares already given credentials when importing credential_handler.
+def alembic_config(config_filename):
+    """Return altered Alembic config.
+
+    First, read project's alembic configuration (alembic.ini).
+    Second, alter project's existing config by passing Ahjo's credential
+    configuration file as an 'x' argument and setting 'config_file_name'
+    to point to Ahjo's logging configuration file.
+
+    This way Alembic will use Ahjo's loggers and project's configurations
+    when running Alembic operations.
     """
-    import alembic.config
-    alembic_args = ['-x', 'main_config=' + config_filename] + alembic_args
-    alembic.config.main(argv=alembic_args)
+    alembic_config = Config('alembic.ini')
+    main_section = alembic_config.config_ini_section
+    alembic_config.get_section(main_section)    # main section options are set when main section is read
+    alembic_config.cmd_opts = Namespace(x=["main_config=" + config_filename])
+    alembic_config.config_file_name = path.join(AHJO_PATH, 'resources/logger.ini')
+    return alembic_config
 
 
 def upgrade_db_to_latest_alembic_version(config_filename):
+    """Run Alembic 'upgrade head' in the same python-process
+    by calling Alembic's API.
+    """
     with OperationManager("Running all upgrade migrations"):
-        run_alembic(['upgrade', 'head'], config_filename)
+        command.upgrade(alembic_config(config_filename), 'head')
 
 
 def downgrade_db_to_alembic_base(config_filename):
+    """Run Alembic 'downgrade base' in the same python-process
+    by calling Alembic's API.
+    """
     with OperationManager('Downgrading to base'):
-        run_alembic(['downgrade', 'base'], config_filename)
+        command.downgrade(alembic_config(config_filename), 'base')
 
 
 def print_alembic_version(engine, alembic_version_table):
-    with OperationManager('Checking alembic version from database'):
+    with OperationManager('Checking Alembic version from database'):
         alembic_version_query = f"SELECT * FROM {alembic_version_table}"
         alembic_version = execute_query(engine=engine, query=alembic_version_query)[0][0]
         logger.info("Alembic version: " + alembic_version)
