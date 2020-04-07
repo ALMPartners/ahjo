@@ -97,6 +97,14 @@ def testdata_acction(context):
 def create_db_permissions(context):
     op.create_db_permissions(context.get_conn_info())
 
+@action('drop', True, ["init"])
+def drop_action(context):
+    op.drop_sqlfile_objects(context.get_engine(), 'VIEW', "./database/views/", "Dropping views")
+    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/procedures/", "Dropping procedures")
+    op.drop_sqlfile_objects(context.get_engine(), 'FUNCTION', "./database/functions/", "Dropping functions")
+    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
+    op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
+
 
 @action('downgrade', True, ["init"])
 def downgrade_action(context):
@@ -113,17 +121,17 @@ def test_action(context):
     op.deploy_sqlfiles(context.get_conn_info(), './database/tests/', "Running tests", display_output=True)
 
 
-@action('version', False, ["init"])
+@action('version', False, ["deploy"])
 def version_action(context):
     op.print_git_version(context.get_engine(), context.configuration.get('git_table_schema', 'dbo'), context.configuration.get('git_table'))
     op.print_alembic_version(context.get_engine(), context.configuration['alembic_version_table'])
 
 
-@action('update-csv-obj-prop', False)
+@action('update-csv-obj-prop', False, ["deploy"])
 def update_csv_obj_prop(context):
     op.update_csv_object_properties(context.get_engine(), context.ahjo_path, context.configuration.get('metadata_allowed_schemas'))
 
-@action('update-db-obj-prop', True)
+@action('update-db-obj-prop', True, ["deploy"])
 def update_db_obj_prop(context):
     op.update_db_object_properties(context.get_engine(), context.ahjo_path, context.configuration.get('metadata_allowed_schemas'))
 

@@ -157,9 +157,12 @@ Pre-defined actions include:
 * complete-build
     * Runs actions init, deploy, data, testdata and test in order.
 
+* drop
+    * Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH.
+
 * downgrade
     * Reverts the database back to basic structure.
-        * Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Runs `alembic downgrade base`.
+        * First, drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Second, runs `alembic downgrade base`.
 
 * version
     * Prints the alembic- and git-version currently in the database.
