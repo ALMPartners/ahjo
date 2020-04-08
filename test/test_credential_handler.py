@@ -1,7 +1,3 @@
-"""
-input: username file name, username file content, password file name, password file content, username input, password input
-output: (username, password)
-"""
 from base64 import b64encode
 from os import remove
 
@@ -14,19 +10,26 @@ def obfuscate(stng):
     return b64encode(stng.encode()).decode()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def execute_get_credentials_with_varying_input(tmp_path, monkeypatch):
+    """First, create username/password files with given content and store
+    file paths to created_records.
+    Second, set username/password input with monkeypatch.
+    Third, execute ahjo.get_credentials with created username/password file
+    paths as parameters (None if no file created).
+    Finally, delete created username/password files.
+    """
     created_records = []
 
     def get_credentials(usrn_file_name, usrn_file_content, pw_file_name, pw_file_content, usrn_input, pw_input):
-        # create username file if file naem and content given
+        # create username file if file name and content given
         usrn_file_path = None
         if usrn_file_name and usrn_file_content is not None:
             usrn_file_path = tmp_path / usrn_file_name
             usrn_file_path.write_text(
                 f"cred={usrn_file_content}", encoding="utf-8")
             created_records.append(str(usrn_file_path))
-        # create password file if file naem and content given
+        # create password file if file name and content given
         pw_file_path = None
         if pw_file_name and pw_file_content is not None:
             pw_file_path = tmp_path / pw_file_name
@@ -40,49 +43,49 @@ def execute_get_credentials_with_varying_input(tmp_path, monkeypatch):
 
     yield get_credentials
 
-    # suorittaa huolimatta get_credentials tuloksesta
+    # executed despite of result
     for record in created_records:
         remove(record)
 
 
 def test_credentials_should_be_read_from_file_when_both_paths_given(execute_get_credentials_with_varying_input):
-    """Molemmat filut annettu - lue filuista
-    input: file_path, "cred=UKKELI", file_path, "cred=SALASANA", None, None
-    output: ("UKKELI", "SALASANA")
+    """Both files given - read credentials from files.
+    input: file_path, "cred=USER1", file_path, "cred=PASSWORD1", None, None
+    output: ("USER1", "PASSWORD1")
     """
-    testinput = ("usrn1.txt", "UKKELI1", "pw1.txt", obfuscate("SALASANA1"), None, None)
-    assert ("UKKELI1", "SALASANA1") == execute_get_credentials_with_varying_input(*testinput)
+    testinput = ("usrn1.txt", "USER1", "pw1.txt", obfuscate("PASSWORD1"), None, None)
+    assert ("USER1", "PASSWORD1") == execute_get_credentials_with_varying_input(*testinput)
 
 
 def test_credentials_should_be_asked_when_username_file_not_given(execute_get_credentials_with_varying_input):
-    """Username filua ei annettu - kysy input
-    input: None, None, file_path, "cred=SALASANA", "UKKELI", "SALASANA"
-    output: ("UKKELI", "SALASANA")
+    """Username file not given - ask credentials from user.
+    input: None, None, file_path, "cred=PASSWORD", "USER2", "PASSWORD2"
+    output: ("USER2", "PASSWORD2")
     """
-    testinput = (None, None, "pw2.txt", obfuscate("SALASANA"), "UKKELI2", "SALASANA2")
-    assert ("UKKELI2", "SALASANA2") == execute_get_credentials_with_varying_input(*testinput)
+    testinput = (None, None, "pw2.txt", obfuscate("PASSWORD"), "USER2", "PASSWORD2")
+    assert ("USER2", "PASSWORD2") == execute_get_credentials_with_varying_input(*testinput)
 
 
 def test_credentials_should_be_asked_when_password_file_not_given(execute_get_credentials_with_varying_input):
-    """Salasana filua ei annettu - kysy input
-    input: file_path, "cred=UKKELI", None, None, "UKKELI", "SALASANA"
-    output: ("UKKELI", "SALASANA")
+    """Password file not given - ask credentials from user.
+    input: file_path, "cred=USER", None, None, "USER3", "PASSWORD3"
+    output: ("USER3", "PASSWORD3")
     """
-    testinput = ("usrn3.txt", "UKKELI", None, None, "UKKELI3", "SALASANA3")
-    assert ("UKKELI3", "SALASANA3") == execute_get_credentials_with_varying_input(*testinput)
+    testinput = ("usrn3.txt", "USER", None, None, "USER3", "PASSWORD3")
+    assert ("USER3", "PASSWORD3") == execute_get_credentials_with_varying_input(*testinput)
 
 
 def test_credentials_should_be_asked_when_both_files_not_given(execute_get_credentials_with_varying_input):
-    """Kumpaakaan filua ei annettu - kysy input
-    input: None, None, None, None, "UKKELI", "SALASANA"
-    output: ("UKKELI", "SALASANA")
+    """Username and password files not given - ask credentials from user.
+    input: None, None, None, None, "USER4", "PASSWORD4"
+    output: ("USER4", "PASSWORD4")
     """
-    testinput = (None, None, None, None, "UKKELI4", "SALASANA4")
-    assert ("UKKELI4", "SALASANA4") == execute_get_credentials_with_varying_input(*testinput)
+    testinput = (None, None, None, None, "USER4", "PASSWORD4")
+    assert ("USER4", "PASSWORD4") == execute_get_credentials_with_varying_input(*testinput)
 
 
 def test_windows_authentication_from_files_should_return_empty_strings(execute_get_credentials_with_varying_input):
-    """WA filuista - palauttaa tyhjän merkkijonon
+    """Windows authentication from files - return tuple of empty strings.
     input: file_path, "cred=", file_path, "cred=", None, None
     output: ("", "")
     """
@@ -91,7 +94,7 @@ def test_windows_authentication_from_files_should_return_empty_strings(execute_g
 
 
 def test_windows_authentication_from_input_should_return_empty_strings(execute_get_credentials_with_varying_input):
-    """WA inputista - palauttaa tyhjän merkkijonon
+    """Windows authentication from user input - return tuple of empty strings.
     input: None, None, None, None, "", ""
     output: ("", "")
     """
@@ -100,9 +103,9 @@ def test_windows_authentication_from_input_should_return_empty_strings(execute_g
 
 
 def test_input_should_be_asked_when_file_missing(execute_get_credentials_with_varying_input):
-    """Filut annettu parametreina, mutta ei olemassa - kysy input
-    input: file_path, None, file_path, None, "UKKELI", "SALASANA"
-    output: ("UKKELI", "SALASANA")
+    """File paths given but files do not exist - ask credentials from user.
+    input: file_path, None, file_path, None, "USER5", "PASSWORD5"
+    output: ("USER5", "PASSWORD5")
     """
-    testinput = ("usrn5.txt", None, "pw5.txt", None, "UKKELI5", "SALASANA5")
-    assert ("UKKELI5", "SALASANA5") == execute_get_credentials_with_varying_input(*testinput)
+    testinput = ("usrn5.txt", None, "pw5.txt", None, "USER5", "PASSWORD5")
+    assert ("USER5", "PASSWORD5") == execute_get_credentials_with_varying_input(*testinput)
