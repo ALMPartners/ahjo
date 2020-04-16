@@ -68,7 +68,7 @@ def deploy_action(context):
     op.deploy_sqlfiles(context.get_conn_info(), "./database/functions/", "Deploying functions")
     op.deploy_sqlfiles(context.get_conn_info(), "./database/views/", "Deploying views")
     op.deploy_sqlfiles(context.get_conn_info(), "./database/procedures/", "Deploying procedures")
-    op.update_db_object_properties(context.get_engine(), context.ahjo_path, context.configuration.get('metadata_allowed_schemas'))
+    op.update_db_object_properties(context.get_engine(), context.configuration.get('metadata_allowed_schemas'))
     op.update_git_version(context.get_engine(),
                            context.configuration.get('git_table_schema', 'dbo'),
                            context.configuration.get('git_table'),
@@ -129,11 +129,11 @@ def version_action(context):
 
 @action('update-csv-obj-prop', False, ["deploy"])
 def update_csv_obj_prop(context):
-    op.update_csv_object_properties(context.get_engine(), context.ahjo_path, context.configuration.get('metadata_allowed_schemas'))
+    op.update_csv_object_properties(context.get_engine(), context.configuration.get('metadata_allowed_schemas'))
 
 @action('update-db-obj-prop', True, ["deploy"])
 def update_db_obj_prop(context):
-    op.update_db_object_properties(context.get_engine(), context.ahjo_path, context.configuration.get('metadata_allowed_schemas'))
+    op.update_db_object_properties(context.get_engine(), context.configuration.get('metadata_allowed_schemas'))
 
 
 create_multiaction("complete-build", ["init", "deploy", "data", "testdata", "test"])

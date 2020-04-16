@@ -18,7 +18,6 @@ AHJO_PATH = path.dirname(__file__)
 class Context:
     """All the default stuff that is passed to actions, like configuration."""
     def __init__(self, config_filename):
-        self.ahjo_path = AHJO_PATH
         self.engine = None
         self.config_filename = config_filename
         self.configuration = load_json_conf(config_filename)

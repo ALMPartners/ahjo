@@ -21,6 +21,7 @@ import csv
 from logging import getLogger
 from os import makedirs, path
 
+from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query, get_schema_names
 from ahjo.operation_manager import OperationManager
 
@@ -32,45 +33,45 @@ EXCLUDED_SCHEMAS = ['db_accessadmin', 'db_backupoperator', 'db_datareader', 'db_
 DOCS_DIR = 'docs/db_objects'
 DB_OBJECTS = {
     'schema': {
-        'meta_query': 'resources/sql/queries/schema_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'schemas.csv'),
-        'col_map': {0: 'schema_name', 1: 'meta_value', 2: 'meta_type', 3: 'object_type'},
-        'key_cols': [0]
+        'query': 'resources/sql/queries/schema_descriptions.sql',
+        'columns': ['schema_name', 'meta_value', 'meta_type', 'object_type'],
+        'key_columns': ['schema_name']
     },
     'procedure': {
-        'meta_query': 'resources/sql/queries/procedure_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'procedures.csv'),
-        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'meta_value', 3: 'meta_type', 4: 'object_type'},
-        'key_cols': [0, 1]
+        'query': 'resources/sql/queries/procedure_descriptions.sql',
+        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'key_columns': ['schema_name', 'object_name']
     },
     'function': {
-        'meta_query': 'resources/sql/queries/function_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'functions.csv'),
-        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'meta_value', 3: 'meta_type', 4: 'object_type'},
-        'key_cols': [0, 1]
+        'query': 'resources/sql/queries/function_descriptions.sql',
+        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'key_columns': ['schema_name', 'object_name']
     },
     'table': {
-        'meta_query': 'resources/sql/queries/table_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'tables.csv'),
-        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'meta_value', 3: 'meta_type', 4: 'object_type'},
-        'key_cols': [0, 1]
+        'query': 'resources/sql/queries/table_descriptions.sql',
+        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'key_columns': ['schema_name', 'object_name']
     },
     'view': {
-        'meta_query': 'resources/sql/queries/view_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'views.csv'),
-        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'meta_value', 3: 'meta_type', 4: 'object_type'},
-        'key_cols': [0, 1]
+        'query': 'resources/sql/queries/view_descriptions.sql',
+        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'key_columns': ['schema_name', 'object_name']
     },
     'column': {
-        'meta_query': 'resources/sql/queries/column_descriptions.sql',
         'csv': path.join(DOCS_DIR, 'columns.csv'),
-        'col_map': {0: 'schema_name', 1: 'object_name', 2: 'col_name', 3: 'meta_value', 4: 'meta_type', 5: 'object_type', 6: 'parent_type'},
-        'key_cols': [0, 1, 2]
+        'query': 'resources/sql/queries/column_descriptions.sql',
+        'columns': ['schema_name', 'object_name', 'col_name', 'meta_value', 'meta_type', 'object_type', 'parent_type'],
+        'key_columns': ['schema_name', 'object_name', 'col_name']
     }
 }
 
 
-def update_db_object_properties(engine, ahjo_path, schema_list):
+def update_db_object_properties(engine, schema_list):
     """Update database object descriptions (CSV) to database.
     If schema_list is None, all schemas are updated.
     If schema_list is empty list, nothing is updated.
@@ -80,8 +81,6 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
     ---------
     engine : sqlalchemy.engine.Engine
         SQL Alchemy engine.
-    ahjo_path : str
-        Path where Ahjo is installed.
     schema_list : list of str
         List of schemas to be documented.
     """
@@ -92,58 +91,57 @@ def update_db_object_properties(engine, ahjo_path, schema_list):
             logger.warning('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
             return
         logger.debug(f'Updating metadata for schemas {", ".join(schema_list)}')
-        for key, entry in DB_OBJECTS.items():
-            if path.exists(entry['csv']):
-                with open(entry['csv'], encoding='utf-8') as csv_file:
-                    reader = csv.reader(csv_file, delimiter=";")
-                    object_descriptions = rows_to_dict(
-                        iterable_rows=reader,
-                        key_cols=entry['key_cols'],
-                        col_mapping=entry['col_map']
-                        )
-                meta_query_path = path.join(ahjo_path, entry['meta_query'])
-                meta_query_result = prepare_and_exec_query(engine, query_path=meta_query_path, param_list=schema_list)
-                object_metadata = rows_to_dict(
-                    iterable_rows=meta_query_result,
-                    key_cols=entry['key_cols'],
-                    col_mapping=entry['col_map']
-                    )
-                exec_update_extended_properties(engine, object_descriptions, object_metadata)
-            else:
-                logger.warning(f"Cannot update {key} metadata. File {entry['csv']} does not exist")
+        for object_type, entry in DB_OBJECTS.items():
+            source_file = entry['csv']
+            columns = entry['columns']
+            key_columns = entry['key_columns']
+            metadata_query = entry['query']
+            if not path.exists(source_file):
+                logger.warning(f"Cannot update {object_type} metadata. File {source_file} does not exist")
+                continue
+            query_result = query_object_metadata(engine, metadata_query, schema_list)
+            metadata_from_db = consume_query_result(query_result, key_columns, columns)
+            with open(source_file, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f, delimiter=";")
+                for object_name, object_csv_description in object_generator(reader, columns, key_columns):
+                    if object_csv_description.get('schema_name') in schema_list:
+                        object_db_metadata = metadata_from_db.get(object_name)
+                        exec_update_extended_properties(engine, object_name, object_csv_description, object_db_metadata)
 
 
-def exec_update_extended_properties(engine, object_descriptions, object_metadata):
-    """Loop object descriptions and update them to database by calling either
-    procedure sp_addextendedproperty or sp_updateextendedproperty."""
-    for object_name, object_desc in object_descriptions.items():
-        try:
-            object_meta = object_metadata[object_name]
-            object_type = object_meta.get('object_type')
-            parent_type = object_meta.get('parent_type')
-            if object_meta.get('meta_value') is None:
-                procedure_call = 'EXEC sp_addextendedproperty '
-            else:
-                procedure_call = 'EXEC sp_updateextendedproperty '
-            procedure_call += '@name=?, @value=?, @level0type=?, @level0name=?'
-            params = ['Description', object_desc.get('meta_value'), 'schema', object_desc.get('schema_name')]
-            if object_type in ('view', 'table', 'function', 'procedure', 'column'):
-                level1type = parent_type if parent_type is not None else object_type
-                procedure_call += ', @level1type=?, @level1name=?'
-                params.extend([level1type, object_desc.get('object_name')])
-                if object_type == 'column':
-                    procedure_call += ', @level2type=?, @level2name=?'
-                    params.extend(['column', object_desc.get('col_name')])
-            execute_query(engine, procedure_call, tuple(params))
-        except Exception as err:
-            logger.warning(f"Failed to update {object_name} description")
-            logger.debug("Row data: " + ', '.join(object_desc.values()))
-            logger.debug("Error message:")
-            logger.debug(err)
-            logger.info("------")
+def exec_update_extended_properties(engine, object_name, object_csv_description, object_db_metadata):
+    """Update object's extended properties (Description) by calling either
+    procedure sp_addextendedproperty or sp_updateextendedproperty.
+    If object_db_metadata is None, object does not exist in database.
+    """
+    try:
+        if object_db_metadata is None:
+            raise Exception('Object not found in database')
+        object_type = object_db_metadata.get('object_type')
+        parent_type = object_db_metadata.get('parent_type')
+        if object_db_metadata.get('meta_value') is None:
+            procedure_call = 'EXEC sp_addextendedproperty '
+        else:
+            procedure_call = 'EXEC sp_updateextendedproperty '
+        procedure_call += '@name=?, @value=?, @level0type=?, @level0name=?'
+        params = ['Description', object_csv_description.get('meta_value'), 'schema', object_csv_description.get('schema_name')]
+        if object_type in ('view', 'table', 'function', 'procedure', 'column'):
+            level1type = parent_type if parent_type is not None else object_type
+            procedure_call += ', @level1type=?, @level1name=?'
+            params.extend([level1type, object_csv_description.get('object_name')])
+            if object_type == 'column':
+                procedure_call += ', @level2type=?, @level2name=?'
+                params.extend(['column', object_csv_description.get('col_name')])
+        execute_query(engine, procedure_call, tuple(params))
+    except Exception as err:
+        logger.warning(f"Failed to update {object_name} description")
+        logger.debug("Row data: " + ', '.join(object_csv_description.values()))
+        logger.debug("Error message:")
+        logger.debug(err)
+        logger.info("------")
 
 
-def update_csv_object_properties(engine, ahjo_path, schema_list):
+def update_csv_object_properties(engine, schema_list):
     """Write metadata to csv file.
     If project doesn't have docs directory, create it.
 
@@ -155,8 +153,6 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
     ---------
     engine : sqlalchemy.engine.Engine
         SQL Alchemy engine.
-    ahjo_path : str
-        Path where Ahjo is installed.
     schema_list : list of str
         List of schemas to be documented.
     """
@@ -170,21 +166,29 @@ def update_csv_object_properties(engine, ahjo_path, schema_list):
             return
         logger.debug(f'Fetching metadata for schemas {", ".join(schema_list)}')
         for _, entry in DB_OBJECTS.items():
-            meta_query_path = path.join(ahjo_path, entry['meta_query'])
-            meta_query_result = prepare_and_exec_query(engine, query_path=meta_query_path, param_list=schema_list)
-            object_metadata = rows_to_dict(
-                iterable_rows=meta_query_result,
-                key_cols=entry['key_cols'],
-                col_mapping=entry['col_map']
-                )
-            filtered_meta = [object_name.split('.') + [object_meta.get('meta_value')]
-                             for object_name, object_meta in object_metadata.items()
-                             if object_meta.get('meta_type') is None
-                             or object_meta.get('meta_type') == "Description"]
-            with open(entry['csv'], 'w+', encoding='utf-8', newline='') as csv_file:
-                writer = csv.writer(csv_file, delimiter=";")
-                writer.writerows(filtered_meta)
+            target_file = entry['csv']
+            columns = entry['columns']
+            key_columns = entry['key_columns']
+            metadata_query = entry['query']
+            query_result = query_object_metadata(engine, metadata_query, schema_list)
+            with open(target_file, 'w+', encoding='utf-8', newline='') as f:
+                writer = csv.writer(f, delimiter=";")
+                for key, val in object_generator(query_result, columns, key_columns):
+                    if val.get('meta_type') is None or val.get('meta_type') == "Description":
+                        writer.writerow(key.split('.') + [val.get('meta_value')])
         logger.debug('Metadata fetched')
+
+
+def query_object_metadata(engine, metadata_query, schema_list):
+    query_path = path.join(AHJO_PATH, metadata_query)
+    return prepare_and_exec_query(engine, query_path=query_path, param_list=schema_list)
+
+
+def consume_query_result(query_result, key_columns, columns):
+    query_result_as_dict = {}
+    for key, val in object_generator(query_result, columns, key_columns):
+        query_result_as_dict[key] = val
+    return query_result_as_dict
 
 
 def prepare_and_exec_query(engine, query_path, param_list):
@@ -198,15 +202,15 @@ def prepare_and_exec_query(engine, query_path, param_list):
     return result
 
 
-def rows_to_dict(iterable_rows, key_cols, col_mapping):
-    """Loop rows and return a dictionary holding entries created from individual rows.
-    Entry key is formed from key_cols of row and entry value
-    is a dictionary holding row columns mapped according to col_mapping."""
-    result_dict = {}
-    for row in iterable_rows:
-        row_key = '.'.join([row[i] for i in key_cols])
-        result_dict[row_key] = {}
-        for index, key in col_mapping.items():
+def object_generator(iterable, columns, key_columns):
+    """Transform row to tuple of object_key (str) and object_attrs (dict).
+
+    Object key is formed by joining the values of key_columns and object_attrs
+    is a dictionary holding all available row columns and values."""
+    for row in iterable:
+        object_key = '.'.join([row[i] for i, _ in enumerate(key_columns)])
+        object_attrs = {}
+        for index, column in enumerate(columns):
             if len(row) > index:
-                result_dict[row_key][key] = row[index]
-    return result_dict
+                object_attrs[column] = row[index]
+        yield object_key, object_attrs

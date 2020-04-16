@@ -1,3 +1,9 @@
+report;ProductWeekly;id;
+report;ProductWeekly;product_id;
+report;ProductWeekly;sold_total_price;
+report;ProductWeekly;sold_units;
+report;ProductWeekly;week;
+report;ProductWeekly;year;
 store;Clients;address;Clients address.
 store;Clients;date_of_birth;Clients date of birth.
 store;Clients;email;Clients email address.
