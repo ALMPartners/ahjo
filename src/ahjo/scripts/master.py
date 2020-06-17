@@ -10,7 +10,7 @@ from logging import getLogger
 from logging.config import fileConfig
 
 import ahjo.scripts.master_actions
-from ahjo.action import execute_action
+from ahjo.action import execute_action, list_actions
 from ahjo.operation_manager import format_message
 
 # load logging config
@@ -35,11 +35,14 @@ else:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", help="Action to execute", type=str)
-    parser.add_argument("config_filename", help="Configuration filename", type=str)
+    parser.add_argument("config_filename", help="Configuration filename", type=str, nargs='?')
     args = parser.parse_args()
     logger.debug(f'Action:  {args.action}')
     logger.debug(f'Config file:  {args.config_filename}')
-    execute_action(args.action, args.config_filename)
+    if args.action == 'list':
+        list_actions()
+    else:
+        execute_action(args.action, args.config_filename)
 
 if __name__ == '__main__':
     main()

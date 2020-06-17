@@ -17,7 +17,7 @@ logger = getLogger('ahjo')
 registered_actions = {}
 
 
-def action(name, affects_database, dependencies=[]):
+def action(name=None, affects_database=False, dependencies=[]):
     """Wrapper function for actions.
 
     Creates and registers an action.
@@ -34,7 +34,10 @@ def action(name, affects_database, dependencies=[]):
         Dependencies cause notifications at action start.
     """
     def wrapper(func):
-        ActionRegisteration(func, name, affects_database, set(dependencies))
+        action_name = name
+        if action_name is None:
+            action_name = func.__name__.replace('_', '-')
+        ActionRegisteration(func, action_name, affects_database, set(dependencies))
         return func
     return wrapper
 
@@ -75,9 +78,9 @@ class ActionRegisteration:
             return
         for dep in self.dependencies:
             logger.info("Note ! this command ("+self.name+") assumes that the "+ dep +" action has been successfully completed already")
+        
 
-
-def create_multiaction(action_name, subactions):
+def create_multiaction(action_name, subactions, description=''):
     """Creates and registers an action that only executes the subactions in order.
     Dependencies and allowation rules are inferred from subactions.
     Subactions must be defined first, because the function uses registered definintions!
@@ -103,6 +106,7 @@ def create_multiaction(action_name, subactions):
     def func(*args, **kwargs):
         returns = [r.function(*args, **kwargs) for r in registerations]
         return returns
+    func.__doc__ = description
     ActionRegisteration(func, action_name, affects_database, dependencies, baseactions)
     return func
 
@@ -163,3 +167,11 @@ def execute_action(action_name, config_filename, *args, **kwargs):
             return
 
     return action.function(context, *args, **kwargs)
+
+
+def list_actions():
+    logger.info('-------------------------------')
+    logger.info('List of available actions')
+    logger.info('-------------------------------')
+    for key, registeration in sorted(registered_actions.items()):
+        logger.info(f"'{key}': {registeration.function.__doc__ or 'No description available.'}")
