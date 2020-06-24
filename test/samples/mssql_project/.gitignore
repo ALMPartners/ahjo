@@ -1,0 +1,31 @@
+# python, vs code
+__pycache__
+.vscode
+.idea/
+
+# sqlite
+**/*.sqlite3
+
+# robot tests
+robotframework/*.log
+robotframework/*.html
+robotframework/*.xml
+robotframework/*.png
+
+# config stuff
+config_*.json*
+!config_development.jsonc
+
+# package stuff
+*.egg-info
+
+# tableau
+/apps/tableau/~*
+*.tde
+
+# logs
+*.log
+*.log.*
+
+# Jupyter
+.ipynb_checkpoints/
