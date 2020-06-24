@@ -9,7 +9,6 @@ _build/
 *.egg-info/
 
 # dev
-.pylintrc
 .venv/
 .tox/
 

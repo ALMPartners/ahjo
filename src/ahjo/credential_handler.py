@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Password information handling."""
+import getpass
 from base64 import b64decode, b64encode
-from getpass import getpass
 from logging import getLogger
 from pathlib import Path
 
@@ -94,13 +94,13 @@ def get_credentials(usrn_file_path=None, pw_file_path=None, cred_key='cred', usr
                 logger.info("Credentials are not yet defined.")
                 logger.info(f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
                 username = input(usrn_prompt)
-                new_password = getpass(pw_prompt)
+                new_password = getpass.getpass(pw_prompt)
                 username, password = obfuscate_credentials((username, new_password))
                 store_to_file(cred_key, username, usrn_file_path)
                 store_to_file(cred_key, password, pw_file_path)
         else:
             username = input(usrn_prompt)
-            new_password = getpass(pw_prompt)
+            new_password = getpass.getpass(pw_prompt)
             username, password = obfuscate_credentials((username, new_password))
         cred_dict[cred_key] = (username, password)
     return deobfuscate_credentials(cred_dict[cred_key])
