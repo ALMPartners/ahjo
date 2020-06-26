@@ -5,6 +5,7 @@ pipelines:
     - step:
         caches:
           - pip
-        script: 
+        script:
+          - apt-get update && apt-get -y install unixodbc-dev
           - pip install tox
           - tox
