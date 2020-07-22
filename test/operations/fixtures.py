@@ -1,10 +1,6 @@
 """Fixtures related to operations."""
-from base64 import b64encode
-from distutils.dir_util import copy_tree
-from os import path
 from subprocess import PIPE, Popen
 
-import commentjson as json
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
@@ -19,7 +15,7 @@ def mssql_engine(request, ahjo_config, mssql_sample):
         password=request.config.getoption('mssql_password'),
         host=config['target_server_hostname'],
         port=config['sql_port'],
-        database='master',
+        database=config['target_database_name'],
         query={'driver': 'SQL Server'}
     )
     return create_engine(connection_url)
