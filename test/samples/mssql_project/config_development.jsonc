@@ -23,6 +23,6 @@
         ,"alembic_version_table": "alembic_version"
         ,"alembic_version_table_schema": "dbo"
         // List of documented schemas
-        ,"metadata_allowed_schemas": []
+        ,"metadata_allowed_schemas": ["store"]
     }
 }

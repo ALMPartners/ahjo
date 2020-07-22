@@ -39,34 +39,37 @@ def pytest_addoption(parser):
 
 
 pytest_plugins = [
-    "test.operations.tsql.fixtures"
+    "test.fixtures",
+    "test.operations.fixtures"
     ]
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "tsql: mark tests that require SQL server to run")
+    config.addinivalue_line("markers", "mssql: mark tests that require SQL server to run")
 
 
 def pytest_collection_modifyitems(config, items):
-    """First, check if tsql tests can be executed, that is,
+    """First, check if mssql tests can be executed, that is,
         - MSSQL hostname was given
         - connection to MSSQL can be established using the
             given hostname, port number and credentials
         - MSSQL doesn't have database with name 'AHJO_TEST'
 
-    If tsql tests can be executed, add fixture 'tsql_setup_and_teardown'
-    to all tests marked with 'tsql'.
+    If mssql tests can be executed, add fixture 'mssql_setup_and_teardown'
+    to all tests marked with 'mssql'.
 
-    If tsql tests can not be executed, skip tests marked with 'tsql'.
+    If mssql tests can not be executed, skip tests marked with 'mssql'.
     """
-    execute_tsql_tests = ensure_mssql_ready_for_tests(config)
-    skip_tsql = pytest.mark.skip(reason="requires SQL Server")
+    execute_mssql_tests = ensure_mssql_ready_for_tests(config)
+    skip_mssql = pytest.mark.skip(reason="requires SQL Server")
     for item in items:
-        if "tsql" in item.keywords:
-            if execute_tsql_tests:
-                item.fixturenames.append('tsql_setup_and_teardown')
+        if "mssql" in item.keywords:
+            if execute_mssql_tests:
+                # Add 'mssql_setup_and_teardown' as FIRST in fixture list
+                fixtures = ['mssql_setup_and_teardown'] + item.fixturenames
+                item.fixturenames = fixtures
             else:
-                item.add_marker(skip_tsql)
+                item.add_marker(skip_mssql)
 
 
 def ensure_mssql_ready_for_tests(config):

@@ -1,6 +1,7 @@
 from ahjo.action import action
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
+from ahjo import operations as op
 
 
 @action("delete-database", True, ['init'])
@@ -14,5 +15,13 @@ def delete_database_action(context):
         for sid in session_ids:
             execute_query(engine, f'KILL {sid.session_id}')
         execute_query(engine, f'DROP DATABASE {database}')
+
+
+@action('deploy-without-object-properties', True, ['init'])
+def deploy_without_object_properties_action(context):
+    op.upgrade_db_to_latest_alembic_version(context.config_filename)
+    op.deploy_sqlfiles(context.get_conn_info(), "./database/functions/", "Deploying functions")
+    op.deploy_sqlfiles(context.get_conn_info(), "./database/views/", "Deploying views")
+    op.deploy_sqlfiles(context.get_conn_info(), "./database/procedures/", "Deploying procedures")
 
 #create_multiaction("complete-build", ["init", "structure", "deploy", "data", "testdata", "test"])

@@ -1,0 +1,15 @@
+store;Clients;address;Clients address.
+store;Clients;date_of_birth;Clients date of birth.
+store;Clients;email;Clients email address.
+store;Clients;id;Client ID or client number.
+store;Clients;name;Clients name.
+store;Clients;phone;Clients phone number.
+store;Clients;zip_code;Clients ZIP code.
+store;Products;category_id;Product categorys ID.
+store;Products;description;Product description.
+store;Products;id;Product ID or product number.
+store;Products;manufacturer;Product namufacturer.
+store;Products;name;Product name.
+store;Products;package_weight;Weight of single package.
+store;Products;unit_price;Product unit price.
+store;Products;units_in_package;How many units in package.
