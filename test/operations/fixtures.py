@@ -8,6 +8,9 @@ from sqlalchemy.engine.url import URL
 
 @pytest.fixture(scope='session')
 def mssql_engine(request, ahjo_config, mssql_sample):
+    """Create engine for MSSQL server test database.
+    This run only once, since it is session scoped.
+    """
     config = ahjo_config(mssql_sample)
     connection_url = URL(
         drivername="mssql+pyodbc",

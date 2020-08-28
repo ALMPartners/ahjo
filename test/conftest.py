@@ -3,6 +3,8 @@
 Notice that MSSQL user must have permissions to master db
 tox -- --mssql_host localhost --mssql_port 14330 --mssql_username sa --mssql_password SALA_kala12
 """
+from subprocess import check_output
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
@@ -46,6 +48,7 @@ pytest_plugins = [
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "mssql: mark tests that require SQL server to run")
+    config.addinivalue_line("markers", "git: mark tests that require Git to run")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -55,13 +58,20 @@ def pytest_collection_modifyitems(config, items):
             given hostname, port number and credentials
         - MSSQL doesn't have database with name 'AHJO_TEST'
 
+    Second, check if git tests can be executed, that is, git is installed
+    and bind to command 'git'.
+
     If mssql tests can be executed, add fixture 'mssql_setup_and_teardown'
     to all tests marked with 'mssql'.
 
     If mssql tests can not be executed, skip tests marked with 'mssql'.
+
+    If git is not installed, skip tests marked with 'git'.
     """
     execute_mssql_tests = ensure_mssql_ready_for_tests(config)
     skip_mssql = pytest.mark.skip(reason="requires SQL Server")
+    git_installed = check_if_git_is_installed()
+    skip_git = pytest.mark.skip(reason="requires GIT")
     for item in items:
         if "mssql" in item.keywords:
             if execute_mssql_tests:
@@ -70,6 +80,9 @@ def pytest_collection_modifyitems(config, items):
                 item.fixturenames = fixtures
             else:
                 item.add_marker(skip_mssql)
+        if "git" in item.keywords:
+            if not git_installed:
+                item.add_marker(skip_git)
 
 
 def ensure_mssql_ready_for_tests(config):
@@ -95,5 +108,15 @@ def ensure_mssql_ready_for_tests(config):
             if result.fetchall():
                 raise Exception("There already exists a database with name 'AHJO_TEST'")
         return True
+    except:
+        return False
+
+def check_if_git_is_installed():
+    """Check if GIT is installed by calling 'git --version'."""
+    try:
+        git_version = check_output(["git", "--version"]).decode('utf-8')
+        if git_version.startswith("git version"):
+            return True
+        raise Exception('Git not installed')
     except:
         return False

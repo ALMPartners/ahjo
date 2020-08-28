@@ -17,8 +17,22 @@ def delete_database_action(context):
         execute_query(engine, f'DROP DATABASE {database}')
 
 
-@action('deploy-without-object-properties', True, ['init'])
-def deploy_without_object_properties_action(context):
+@action('drop-git-and-alembic-version-if-exists', True, ["deploy"])
+def drop_git_version_exists_action(context):
+    with OperationManager('Dropping Git and Alembic version tables'):
+        engine = context.get_engine()
+        git_table = context.configuration.get('git_table', 'dbo')
+        git_table_schema = context.configuration.get('git_table_schema', 'git_table')
+        git_table_full = git_table_schema + '.' + git_table
+        execute_query(engine, query=f"DROP TABLE IF EXISTS {git_table_full}")
+        alembic_table = context.configuration.get('alembic_version_table', 'dbo')
+        alembic_table_schema = context.configuration.get('alembic_version_table_schema', 'alembic_version')
+        alembic_table_full = alembic_table_schema + '.' + alembic_table
+        execute_query(engine, query=f"DROP TABLE IF EXISTS {alembic_table_full}")
+
+
+@action('deploy-without-git-version-and-object-properties', True, ['init'])
+def deploy_without_git_version_and_object_properties_action(context):
     op.upgrade_db_to_latest_alembic_version(context.config_filename)
     op.deploy_sqlfiles(context.get_conn_info(), "./database/functions/", "Deploying functions")
     op.deploy_sqlfiles(context.get_conn_info(), "./database/views/", "Deploying views")
