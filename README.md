@@ -38,7 +38,8 @@ pip install ahjo
     - Use `-e` flag to install package in develop mode. 
 
 ```
-pip install [--user] [-e] .\ahjo
+cd .\ahjo
+pip install [-e] .
 ```
 
 # Project Initialization
