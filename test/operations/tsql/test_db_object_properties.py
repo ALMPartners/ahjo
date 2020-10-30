@@ -7,10 +7,15 @@ import logging
 
 import ahjo.operations.tsql.db_object_properties as dop
 
-EXT_PROP_QUERY = """
+DESC_QUERY = """
     SELECT CAST(value as VARCHAR(8000))
     FROM sys.extended_properties
     WHERE name = 'Description' AND value != ''"""
+
+FLAG_QUERY = """
+    SELECT CAST(value as VARCHAR(8000))
+    FROM sys.extended_properties
+    WHERE name = 'Flag' AND value != ''"""
 
 
 @contextmanager
@@ -38,17 +43,23 @@ class TestWithSQLServer():
                   cwd=mssql_sample, stdin=PIPE)
         p.communicate(input='y\n'.encode())
 
-    def test_objects_should_not_have_descriptions_before_update(self):
-        result = self.engine.execute(EXT_PROP_QUERY)
+    def test_objects_should_not_have_external_properties_before_update(self):
+        result = self.engine.execute(DESC_QUERY)
         descriptions = result.fetchall()
+        result = self.engine.execute(FLAG_QUERY)
+        flags = result.fetchall()
         assert len(descriptions) == 0
+        assert len(flags) == 0
 
-    def test_objects_should_have_descriptions_after_update(self):
+    def test_objects_should_have_external_properties_after_update(self):
         with temporal_cwd(self.cwd):
             dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(EXT_PROP_QUERY)
+        result = self.engine.execute(DESC_QUERY)
         descriptions = result.fetchall()
+        result = self.engine.execute(FLAG_QUERY)
+        flags = result.fetchall()
         assert len(descriptions) > 0
+        assert len(flags) > 0
 
     def test_update_should_not_span_warnings_when_all_schemas_are_not_updated(self, caplog):
         caplog.set_level(logging.WARNING)

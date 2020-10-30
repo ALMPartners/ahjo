@@ -9,13 +9,13 @@ SELECT
     c.[TABLE_SCHEMA] AS [schema_name]
     ,c.[TABLE_NAME] AS [object_name]
     ,c.[COLUMN_NAME] AS [column_name]
-    ,g.[value] AS [value]
-    ,g.[meta_name] AS [meta_name]
 	,'column' AS [object_type]
 	,CASE g.[object_type] 
 		WHEN 'V' THEN 'view'
 		ELSE 'table' 
 	END AS [parent_type]
+    ,g.[property_name] AS [property_name]
+    ,g.[property_value] AS [property_value]
 FROM  INFORMATION_SCHEMA.COLUMNS AS c 
 LEFT JOIN 
 		(SELECT 
@@ -23,8 +23,8 @@ LEFT JOIN
 			,O.[name] AS [object_name]
 			,C.[name] AS [column_name]
 			,O.type AS [object_type]
-			,CONVERT(VARCHAR(200),EP.[value]) AS [value]
-			,CONVERT(VARCHAR(200), EP.[name]) AS [meta_name]
+			,CONVERT(VARCHAR(200),EP.[value]) AS [property_value]
+			,CONVERT(VARCHAR(200), EP.[name]) AS [property_name]
 		FROM sys.all_objects AS O
 			INNER JOIN sys.schemas AS S 
 				ON O.[schema_id] = S.[schema_id]
@@ -35,5 +35,5 @@ LEFT JOIN
 	ON g.[schema_name] = c.[TABLE_SCHEMA] 
 	AND g.[object_name] = c.[TABLE_NAME] 
 	AND g.[column_name] = c.[COLUMN_NAME]
-WHERE TABLE_SCHEMA IN (?)
+WHERE c.[TABLE_SCHEMA] IN (?)
 ORDER BY [schema_name], [object_name], [column_name]

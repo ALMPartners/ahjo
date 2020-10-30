@@ -3,21 +3,21 @@
 # Copyright 2019, 2020 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-"""Module for updating database object properties (descriptions).
+"""Module for updating database extended properties.
 
 Global variable EXCLUDED_SCHEMAS holds list of schemas that should
 be excluded from update.
 
 Global variable DOCS_DIR holds the documentation path of project.
 
-Global variable DB_OBJECTS is a list of dictionaries holding
-information about:
-- which query to use to fetch metadata of specific db objects, for example views
-- where to store fetched metadata and valid descriptions (CSV)
-- column mapping of previously mentioned metadata query and CSV
-- list of column indexes whose values form an unique object key
+Global variable DB_OBJECTS is a dictionary holding the following information
+for listed object types:
+- file = where documented extended properties are stored
+- query = path to query that returns metadata and existing extended properties for this object type
+- columns = columns returned by the previously mentioned query
+- key_columns = list of columns whose values form an unique object key
 """
-import csv
+import json
 from logging import getLogger
 from os import makedirs, path
 
@@ -33,49 +33,46 @@ EXCLUDED_SCHEMAS = ['db_accessadmin', 'db_backupoperator', 'db_datareader', 'db_
 DOCS_DIR = 'docs/db_objects'
 DB_OBJECTS = {
     'schema': {
-        'csv': path.join(DOCS_DIR, 'schemas.csv'),
-        'query': 'resources/sql/queries/schema_descriptions.sql',
-        'columns': ['schema_name', 'meta_value', 'meta_type', 'object_type'],
+        'file': path.join(DOCS_DIR, 'schemas.json'),
+        'query': 'resources/sql/queries/extended_properties_schemas.sql',
+        'columns': ['schema_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name']
     },
     'procedure': {
-        'csv': path.join(DOCS_DIR, 'procedures.csv'),
-        'query': 'resources/sql/queries/procedure_descriptions.sql',
-        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'file': path.join(DOCS_DIR, 'procedures.json'),
+        'query': 'resources/sql/queries/extended_properties_procedures.sql',
+        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'function': {
-        'csv': path.join(DOCS_DIR, 'functions.csv'),
-        'query': 'resources/sql/queries/function_descriptions.sql',
-        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'file': path.join(DOCS_DIR, 'functions.json'),
+        'query': 'resources/sql/queries/extended_properties_functions.sql',
+        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'table': {
-        'csv': path.join(DOCS_DIR, 'tables.csv'),
-        'query': 'resources/sql/queries/table_descriptions.sql',
-        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'file': path.join(DOCS_DIR, 'tables.json'),
+        'query': 'resources/sql/queries/extended_properties_tables.sql',
+        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'view': {
-        'csv': path.join(DOCS_DIR, 'views.csv'),
-        'query': 'resources/sql/queries/view_descriptions.sql',
-        'columns': ['schema_name', 'object_name', 'meta_value', 'meta_type', 'object_type'],
+        'file': path.join(DOCS_DIR, 'views.json'),
+        'query': 'resources/sql/queries/extended_properties_views.sql',
+        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'column': {
-        'csv': path.join(DOCS_DIR, 'columns.csv'),
-        'query': 'resources/sql/queries/column_descriptions.sql',
-        'columns': ['schema_name', 'object_name', 'col_name', 'meta_value', 'meta_type', 'object_type', 'parent_type'],
+        'file': path.join(DOCS_DIR, 'columns.json'),
+        'query': 'resources/sql/queries/extended_properties_columns.sql',
+        'columns': ['schema_name', 'object_name', 'col_name', 'object_type', 'parent_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name', 'col_name']
     }
 }
 
 
 def update_db_object_properties(engine, schema_list):
-    """Update database object descriptions (CSV) to database.
-    If schema_list is None, all schemas are updated.
-    If schema_list is empty list, nothing is updated.
-    Else schemas of schema_list are updated.
+    """Update extended properties from file to database.
 
     Arguments
     ---------
@@ -83,71 +80,86 @@ def update_db_object_properties(engine, schema_list):
         SQL Alchemy engine.
     schema_list : list of str
         List of schemas to be documented.
+            - If None, all schemas are updated.
+            - If empty list, nothing is updated.
+            - Else schemas of schema_list are updated.
     """
-    with OperationManager('Updating metadata'):
+    with OperationManager('Updating extended properties'):
         if schema_list is None:
-            schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
+            schema_list = [s for s in get_schema_names(engine)
+                           if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
             logger.warning('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
             return
-        logger.debug(f'Updating metadata for schemas {", ".join(schema_list)}')
-        for object_type, entry in DB_OBJECTS.items():
-            source_file = entry['csv']
-            columns = entry['columns']
-            key_columns = entry['key_columns']
-            metadata_query = entry['query']
+        logger.debug(f'Updating extended properties for schemas {", ".join(schema_list)}')
+        for object_type in DB_OBJECTS:
+            existing_metadata = query_metadata(engine, DB_OBJECTS[object_type], schema_list)
+            source_file = DB_OBJECTS[object_type]['file']
             if not path.exists(source_file):
-                logger.warning(f"Cannot update {object_type} metadata. File {source_file} does not exist")
+                logger.warning(f"Cannot update extended properties for {object_type}s. File {source_file} does not exist.")
                 continue
-            query_result = query_object_metadata(engine, metadata_query, schema_list)
-            metadata_from_db = consume_query_result(query_result, key_columns, columns)
-            with open(source_file, 'r', encoding='utf-8') as f:
-                reader = csv.reader(f, delimiter=";")
-                for object_name, object_csv_description in object_generator(reader, columns, key_columns):
-                    if object_csv_description.get('schema_name') in schema_list:
-                        object_db_metadata = metadata_from_db.get(object_name)
-                        exec_update_extended_properties(engine, object_name, object_csv_description, object_db_metadata)
+            try:
+                with open(source_file, 'r', encoding='utf-8') as f:
+                    documented_properties = json.load(f)
+            except Exception as err:
+                raise Exception(f'Failed to read extended properties for {object_type}') from err
+            for object_name, extended_properties in documented_properties.items():
+                schema_name = object_name.split('.')[0]
+                if schema_name in schema_list:
+                    object_metadata = existing_metadata.get(object_name)
+                    for property_name, property_value in extended_properties.items():
+                        exec_update_extended_properties(
+                            engine,
+                            object_name,
+                            object_metadata,
+                            property_name,
+                            property_value
+                        )
 
 
-def exec_update_extended_properties(engine, object_name, object_csv_description, object_db_metadata):
-    """Update object's extended properties (Description) by calling either
+def exec_update_extended_properties(engine, object_name, object_metadata, extended_property_name, extended_property_value):
+    """Update object's extended properties by calling either
     procedure sp_addextendedproperty or sp_updateextendedproperty.
-    If object_db_metadata is None, object does not exist in database.
+    If object_metadata is None, object does not exist in database.
     """
     try:
-        if object_db_metadata is None:
-            raise Exception('Object not found in database')
-        object_type = object_db_metadata.get('object_type')
-        parent_type = object_db_metadata.get('parent_type')
-        if object_db_metadata.get('meta_value') is None:
+        if object_metadata is None:
+            raise Exception('Object not found in database.')
+        if object_metadata.get(extended_property_name) is None:
             procedure_call = 'EXEC sp_addextendedproperty '
         else:
             procedure_call = 'EXEC sp_updateextendedproperty '
         procedure_call += '@name=?, @value=?, @level0type=?, @level0name=?'
-        params = ['Description', object_csv_description.get('meta_value'), 'schema', object_csv_description.get('schema_name')]
+        params = [
+            extended_property_name,
+            extended_property_value,
+            'schema',
+            object_metadata.get('schema_name')
+        ]
+        object_type = object_metadata.get('object_type')
+        parent_type = object_metadata.get('parent_type')
         if object_type in ('view', 'table', 'function', 'procedure', 'column'):
             level1type = parent_type if parent_type is not None else object_type
             procedure_call += ', @level1type=?, @level1name=?'
-            params.extend([level1type, object_csv_description.get('object_name')])
+            params.extend([level1type, object_metadata.get('object_name')])
             if object_type == 'column':
                 procedure_call += ', @level2type=?, @level2name=?'
-                params.extend(['column', object_csv_description.get('col_name')])
+                params.extend(['column', object_metadata.get('col_name')])
         execute_query(engine, procedure_call, tuple(params))
     except Exception as err:
-        logger.warning(f"Failed to update {object_name} description")
-        logger.debug("Row data: " + ', '.join(object_csv_description.values()))
-        logger.debug("Error message:")
-        logger.debug(err)
+        logger.warning(f"Failed to update {object_name} extended property '{extended_property_name}'.")
+        logger.debug(f"Extended property value: {extended_property_value}")
+        logger.debug(err, exc_info=1)
         logger.info("------")
 
 
-def update_csv_object_properties(engine, schema_list):
-    """Write metadata to csv file.
+def update_file_object_properties(engine, schema_list):
+    """Write extended properties to JSON file.
     If project doesn't have docs directory, create it.
 
-    If schema_list is None, all schemas are written to csv.
-    If schema_list is empty list, nothing is written to csv.
-    Else schemas of schema_list are written to csv.
+    If schema_list is None, all schemas are written to file.
+    If schema_list is empty list, nothing is written to file.
+    Else schemas of schema_list are written to file.
 
     Arguments
     ---------
@@ -156,39 +168,33 @@ def update_csv_object_properties(engine, schema_list):
     schema_list : list of str
         List of schemas to be documented.
     """
-    with OperationManager('Fetching metadata to CSV'):
+    with OperationManager('Fetching extended properties to files'):
         if not path.exists(DOCS_DIR):
             makedirs(DOCS_DIR, exist_ok=True)
         if schema_list is None:
-            schema_list = [s for s in get_schema_names(engine) if s not in EXCLUDED_SCHEMAS]
+            schema_list = [s for s in get_schema_names(engine)
+                           if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
             logger.warning('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
             return
-        logger.debug(f'Fetching metadata for schemas {", ".join(schema_list)}')
-        for _, entry in DB_OBJECTS.items():
-            target_file = entry['csv']
-            columns = entry['columns']
-            key_columns = entry['key_columns']
-            metadata_query = entry['query']
-            query_result = query_object_metadata(engine, metadata_query, schema_list)
+        logger.debug(f'Fetching extended properties for schemas {", ".join(schema_list)}')
+        for object_type in DB_OBJECTS:
+            existing_metadata = query_metadata(
+                engine,
+                DB_OBJECTS[object_type],
+                schema_list,
+                properties_only=True
+                )
+            target_file = DB_OBJECTS[object_type]['file']
             with open(target_file, 'w+', encoding='utf-8', newline='') as f:
-                writer = csv.writer(f, delimiter=";")
-                for key, val in object_generator(query_result, columns, key_columns):
-                    if val.get('meta_type') is None or val.get('meta_type') == "Description":
-                        writer.writerow(key.split('.') + [val.get('meta_value')])
-        logger.debug('Metadata fetched')
+                json.dump(existing_metadata, f, indent=4)
+        logger.debug('Extended properties fetched')
 
 
-def query_object_metadata(engine, metadata_query, schema_list):
-    query_path = path.join(AHJO_PATH, metadata_query)
-    return prepare_and_exec_query(engine, query_path=query_path, param_list=schema_list)
-
-
-def consume_query_result(query_result, key_columns, columns):
-    query_result_as_dict = {}
-    for key, val in object_generator(query_result, columns, key_columns):
-        query_result_as_dict[key] = val
-    return query_result_as_dict
+def query_metadata(engine, metadata, schema_list, properties_only=False):
+    query_path = path.join(AHJO_PATH, metadata['query'])
+    query_result = prepare_and_exec_query(engine, query_path=query_path, param_list=schema_list)
+    return result_set_to_dict(query_result, metadata['columns'], metadata['key_columns'], properties_only)
 
 
 def prepare_and_exec_query(engine, query_path, param_list):
@@ -202,15 +208,20 @@ def prepare_and_exec_query(engine, query_path, param_list):
     return result
 
 
-def object_generator(iterable, columns, key_columns):
-    """Transform row to tuple of object_key (str) and object_attrs (dict).
-
-    Object key is formed by joining the values of key_columns and object_attrs
-    is a dictionary holding all available row columns and values."""
-    for row in iterable:
-        object_key = '.'.join([row[i] for i, _ in enumerate(key_columns)])
-        object_attrs = {}
-        for index, column in enumerate(columns):
-            if len(row) > index:
-                object_attrs[column] = row[index]
-        yield object_key, object_attrs
+def result_set_to_dict(result_set, columns, key_columns, properties_only):
+    result = {}
+    for values in result_set:
+        row = dict(zip(columns, values))
+        object_key = '.'.join([row[k] for k in key_columns])
+        if result.get(object_key) is None:
+            if properties_only is True:
+                result[object_key] = {}
+            else:
+                result[object_key] = row.copy()
+                result[object_key].pop('property_name', None)
+                result[object_key].pop('property_value', None)
+        property_name = row['property_name']
+        property_value = row['property_value']
+        if property_name is not None:
+            result[object_key][property_name] = property_value
+    return result

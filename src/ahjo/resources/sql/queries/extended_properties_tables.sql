@@ -8,9 +8,9 @@
 SELECT 
     s.[TABLE_SCHEMA] AS [schema_name]
     ,s.[TABLE_NAME] AS [table_name]
-    ,CONVERT(VARCHAR(200), e.[value]) AS [value]
-    ,CONVERT(VARCHAR(200), e.[name]) AS [meta_name]
     ,'table' AS [object_type]
+    ,CONVERT(VARCHAR(200), e.[name]) AS [property_name]
+    ,CONVERT(VARCHAR(200), e.[value]) AS [property_value]
 FROM INFORMATION_SCHEMA.TABLES AS s 
     LEFT JOIN sys.extended_properties AS e 
 		ON e.[major_id] = OBJECT_ID('' + s.[TABLE_SCHEMA] + '.' + s.[TABLE_NAME]) 

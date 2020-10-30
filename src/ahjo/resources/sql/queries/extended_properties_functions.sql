@@ -8,9 +8,9 @@
 SELECT 
     SCHEMA_NAME(s.[schema_id]) AS [schema_name]
     ,s.[name] AS [func_name]
-    ,CONVERT(VARCHAR(200), e.[value]) AS [value]
-    ,CONVERT(VARCHAR(200), e.[name]) AS [meta_name]
     ,'function' AS [object_type]
+    ,CONVERT(VARCHAR(200), e.[name]) AS [property_name]
+    ,CONVERT(VARCHAR(200), e.[value]) AS [property_value]
 FROM sys.objects AS s 
     LEFT JOIN sys.extended_properties AS e 
 		ON e.[major_id] = s.[object_id]

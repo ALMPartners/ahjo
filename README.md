@@ -7,15 +7,15 @@ Ahjo Framework
 
 Ahjo is a database project framework and a deployment script. It is made to unify database project deployment and development practices and to give basic tooling for such projects. 
 
-Ahjo provides a base scripts for database deployment with simple commands ("actions"), and the possibility to define custom actions for project's special needs. The scripts are designed to reduce accidental operations to production environments. The actions and their parts are logged by ahjo.
+Ahjo provides a base scripts for database deployment with simple commands ("actions"), and the possibility to define custom actions for project's special needs. The scripts are designed to reduce accidental operations to production environments. The actions and their parts are logged by Ahjo.
 
 Database tooling is currently based on sqlalchemy/alembic and tsql scripts. Support for other backends than Sql Server is currently limited.
 
 # Dependencies
-* [commentjson](https://pypi.org/project/commentjson/)
-* [SQL Alchemy](https://pypi.org/project/SQLAlchemy/)
 * [alembic](https://pypi.org/project/alembic/)
+* [commentjson](https://pypi.org/project/commentjson/)
 * [pyodbc](https://pypi.org/project/pyodbc/)
+* [SQL Alchemy](https://pypi.org/project/SQLAlchemy/)
 
 # Install Guide
 There are two ways to install Ahjo.
@@ -145,7 +145,7 @@ Pre-defined actions include:
 
 * deploy
     * Runs alembic migrations, creates views, procedures and functions. 
-        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update object descriptions to database. Finally, updates current GIT commit to GIT version table.
+        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT commit to GIT version table.
 
 * data
     * Runs data insertion scripts.
@@ -168,11 +168,11 @@ Pre-defined actions include:
 * version
     * Prints the alembic- and git-version currently in the database.
         * Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
-* update-csv-obj-prop
-    * Write objects and their available descriptions (Sql Server extended properties) to CSV files under *./docs* directory.
+* update-file-obj-prop
+    * Write objects and their extended properties (only SQL Server) to JSON files under *./docs* directory.
         * Documented schemas are listed in *metadata_allowed_schemas*.
 * update-db-obj-prop
-    * Update object descriptions from CSV files under *./docs* directory to database (Sql Server extended properties).
+    * Update documented extended properties (only SQL Server) from JSON files under *./docs* directory to database.
         * Updated schemas are listed in *metadata_allowed_schemas*.
 * test
     * Runs tests and returns the results.
@@ -228,7 +228,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | password_file | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
 | alembic_version_table | No | Name of Alembic version table. Table holds the current revision number. | str | "alembic_version" |
 | alembic_version_table_schema | No | Schema of Alembic version table. | str | "dbo" |
-| metadata_allowed_schemas | No | List of schemas that object descriptions will be written to CSV files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
+| metadata_allowed_schemas | No | List of schemas that extended properties will be written to JSON files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
 
 ## Using Alembic with Ahjo
 Alembic upgrade HEAD is used in deploy action, but for many use cases other alembic commands are needed. For these needs Ahjo comes with a [env.py](./ahjo/resources/files/env.py) file that enables running Alembic commands without running Ahjo.

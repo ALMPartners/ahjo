@@ -127,9 +127,9 @@ def version_action(context):
     op.print_alembic_version(context.get_engine(), context.configuration['alembic_version_table'])
 
 
-@action('update-csv-obj-prop', False, ["deploy"])
-def update_csv_obj_prop(context):
-    op.update_csv_object_properties(context.get_engine(), context.configuration.get('metadata_allowed_schemas'))
+@action('update-file-obj-prop', False, ["deploy"])
+def update_file_obj_prop(context):
+    op.update_file_object_properties(context.get_engine(), context.configuration.get('metadata_allowed_schemas'))
 
 @action('update-db-obj-prop', True, ["deploy"])
 def update_db_obj_prop(context):
