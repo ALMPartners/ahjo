@@ -187,7 +187,7 @@ def update_file_object_properties(engine, schema_list):
                 )
             target_file = DB_OBJECTS[object_type]['file']
             with open(target_file, 'w+', encoding='utf-8', newline='') as f:
-                json.dump(existing_metadata, f, indent=4)
+                json.dump(existing_metadata, f, indent=4, ensure_ascii=False)
         logger.debug('Extended properties fetched')
 
 
