@@ -23,8 +23,8 @@ LEFT JOIN
 			,O.[name] AS [object_name]
 			,C.[name] AS [column_name]
 			,O.type AS [object_type]
-			,CONVERT(VARCHAR(200),EP.[value]) AS [property_value]
-			,CONVERT(VARCHAR(200), EP.[name]) AS [property_name]
+			,CONVERT(VARCHAR(8000), EP.[value]) AS [property_value]
+			,CONVERT(VARCHAR(8000), EP.[name]) AS [property_name]
 		FROM sys.all_objects AS O
 			INNER JOIN sys.schemas AS S 
 				ON O.[schema_id] = S.[schema_id]
