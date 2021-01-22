@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019, 2020 ALM Partners Oy
+# Copyright 2019, 2020, 2021 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 """This script defines actions for the project.
@@ -90,7 +90,7 @@ def deploy(context):
 
 @action(affects_database=True, dependencies=['init'])
 def assembly(context):
-    """"(MSSQL) Drop and deploy CLR-procedures and assemblies."""
+    """(MSSQL) Drop and deploy CLR-procedures and assemblies."""
     op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
     op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
     op.deploy_sqlfiles(context.get_conn_info(), "./database/assemblies/", "Deploying assemblies")
@@ -158,7 +158,7 @@ def version(context):
 
 @action(dependencies=["deploy"])
 def update_file_obj_prop(context):
-    """(MSSQL) Update extended properties to files."""
+    """(MSSQL) Update extended properties from database to files."""
     op.update_file_object_properties(
         context.get_engine(),
         context.configuration.get('metadata_allowed_schemas')
@@ -167,7 +167,7 @@ def update_file_obj_prop(context):
 
 @action(affects_database=True, dependencies=["deploy"])
 def update_db_obj_prop(context):
-    """(MSSQL) Update extended properties to database."""
+    """(MSSQL) Update extended properties from files to database."""
     op.update_db_object_properties(
         context.get_engine(),
         context.configuration.get('metadata_allowed_schemas')

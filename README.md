@@ -178,6 +178,20 @@ Pre-defined actions include:
     * Runs tests and returns the results.
         * Runs all SQL scripts under *./database/tests*.
 
+### List
+You can view all available actions and their descriptions with command `ahjo list`.
+```
+ahjo list
+-------------------------------
+List of available actions
+-------------------------------
+'assembly': (MSSQL) Drop and deploy CLR-procedures and assemblies.
+'complete-build': (MSSQL) Run 'init', 'deploy', 'data', 'testdata' and 'test' actions.
+.
+.
+.
+```
+
 ## Config File
 Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo configs are located in *BACKEND* section of file. Below is an example of config file and a list of default configuration parameters.
 ```
@@ -254,8 +268,9 @@ import ahjo.operations as op
 from ahjo.action import action, create_multiaction
 
 
-@action('init', True)
-def new_init(context):
+@action(affects_database=True)
+def init(context):
+    """New init action."""
     op.create_db(context.get_conn_info(), None, None)
     op.create_db_structure(context.get_conn_info())
 
@@ -264,7 +279,7 @@ create_multiaction("complete-build", ["init", "deploy", "data", "testdata", "cre
 ```
 
 # License
-Copyright 2019, 2020 ALM Partners Oy
+Copyright 2019, 2020, 2021 ALM Partners Oy
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
