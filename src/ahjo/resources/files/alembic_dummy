@@ -1,0 +1,6 @@
+This is a placeholder file.
+
+The role of this file is to keep the directory alembic/versions in version control,
+since Alembic requires the existence of such directory.
+
+You may delete this file when creating alembic migrations.

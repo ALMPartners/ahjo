@@ -14,21 +14,44 @@ def new_sample(prepared_sample):
 """
 from base64 import b64encode
 from distutils.dir_util import copy_tree
-from os import path
+from os import chdir, getcwd, path
 
 import commentjson as json
 import pytest
 
+PROJECT_ROOT = getcwd()
+
+
+@pytest.fixture(scope='session')
+def project_root():
+    return PROJECT_ROOT
+
 
 @pytest.fixture(scope='session')
 def ahjo_config():
+    """Return read sample Ahjo config.
+    This fixture is used when creating engine fixture.
+    """
     def read_samples_ahjo_config(sample_directory):
         sample_config = path.join(sample_directory, 'config_development.jsonc')
         with open(sample_config) as f:
             config = json.load(f)
             config = config['BACKEND']
         return config
-    yield read_samples_ahjo_config
+    return read_samples_ahjo_config
+
+
+@pytest.fixture(scope='session')
+def mssql_cwd(mssql_sample):
+    """Change current working directory to mssql sample root.
+    After tests, change it back.
+    """
+    old_cwd = getcwd()
+    chdir(mssql_sample)
+    try:
+        yield
+    finally:
+        chdir(old_cwd)
 
 
 @pytest.fixture(scope='session')
@@ -46,7 +69,8 @@ def mssql_sample(prepared_sample):
 def prepared_sample(tmpdir_factory, pytestconfig):
     def prepare_sample_for_tests(sample_name, host_param, port_param, usrn_param, pass_param):
         sample_directory = tmpdir_factory.mktemp(sample_name).strpath
-        copy_sample_project(pytestconfig.rootdir, sample_name, sample_directory)
+        copy_sample_project(pytestconfig.rootdir,
+                            sample_name, sample_directory)
         rewrite_sample_configuration(
             sample_directory,
             pytestconfig.getoption(host_param),
@@ -58,7 +82,7 @@ def prepared_sample(tmpdir_factory, pytestconfig):
             pytestconfig.getoption(pass_param)
         )
         return sample_directory
-    yield prepare_sample_for_tests
+    return prepare_sample_for_tests
 
 
 def copy_sample_project(test_root, sample_name, sample_target):
@@ -85,7 +109,6 @@ def rewrite_sample_configuration(sample_root, hostname, port_number):
 
 def write_sample_password_files(sample_root, username, password):
     """Create files containing server credentials."""
-    # use ahjo.credential_handler.obfuscate_credentials?
     username_file = path.join(sample_root, 'username')
     username = 'cred=' + username
     with open(username_file, 'w', encoding='utf-8') as f:

@@ -59,13 +59,14 @@ def pytest_collection_modifyitems(config, items):
         - MSSQL doesn't have database with name 'AHJO_TEST'
 
     Second, check if git tests can be executed, that is, git is installed
-    and bind to command 'git'.
+        and bind to command 'git'.
 
     If mssql tests can be executed, add fixture 'mssql_setup_and_teardown'
-    to all tests marked with 'mssql'.
-
+        to all tests marked with 'mssql'.
     If mssql tests can not be executed, skip tests marked with 'mssql'.
 
+    If git is installed, add fixture 'git_setup'
+        to all tests marked with 'git'.
     If git is not installed, skip tests marked with 'git'.
     """
     execute_mssql_tests = ensure_mssql_ready_for_tests(config)
@@ -81,7 +82,10 @@ def pytest_collection_modifyitems(config, items):
             else:
                 item.add_marker(skip_mssql)
         if "git" in item.keywords:
-            if not git_installed:
+            if git_installed:
+                fixtures = ['git_setup'] + item.fixturenames
+                item.fixturenames = fixtures
+            else:
                 item.add_marker(skip_git)
 
 

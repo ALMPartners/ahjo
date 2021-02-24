@@ -1,9 +1,15 @@
 """Fixtures related to operations."""
+from os import environ, path
 from subprocess import PIPE, Popen
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
+
+
+@pytest.fixture(scope='session')
+def git_setup(project_root):
+    environ["GIT_DIR"] = path.join(project_root, '.git')
 
 
 @pytest.fixture(scope='session')
@@ -25,17 +31,20 @@ def mssql_engine(request, ahjo_config, mssql_sample):
 
 
 @pytest.fixture(scope='session')
-def mssql_setup_and_teardown(mssql_sample):
-    """Copy MSSQL project to temporary dir.
-    Rewrite configurations and create credential files.
-    Init database for testing using Ahjo action 'init'.
-    Execute mssql tests.
-    Delete database using custom Ahjo action 'delete-database'.
+def mssql_setup_and_teardown(mssql_cwd):
     """
-    p = Popen(['ahjo', 'init', 'config_development.jsonc'],
-              cwd=mssql_sample, stdin=PIPE)
+    mssql_cdw fixture prepares the sample and changes cwd during database testing.
+        - Copy MSSQL project to temporary dir.
+        - Rewrite configurations and create credential files.
+        - Change cwd to mssql sample root.
+
+    What this fixture does:
+        - Init database for testing using Ahjo action 'init'.
+        - Execute mssql tests.
+        - Delete database using custom Ahjo action 'delete-database'.
+    """
+    p = Popen(['ahjo', 'init', 'config_development.jsonc'], stdin=PIPE)
     p.communicate(input='y\n'.encode())
     yield
-    p = Popen(['ahjo', 'delete-database', 'config_development.jsonc'],
-              cwd=mssql_sample, stdin=PIPE)
+    p = Popen(['ahjo', 'delete-database', 'config_development.jsonc'], stdin=PIPE)
     p.communicate(input='y\n'.encode())

@@ -1,11 +1,8 @@
-from contextlib import contextmanager
-from os import chdir, getcwd
+import logging
 from subprocess import PIPE, Popen
 
-import pytest
-import logging
-
 import ahjo.operations.tsql.db_object_properties as dop
+import pytest
 
 DESC_QUERY = """
     SELECT CAST(value as VARCHAR(8000))
@@ -18,29 +15,18 @@ FLAG_QUERY = """
     WHERE name = 'Flag' AND value != ''"""
 
 
-@contextmanager
-def temporal_cwd(path):
-    oldpwd = getcwd()
-    chdir(path)
-    try:
-        yield
-    finally:
-        chdir(oldpwd)
-
-
 @pytest.mark.mssql
 class TestWithSQLServer():
 
     @pytest.fixture(scope='function', autouse=True)
-    def db_objects_setup_and_teardown(self, mssql_sample, mssql_engine):
+    def db_objects_setup_and_teardown(self, mssql_engine):
+        """Deploy objects without updating object properties and git version."""
         self.engine = mssql_engine
-        self.cwd = mssql_sample
-        p = Popen(['ahjo', 'deploy-without-git-version-and-object-properties', 'config_development.jsonc'],
-                  cwd=mssql_sample, stdin=PIPE)
+        p = Popen(['ahjo', 'deploy-without-git-version-and-object-properties',
+                   'config_development.jsonc'], stdin=PIPE)
         p.communicate(input='y\n'.encode())
         yield
-        p = Popen(['ahjo', 'downgrade', 'config_development.jsonc'],
-                  cwd=mssql_sample, stdin=PIPE)
+        p = Popen(['ahjo', 'downgrade', 'config_development.jsonc'], stdin=PIPE)
         p.communicate(input='y\n'.encode())
 
     def test_objects_should_not_have_external_properties_before_update(self):
@@ -52,8 +38,7 @@ class TestWithSQLServer():
         assert len(flags) == 0
 
     def test_objects_should_have_external_properties_after_update(self):
-        with temporal_cwd(self.cwd):
-            dop.update_db_object_properties(self.engine, ['store', 'report'])
+        dop.update_db_object_properties(self.engine, ['store', 'report'])
         result = self.engine.execute(DESC_QUERY)
         descriptions = result.fetchall()
         result = self.engine.execute(FLAG_QUERY)
@@ -63,7 +48,6 @@ class TestWithSQLServer():
 
     def test_update_should_not_span_warnings_when_all_schemas_are_not_updated(self, caplog):
         caplog.set_level(logging.WARNING)
-        with temporal_cwd(self.cwd):
-            # updating report schema not allowed
-            dop.update_db_object_properties(self.engine, ['store'])
+        # updating report schema not allowed
+        dop.update_db_object_properties(self.engine, ['store'])
         assert len(caplog.record_tuples) == 0

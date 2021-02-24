@@ -4,16 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Module for Alembic related operations"""
-from os import path
 from argparse import Namespace
 from logging import getLogger
-
-from alembic import command
-from alembic.config import Config
+from os import path
 
 from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
+
+from alembic import command
+from alembic.config import Config
 
 logger = getLogger('ahjo')
 
@@ -56,5 +56,8 @@ def downgrade_db_to_alembic_base(config_filename):
 def print_alembic_version(engine, alembic_version_table):
     with OperationManager('Checking Alembic version from database'):
         alembic_version_query = f"SELECT * FROM {alembic_version_table}"
-        alembic_version = execute_query(engine=engine, query=alembic_version_query)[0][0]
-        logger.info("Alembic version: " + alembic_version)
+        try:
+            alembic_version = execute_query(engine=engine, query=alembic_version_query)[0][0]
+            logger.info("Alembic version: " + alembic_version)
+        except IndexError:
+            logger.info(f"Table {alembic_version_table} is empty. No deployed revisions.")

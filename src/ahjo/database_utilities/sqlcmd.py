@@ -40,7 +40,7 @@ def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
     subprocess_args += ["-S", server]
     if database is not None:
         subprocess_args += ["-d", str(database)]
-    if username is not "" and password is not "":
+    if username != "" and password !=  "":
         subprocess_args += ["-U", username, "-P", str(password)]
     else:
         subprocess_args += ["-E"]  # trusted connection

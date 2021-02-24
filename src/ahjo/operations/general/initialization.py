@@ -22,7 +22,7 @@ from ahjo.operation_manager import OperationManager
 
 PROJECT_STRUCTURE = {
     "alembic": {
-        "versions": {},
+        "versions": {"alembic_dummy": "resources/files/alembic_dummy"},
         "env.py": "resources/files/env.py",
         "README": "empty file",
         "script.py.mako": "resources/files/script.py.mako"

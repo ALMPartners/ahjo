@@ -19,10 +19,10 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # access to the values within the .ini file in use.
 config = context.config
 
-# Configure logging for alembic
-# Do not disable existing loggers!
-# If existing loggers are disabled --> Ahjo's loggers will be disabled after upgrade. 
-fileConfig(config.config_file_name, disable_existing_loggers=False)
+# Line below is commented because of pytest's caplog fixture!
+# This does not affect Ahjo's functionality, since this line exists solely
+# so that Alembic can be used independently
+# fileConfig(config.config_file_name, disable_existing_loggers=False)
 logger = getLogger('alembic.env.py')
 
 # Load project config file (config_development.jsonc)
