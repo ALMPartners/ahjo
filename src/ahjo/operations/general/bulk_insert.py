@@ -62,7 +62,8 @@ class BulkInsertContext:
             event.remove(self.engine, "before_cursor_execute",
                          handler_fast_executemany)
         if traceback is None:
-            logger.info(f'{self.table_name} insert took {time() - self.start_time} seconds')
+            duration = time() - self.start_time
+            logger.info(f'{self.table_name} insert took {duration:.2f} seconds')
 
 
 def handler_fast_executemany(conn, cursor, statement, params, context, executemany):
