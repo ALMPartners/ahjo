@@ -9,21 +9,29 @@ Ahjo is a database project framework and a deployment script. It is made to unif
 
 Ahjo provides a base scripts for database deployment with simple commands ("actions"), and the possibility to define custom actions for project's special needs. The scripts are designed to reduce accidental operations to production environments. The actions and their parts are logged by Ahjo.
 
-Database tooling is currently based on sqlalchemy/alembic and tsql scripts. Support for other backends than Sql Server is currently limited.
+Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Support for other backends than Microsoft SQL Server is currently limited.
 
 # Dependencies
+## Common
 * [alembic](https://pypi.org/project/alembic/)
 * [commentjson](https://pypi.org/project/commentjson/)
-* [pyodbc](https://pypi.org/project/pyodbc/)
 * [SQL Alchemy](https://pypi.org/project/SQLAlchemy/)
 
+## Platform-specific
+
+### mssql
+* [pyodbc](https://pypi.org/project/pyodbc/)
+
 # Install Guide
-There are two ways to install Ahjo.
 
 ## Install Guide 1 - PyPI
-Install Ahjo from [Python Package Index](https://pypi.org/) with the following command:
+Install Ahjo (without platform-specific dependencies) from [Python Package Index](https://pypi.org/) with the following command:
 ```
 pip install ahjo
+```
+In order to use Ahjo with the database engine of your choice, install platform-specific dependencies using available tags. For example, if you use Ahjo with Microsoft SQL Server, use tag `mssql` to install required dependencies. See full list of available tags below.
+```
+pip install ahjo[mssql]
 ```
 
 
@@ -39,8 +47,11 @@ pip install ahjo
 
 ```
 cd .\ahjo
-pip install [-e] .
+pip install [-e] .[mssql]
 ```
+
+## Available platform tags
+- `mssql` - Microsoft SQL Server
 
 # Project Initialization
 Create a new project by running the following command:
