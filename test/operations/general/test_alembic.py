@@ -1,5 +1,5 @@
 import logging
-from os import path
+from os import chdir, getcwd, path
 
 import ahjo.operations.general.alembic as alembic
 import pytest
@@ -16,6 +16,10 @@ class TestWithSQLServer():
         self.alembic_table = self.config['alembic_version_table_schema'] + '.' + self.config['alembic_version_table']
         self.config_filepath = path.join(mssql_sample, 'config_development.jsonc')
         self.engine = mssql_engine
+        old_cwd = getcwd()
+        chdir(mssql_sample)
+        yield
+        chdir(old_cwd)
 
     def test_alembic_version_table_should_not_exist(self):
         query = f"SELECT * FROM {self.alembic_table}"

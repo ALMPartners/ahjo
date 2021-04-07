@@ -14,10 +14,12 @@ def new_sample(prepared_sample):
 """
 from base64 import b64encode
 from distutils.dir_util import copy_tree
-from os import chdir, getcwd, path
+from os import getcwd, path
 
 import commentjson as json
 import pytest
+
+from.conftest import TEST_DB_NAME
 
 PROJECT_ROOT = getcwd()
 
@@ -25,6 +27,11 @@ PROJECT_ROOT = getcwd()
 @pytest.fixture(scope='session')
 def project_root():
     return PROJECT_ROOT
+
+
+@pytest.fixture(scope='session')
+def test_db_name():
+    return TEST_DB_NAME
 
 
 @pytest.fixture(scope='session')
@@ -39,19 +46,6 @@ def ahjo_config():
             config = config['BACKEND']
         return config
     return read_samples_ahjo_config
-
-
-@pytest.fixture(scope='session')
-def mssql_cwd(mssql_sample):
-    """Change current working directory to mssql sample root.
-    After tests, change it back.
-    """
-    old_cwd = getcwd()
-    chdir(mssql_sample)
-    try:
-        yield
-    finally:
-        chdir(old_cwd)
 
 
 @pytest.fixture(scope='session')

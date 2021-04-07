@@ -1,5 +1,5 @@
 from os import environ
-from subprocess import PIPE, Popen, check_output
+from subprocess import check_output
 
 import ahjo.operations.general.git_version as git
 import pytest
@@ -39,15 +39,10 @@ class TestWithSQLServer():
         self.git_table_schema = config['git_table_schema']
         self.sample_repository = config['url_of_remote_git_repository']
         self.engine = mssql_engine
-        p = Popen(['ahjo', 'deploy-without-git-version-and-object-properties',
-                   'config_development.jsonc'], stdin=PIPE)
-        p.communicate(input='y\n'.encode())
         yield
-        p = Popen(['ahjo', 'downgrade', 'config_development.jsonc'], stdin=PIPE)
-        p.communicate(input='y\n'.encode())
-        p = Popen(['ahjo', 'drop-git-and-alembic-version-if-exists',
-                   'config_development.jsonc'], stdin=PIPE)
-        p.communicate(input='y\n'.encode())
+        with self.engine.connect() as connection:
+            connection.execution_options(isolation_level="AUTOCOMMIT")
+            connection.execute(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}")
 
     def reflected_git_table(self):
         return Table(self.git_table, MetaData(),

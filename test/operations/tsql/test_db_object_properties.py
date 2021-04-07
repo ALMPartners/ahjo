@@ -1,8 +1,10 @@
 import logging
-from subprocess import PIPE, Popen
+from os import chdir, getcwd
 
 import ahjo.operations.tsql.db_object_properties as dop
 import pytest
+
+from .utils import run_alembic_action
 
 DESC_QUERY = """
     SELECT CAST(value as VARCHAR(8000))
@@ -19,15 +21,15 @@ FLAG_QUERY = """
 class TestWithSQLServer():
 
     @pytest.fixture(scope='function', autouse=True)
-    def db_objects_setup_and_teardown(self, mssql_engine):
+    def db_objects_setup_and_teardown(self, mssql_sample, mssql_engine):
         """Deploy objects without updating object properties and git version."""
         self.engine = mssql_engine
-        p = Popen(['ahjo', 'deploy-without-git-version-and-object-properties',
-                   'config_development.jsonc'], stdin=PIPE)
-        p.communicate(input='y\n'.encode())
+        old_cwd = getcwd()
+        chdir(mssql_sample)
+        run_alembic_action('upgrade', 'head')
         yield
-        p = Popen(['ahjo', 'downgrade', 'config_development.jsonc'], stdin=PIPE)
-        p.communicate(input='y\n'.encode())
+        run_alembic_action('downgrade', 'base')
+        chdir(old_cwd)
 
     def test_objects_should_not_have_external_properties_before_update(self):
         result = self.engine.execute(DESC_QUERY)

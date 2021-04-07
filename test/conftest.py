@@ -9,6 +9,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 
+TEST_DB_NAME = 'AHJO_TEST'
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -107,13 +109,14 @@ def ensure_mssql_ready_for_tests(config):
         )
         engine = create_engine(connection_url)
         with engine.connect() as connection:
-            query = "SELECT name FROM sys.databases WHERE UPPER(name) = 'AHJO_TEST'"
-            result = connection.execute(query)
+            query = "SELECT name FROM sys.databases WHERE UPPER(name) = ?"
+            result = connection.execute(query, (TEST_DB_NAME, ))
             if result.fetchall():
-                raise Exception("There already exists a database with name 'AHJO_TEST'")
+                raise Exception(f"There already exists a database with name '{TEST_DB_NAME}'")
         return True
     except:
         return False
+
 
 def check_if_git_is_installed():
     """Check if GIT is installed by calling 'git --version'."""
