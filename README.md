@@ -233,27 +233,29 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 
 | Parameter  | Required | Description | Type | Default Value |
 | --- | --- | --- | --- | --- |
-| allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
-| url_of_remote_git_repository | No | URL of project's remote repository. | str | |
-| git_table | Yes | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | str | |
-| git_table_schema | No | Schema of git hash table. | str | "dbo" |
-| sql_port | Yes | Port number of target database server. | int | |
-| sql_driver | No | Name of ODBC driver. | str | |
-| sql_dialect | No | Dialect used by SQL Alchemy. | str | 'mssql+pyodbc' |
-| target_server_hostname | Yes | Host name of target database server. | str | |
-| target_database_name | Yes | Name of target database. | str | |
-| database_data_path | No | Path of database data file. | str | |
-| database_log_path | No | Path of database log file. | str | |
-| database_init_size | No | Initial size (MB) of database data file. | int | 100 |
-| database_max_size | No | Maximum size (MB) of database data file. | int | 10000 |
-| database_file_growth | No | The size (MB) of how much database data file will grow when it runs out of space. | int | 500 |
-| database_compatibility_level | No | Compatibility level of database. | int | Depends on server. SQL Server 2017 default is 140. |
-| database_collation | No | Collation of database. | str | "Latin1_General_CS_AS" |
-| username_file | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
-| password_file | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
 | alembic_version_table | No | Name of Alembic version table. Table holds the current revision number. | str | "alembic_version" |
 | alembic_version_table_schema | No | Schema of Alembic version table. | str | "dbo" |
+| allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
+| azure_authentication | No | Authentication type to Azure AD. Possible values are "ActiveDirectoryPassword", "ActiveDirectoryInteractive" and "ActiveDirectoryIntegrated". | str | |
+| database_collation | No | Collation of database. | str | "Latin1_General_CS_AS" |
+| database_compatibility_level | No | Compatibility level of database. | int | Depends on server. SQL Server 2017 default is 140. |
+| database_data_path | No | Path of database data file. | str | |
+| database_file_growth | No | The size (MB) of how much database data file will grow when it runs out of space. | int | 500 |
+| database_init_size | No | Initial size (MB) of database data file. | int | 100 |
+| database_log_path | No | Path of database log file. | str | |
+| database_max_size | No | Maximum size (MB) of database data file. | int | 10000 |
+| git_table | No | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | str | "git_version" |
+| git_table_schema | No | Schema of git hash table. | str | "dbo" |
 | metadata_allowed_schemas | No | List of schemas that extended properties will be written to JSON files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
+| password_file | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
+| sql_dialect | No | Dialect used by SQL Alchemy. | str | "mssql+pyodbc" |
+| sql_driver | No | Name of ODBC driver. | str | |
+| sql_port | Yes | Port number of target database server. | int | |
+| target_database_name | Yes | Name of target database. | str | |
+| target_server_hostname | Yes | Host name of target database server. | str | |
+| url_of_remote_git_repository | No | URL of project's remote repository. | str | |
+| username_file | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
+
 
 ## Using Alembic with Ahjo
 Alembic upgrade HEAD is used in deploy action, but for many use cases other alembic commands are needed. For these needs Ahjo comes with a [env.py](./ahjo/resources/files/env.py) file that enables running Alembic commands without running Ahjo.

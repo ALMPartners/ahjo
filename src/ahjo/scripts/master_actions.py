@@ -83,7 +83,7 @@ def deploy(context):
     op.update_git_version(
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
-        context.configuration.get('git_table'),
+        context.configuration.get('git_table', 'git_version'),
         context.configuration.get('url_of_remote_git_repository')
         )
 
@@ -148,7 +148,7 @@ def version(context):
     op.print_git_version(
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
-        context.configuration.get('git_table')
+        context.configuration.get('git_table', 'git_version')
         )
     op.print_alembic_version(
         context.get_engine(),

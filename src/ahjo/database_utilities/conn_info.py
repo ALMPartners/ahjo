@@ -20,7 +20,7 @@ def create_conn_info(conf):
     -------
     dict
         Dictionary with the following keys: host, port, server, database, driver,
-        dialect, username and password.
+        dialect, username, password and azure_auth.
     """
     username_file = conf.get("username_file")
     password_file = conf.get("password_file")
@@ -31,6 +31,7 @@ def create_conn_info(conf):
     database = conf.get('target_database_name')
     driver = conf.get('sql_driver')
     dialect = conf.get('sql_dialect', 'mssql+pyodbc')
+    azure_auth = conf.get('azure_authentication')
     return {
         'host': host,
         'port': port,
@@ -39,7 +40,8 @@ def create_conn_info(conf):
         'driver': driver,
         'dialect': dialect,
         'username': username,
-        'password': password
+        'password': password,
+        'azure_auth': azure_auth
     }
 
 def _create_server_string(hostname, server_port):

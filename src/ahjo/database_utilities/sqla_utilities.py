@@ -5,11 +5,11 @@
 
 """Utility functions for sqlalchemy
 """
-
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import URL
 
-MASTER_DB = {'mssql+pyodbc' : 'master', 'postgresql': 'postgres'}
+MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
+
 
 def create_sqlalchemy_url(conn_info, use_master_db=False):
     """Create url for sqlalchemy/alembic.
@@ -27,14 +27,36 @@ def create_sqlalchemy_url(conn_info, use_master_db=False):
     sqlalchemy.engine.url.URL
         Connection url for sqlalchemy/alembic.
     """
-    # Add optional driver to query-dictionary
-    query = {}
-    if conn_info.get('driver') is not None:
-        query['driver'] = conn_info.get('driver')
     if use_master_db is True:
         database = MASTER_DB.get(conn_info.get('dialect'))
     else:
         database = conn_info.get('database')
+    query = {}
+    # Add optional driver to query-dictionary
+    if conn_info.get('driver') is not None:
+        query['driver'] = conn_info.get('driver')
+    # sqlalchemy does not have full url support for different Azure authentications
+    # ODBC connection string must be added to query
+    azure_auth = conn_info.get('azure_auth')
+    if azure_auth is not None:
+        odbc = ''
+        if azure_auth.lower() == 'activedirectorypassword':
+            authentication = 'ActiveDirectoryPassword'
+            odbc = f"Pwd{{{conn_info.get('password')}}};"
+        elif azure_auth.lower() == 'activedirectoryintegrated':
+            authentication = 'ActiveDirectoryIntegrated'
+        elif azure_auth.lower() == 'activedirectoryinteractive':
+            authentication = 'ActiveDirectoryInteractive'
+        else:
+            raise Exception(
+                "Unknown Azure authentication type! Check variable 'azure_authentication'.")
+        query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt=yes;TrustServerCertificate=no;Authentication={auth}".format(
+            driver=conn_info.get('driver'),
+            server=conn_info.get('server'),
+            database=database,
+            uid=conn_info.get('username'),
+            auth=authentication
+        )
     return URL(
         drivername=conn_info.get('dialect'),
         username=conn_info.get('username'),
@@ -88,9 +110,11 @@ def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT'):
     """
     with engine.connect() as connection:
         if variables is not None and isinstance(variables, (tuple, list)):
-            result_set = connection.execution_options(isolation_level=isolation_level).execute(query, *variables)
+            result_set = connection.execution_options(
+                isolation_level=isolation_level).execute(query, *variables)
         else:
-            result_set = connection.execution_options(isolation_level=isolation_level).execute(query)
+            result_set = connection.execution_options(
+                isolation_level=isolation_level).execute(query)
         if result_set.returns_rows:
             return [row for row in result_set]
         return []
