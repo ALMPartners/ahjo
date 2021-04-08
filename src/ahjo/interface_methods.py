@@ -60,3 +60,19 @@ def remove_special_chars(in_string):
     out_string = sub('[^a-zA-Z0-9_]', '', out_string)
     out_string = out_string.lower()
     return out_string
+
+
+
+def format_to_table(lst_of_lsts):
+    """Format list of iterables to nice human-readable table."""
+    col_widths = [0]*len(lst_of_lsts)
+    for row in lst_of_lsts:
+        for i, cell in enumerate(row):
+            col_widths[i] = max(col_widths[i], len(str(cell)))
+    col_formats = [f"{{:<{width + 2}}}" for width in col_widths]
+    formatted_output = ''
+    for row in lst_of_lsts:
+        for i, cell in enumerate(row):
+            formatted_output += col_formats[i].format(cell)
+        formatted_output += '\n'
+    return formatted_output

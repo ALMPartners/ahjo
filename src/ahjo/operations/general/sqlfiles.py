@@ -10,6 +10,7 @@ from os import listdir, path
 from pathlib import Path
 
 from ahjo.database_utilities import execute_from_file, execute_try_catch
+from ahjo.interface_methods import format_to_table
 from ahjo.operation_manager import OperationManager
 
 logger = getLogger('ahjo')
@@ -35,10 +36,14 @@ def deploy_sqlfiles(engine, directory, message, display_output=False, variables=
 
     Raises
     ------
+    ValueError
+        If engine is not instance of sqlalchemy.engine.Engine.
     RuntimeError
         If any of the files in given directory fail to deploy after multiple tries.
     """
     with OperationManager(message):
+        if isinstance(engine, dict):
+            raise ValueError("First parameter of function 'deploy_sqlfiles' should be instance of sqlalchemy engine. Check your custom actions!")
         if not Path(directory).is_dir():
             logger.warning("Directory not found: " + directory)
             return False
@@ -49,8 +54,10 @@ def deploy_sqlfiles(engine, directory, message, display_output=False, variables=
         if len(failed) > 0:
             error_msg = "Failed to deploy the following files:\n{}".format(
                 '\n'.join(failed.keys()))
-            for fail_messages in failed.values():
-                error_msg = error_msg + ''.join(fail_messages)
+            error_msg = error_msg + '\nSee log for error details.'
+            for fail_object, fail_messages in failed.items():
+                logger.debug(f'----- Error for object {fail_object} -----')
+                logger.debug(''.join(fail_messages))
             raise RuntimeError(error_msg)
         return True
 
@@ -91,22 +98,22 @@ def drop_sqlfile_objects(engine, object_type, directory, message):
             raise RuntimeError(error_msg)
 
 
-def deploy_sql_from_file(file, engine, display_output, variable):
+def deploy_sql_from_file(file, engine, display_output, variables):
     '''Run single SQL script file.
 
     Parameters
     ----------
     file : str
         SQL script file path passed to SQLCMD.
-    conn_info : dict
-        Dictionary holding information needed to establish database connection.
+    engine : sqlalchemy.engine.Engine
+        SQL Alchemy engine.
     display_output : bool
         Indicator to print script output.
     '''
-    output = execute_from_file(engine, file_path=file, variables=variable)
+    output = execute_from_file(engine, file_path=file, variables=variables, include_headers=True)
     logger.info(path.basename(file))
     if display_output:
-        logger.info(output)
+        logger.info(format_to_table(output))
 
 
 def drop_sql_from_file(file, engine, object_type):

@@ -1,3 +1,4 @@
+import logging
 from os import environ
 from subprocess import check_output
 
@@ -128,3 +129,18 @@ class TestWithSQLServer():
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]
         assert 'Commit' in git_version_table_columns
+
+    @pytest.mark.git
+    def test_correct_git_version_should_be_printed(self, caplog):
+        git.update_git_version(self.engine, self.git_table_schema,
+                               self.git_table, self.sample_repository)
+        git_branch = check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip()
+        git_commit = check_output(
+            ["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
+        caplog.set_level(logging.INFO)
+        git.print_git_version(self.engine, self.git_table_schema, self.git_table)
+        log_output = caplog.text
+        assert f"Repository: {self.sample_repository}" in log_output
+        assert f"Branch: {git_branch}" in log_output
+        assert f"Version: {git_commit}" in log_output

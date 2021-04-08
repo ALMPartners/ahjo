@@ -89,9 +89,8 @@ def create_sqlalchemy_engine(sqlalchemy_url, kwargs={}):
     return engine
 
 
-def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT'):
-    """Execute query with chosen isolation level and connection created with
-    SQL Alchemy engine.
+def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT', include_headers=False):
+    """Execute query with chosen isolation level.
 
     Arguments
     ---------
@@ -104,6 +103,8 @@ def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT'):
     isolation_level : str
         Transaction isolation level.
         See https://docs.sqlalchemy.org/en/13/core/connections.html#sqlalchemy.engine.Connection.execution_options.params.isolation_level
+    include_headers : bool
+        Indicator to add result headers to first returned row.
 
     Returns
     -------
@@ -116,15 +117,17 @@ def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT'):
             result_set = connection.execute(query, *variables)
         else:
             result_set = connection.execute(query)
+        query_output = []
         if result_set.returns_rows:
-            return [row for row in result_set]
-        return []
+            if include_headers is True:
+                query_output.append(list(result_set.keys()))
+            query_output.extend([row for row in result_set])
+        return query_output
 
 
 def execute_try_catch(engine, query, variables=None, throw=False):
-    """Execute query with try catch and connection created with
-    SQL Alchemy engine. If throw is set to True, raise error in
-    case query execution fails.
+    """Execute query with try catch.
+    If throw is set to True, raise error in case query execution fails.
 
     Arguments
     ---------
@@ -151,8 +154,27 @@ def execute_try_catch(engine, query, variables=None, throw=False):
                 raise
 
 
-def execute_from_file(engine, file_path, variables=None):
-    """"""
+def execute_from_file(engine, file_path, variables=None, include_headers=False):
+    """Open file containing raw SQL and execute in batches.
+    Batches are split using the batch separator, which is defined by used dialect.
+
+    Arguments
+    ---------
+    engine : sqlalchemy.engine.Engine
+        SQL Alchemy engine.
+    file_path : str
+        Full path to SQL script file.
+    variables : list or tuple
+        Variables for query.
+    include_headers : bool
+        Indicator to add result headers to first returned row.
+
+    Returns
+    -------
+    list
+        Query output as list. If query returns no output, empty list is returned.
+    """
+    # TODO: encoding varoitus
     with open(file_path, 'r') as f:
         sql = f.read()
     batch_separator = BATCH_SEPARATOR.get(engine.name, 'GO')
@@ -168,24 +190,10 @@ def execute_from_file(engine, file_path, variables=None):
             else:
                 result_set = connection.execute(text(batch))
             if result_set.returns_rows:
-                if script_output == []:    # headers
+                if script_output == [] and include_headers is True:
                     script_output.append(list(result_set.keys()))
-                script_output.extend([list(row) for row in result_set])
-    return format_script_result(script_output)
-
-def format_script_result(script_output):
-    col_widths = []
-    #longest_cell = max(mylist, key=len)
-    formatted_output = ''
-    header_len = len(script_output[0])
-    row_len = 30*header_len
-    row_format ="{:^30}" * (len(script_output[0]) + 1)
-    formatted_output =  '-' * row_len
-    formatted_output += '\n' + row_format.format(*script_output[0], "|")
-    formatted_output += '\n' + '-' * row_len
-    for row in script_output[1:]:
-        formatted_output += '\n' + row_format.format(*row, "")
-    return formatted_output
+                script_output.extend([row for row in result_set])
+    return script_output
 
 
 def get_schema_names(engine):
