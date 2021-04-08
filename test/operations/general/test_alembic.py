@@ -5,7 +5,7 @@ import ahjo.operations.general.alembic as alembic
 import pytest
 from sqlalchemy.exc import ProgrammingError
 
-LATEST_REVISION = '46f7c0d382af'
+LATEST_REVISION = '46f7c0d382af'   # from sample project
 
 @pytest.mark.mssql
 class TestWithSQLServer():

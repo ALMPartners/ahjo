@@ -11,7 +11,7 @@ FUNC_DIR = './database/functions'
 
 
 def run_alembic_action(action, target):
-    """CWD must be set correctly!"""
+    """CWD must be set correctly to sample root!"""
     alembic_config = Config('alembic.ini')
     # main section options are set when main section is read
     main_section = alembic_config.config_ini_section
@@ -25,11 +25,11 @@ def run_alembic_action(action, target):
 
 
 def deploy_database_objects(engine):
-    """CWD must be set correctly!"""
-    wfiles = [path.join(VIEWS_DIR, f) for f in listdir(VIEWS_DIR)]
-    pfiles = [path.join(PROC_DIR, f) for f in listdir(PROC_DIR)]
-    ffiles = [path.join(FUNC_DIR, f) for f in listdir(FUNC_DIR)]
-    files = wfiles + pfiles + ffiles
+    """CWD must be set correctly to sample root!"""
+    w_files = [path.join(VIEWS_DIR, f) for f in listdir(VIEWS_DIR)]
+    p_files = [path.join(PROC_DIR, f) for f in listdir(PROC_DIR)]
+    f_files = [path.join(FUNC_DIR, f) for f in listdir(FUNC_DIR)]
+    files = w_files + p_files + f_files
 
     for tsql in files:
         print(tsql)
@@ -46,11 +46,11 @@ def deploy_database_objects(engine):
 
 
 def drop_database_objects(engine):
-    """CWD must be set correctly!"""
-    wobjects = [f"VIEW {f}" for f in listdir(VIEWS_DIR)]
-    pobjects = [f"PROCEDURE {f}" for f in listdir(PROC_DIR)]
-    fobjects = [f"FUNCTION {f}" for f in listdir(FUNC_DIR)]
-    database_objects = wobjects + pobjects + fobjects
+    """CWD must be set correctly to sample root!"""
+    w_objects = [f"VIEW {f}" for f in listdir(VIEWS_DIR)]
+    p_objects = [f"PROCEDURE {f}" for f in listdir(PROC_DIR)]
+    f_objects = [f"FUNCTION {f}" for f in listdir(FUNC_DIR)]
+    database_objects = w_objects + p_objects + f_objects
 
     for db_object in database_objects:
         with engine.connect() as connection:

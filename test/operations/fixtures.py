@@ -48,15 +48,10 @@ def mssql_engine(request, ahjo_config, mssql_sample):
 @pytest.fixture(scope='session')
 def mssql_setup_and_teardown(mssql_master_engine, test_db_name):
     """
-    mssql_cdw fixture prepares the sample and changes cwd during database testing.
-        - Copy MSSQL project to temporary dir.
-        - Rewrite configurations and create credential files.
-        - Change cwd to mssql sample root.
-
     What this fixture does:
-        - Init database for testing using Ahjo action 'init'.
+        - Init database for testing.
         - Execute mssql tests.
-        - Delete database using custom Ahjo action 'delete-database'.
+        - Delete database.
     """
     with mssql_master_engine.connect() as connection:
         connection.execution_options(isolation_level="AUTOCOMMIT")
