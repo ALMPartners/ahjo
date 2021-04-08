@@ -12,11 +12,9 @@ from ahjo.database_utilities.sqla_utilities import (
     create_sqlalchemy_engine,
     execute_query,
     execute_try_catch,
-    get_schema_names
+    get_schema_names,
+    execute_from_file
 )
 from ahjo.database_utilities.sqlcmd import (
-    invoke_sqlcmd,
-    deploy_tsql_from_file,
-    drop_tsql_from_file,
-    sql_file_loop
+    invoke_sqlcmd
 )

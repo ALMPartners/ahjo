@@ -7,8 +7,10 @@
 """
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import URL
+from sqlalchemy.sql import text
 
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
+BATCH_SEPARATOR = {'mssql+pyodbc': 'GO'}
 
 
 def create_sqlalchemy_url(conn_info, use_master_db=False):
@@ -109,12 +111,11 @@ def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT'):
         Query output as list. If query returns no output, empty list is returned.
     """
     with engine.connect() as connection:
+        connection.execution_options(isolation_level=isolation_level)
         if variables is not None and isinstance(variables, (tuple, list)):
-            result_set = connection.execution_options(
-                isolation_level=isolation_level).execute(query, *variables)
+            result_set = connection.execute(query, *variables)
         else:
-            result_set = connection.execution_options(
-                isolation_level=isolation_level).execute(query)
+            result_set = connection.execute(query)
         if result_set.returns_rows:
             return [row for row in result_set]
         return []
@@ -148,6 +149,43 @@ def execute_try_catch(engine, query, variables=None, throw=False):
             trans.rollback()
             if throw is True:
                 raise
+
+
+def execute_from_file(engine, file_path, variables=None):
+    """"""
+    with open(file_path, 'r') as f:
+        sql = f.read()
+    batch_separator = BATCH_SEPARATOR.get(engine.name, 'GO')
+    batches = sql.split(batch_separator)
+    with engine.connect() as connection:
+        connection.execution_options(isolation_level='AUTOCOMMIT')
+        script_output = []
+        for batch in batches:
+            if not batch:
+                continue
+            if variables is not None and isinstance(variables, (tuple, list)):
+                result_set = connection.execute(text(batch), *variables)
+            else:
+                result_set = connection.execute(text(batch))
+            if result_set.returns_rows:
+                if script_output == []:    # headers
+                    script_output.append(list(result_set.keys()))
+                script_output.extend([list(row) for row in result_set])
+    return format_script_result(script_output)
+
+def format_script_result(script_output):
+    col_widths = []
+    #longest_cell = max(mylist, key=len)
+    formatted_output = ''
+    header_len = len(script_output[0])
+    row_len = 30*header_len
+    row_format ="{:^30}" * (len(script_output[0]) + 1)
+    formatted_output =  '-' * row_len
+    formatted_output += '\n' + row_format.format(*script_output[0], "|")
+    formatted_output += '\n' + '-' * row_len
+    for row in script_output[1:]:
+        formatted_output += '\n' + row_format.format(*row, "")
+    return formatted_output
 
 
 def get_schema_names(engine):

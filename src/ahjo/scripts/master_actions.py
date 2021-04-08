@@ -56,9 +56,9 @@ def create_db_login(context):
 @action(affects_database=True, dependencies=['init'])
 def structure(context):
     """(MSSQL) Create database structure (schemas, tables, constraints). Not available if these are created with alembic."""
-    success1 = op.deploy_sqlfiles(context.get_conn_info(), './database/schema/', 'Creating schemas')
-    success2 = op.deploy_sqlfiles(context.get_conn_info(), './database/tables/', 'Creating tables')
-    success3 = op.deploy_sqlfiles(context.get_conn_info(), './database/constraints/', 'Creating constraints')
+    success1 = op.deploy_sqlfiles(context.get_engine(), './database/schema/', 'Creating schemas')
+    success2 = op.deploy_sqlfiles(context.get_engine(), './database/tables/', 'Creating tables')
+    success3 = op.deploy_sqlfiles(context.get_engine(), './database/constraints/', 'Creating constraints')
     if success1 is False and success2 is False and success3 is False:
         logger.error(
             'Failed to create database structure using primary method, attempting alternate method.')
@@ -73,9 +73,9 @@ def structure(context):
 def deploy(context):
     """(MSSQL) Run 'alembic upgrade head'. Deploy functions, views and prodecures. Update extended properties and Git version."""
     op.upgrade_db_to_latest_alembic_version(context.config_filename)
-    op.deploy_sqlfiles(context.get_conn_info(), "./database/functions/", "Deploying functions")
-    op.deploy_sqlfiles(context.get_conn_info(), "./database/views/", "Deploying views")
-    op.deploy_sqlfiles(context.get_conn_info(), "./database/procedures/", "Deploying procedures")
+    op.deploy_sqlfiles(context.get_engine(), "./database/functions/", "Deploying functions")
+    op.deploy_sqlfiles(context.get_engine(), "./database/views/", "Deploying views")
+    op.deploy_sqlfiles(context.get_engine(), "./database/procedures/", "Deploying procedures")
     op.update_db_object_properties(
         context.get_engine(),
         context.configuration.get('metadata_allowed_schemas')
@@ -93,20 +93,20 @@ def assembly(context):
     """(MSSQL) Drop and deploy CLR-procedures and assemblies."""
     op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
     op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
-    op.deploy_sqlfiles(context.get_conn_info(), "./database/assemblies/", "Deploying assemblies")
-    op.deploy_sqlfiles(context.get_conn_info(), "./database/clr-procedures/", "Deploying CLR-procedures")
+    op.deploy_sqlfiles(context.get_engine(), "./database/assemblies/", "Deploying assemblies")
+    op.deploy_sqlfiles(context.get_engine(), "./database/clr-procedures/", "Deploying CLR-procedures")
 
 
 @action(affects_database=True, dependencies=['deploy'])
 def data(context):
-    """(MSSQL) Insert data."""
-    op.deploy_sqlfiles(context.get_conn_info(), './database/data/', "Inserting data")
+    """Insert data."""
+    op.deploy_sqlfiles(context.get_engine(), './database/data/', "Inserting data")
 
 
 @action(affects_database=True, dependencies=['data'])
 def testdata(context):
-    """(MSSQL) Insert testdata."""
-    op.deploy_sqlfiles(context.get_conn_info(), './database/data/testdata/', "Inserting test data")
+    """Insert testdata."""
+    op.deploy_sqlfiles(context.get_engine(), './database/data/testdata/', "Inserting test data")
 
 
 @action(affects_database=True, dependencies=['init'])
@@ -138,8 +138,8 @@ def downgrade(context):
 
 @action()
 def test(context):
-    """(MSSQL) Run tests."""
-    op.deploy_sqlfiles(context.get_conn_info(), './database/tests/', "Running tests", display_output=True)
+    """Run tests."""
+    op.deploy_sqlfiles(context.get_engine(), './database/tests/', "Running tests", display_output=True)
 
 
 @action(dependencies=["deploy"])

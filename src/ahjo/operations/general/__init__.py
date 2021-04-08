@@ -26,3 +26,8 @@ from ahjo.operations.general.initialization import (
     create_new_project,
     populate_project
     )
+
+from ahjo.operations.general.sqlfiles import (
+    deploy_sqlfiles,
+    drop_sqlfile_objects
+    )

@@ -15,7 +15,9 @@ from ahjo.operations.general import (
     create_local_config_base,
     create_new_project,
     populate_project,
-    bulk_insert_into_database
+    bulk_insert_into_database,
+    drop_sqlfile_objects,
+    deploy_sqlfiles
 )
 
 from ahjo.operations.tsql import (
@@ -24,7 +26,5 @@ from ahjo.operations.tsql import (
     create_db_permissions,
     create_db_structure,
     update_file_object_properties,
-    update_db_object_properties,
-    deploy_sqlfiles,
-    drop_sqlfile_objects
+    update_db_object_properties
 )

@@ -5,13 +5,9 @@
 
 """Utility functions for executing tsql using sqlcmd.exe
 """
-from collections import defaultdict
 from logging import getLogger
-from os import path
 from re import search
 from subprocess import PIPE, Popen, list2cmdline
-
-from ahjo.database_utilities.sqla_utilities import execute_try_catch
 
 logger = getLogger('ahjo')
 
@@ -78,92 +74,6 @@ def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
             error_msg = error_msg + '\nFile: ' + infile
         raise RuntimeError(error_msg)
     return output
-
-
-def deploy_tsql_from_file(file, conn_info, display_output, variable):
-    '''Run single TSQL script file.
-
-    Parameters
-    ----------
-    file : str
-        SQL script file path passed to SQLCMD.
-    conn_info : dict
-        Dictionary holding information needed to establish database connection.
-    display_output : bool
-        Indicator to print script output.
-    '''
-    output = invoke_sqlcmd(conn_info, infile=file, variable=variable)
-    logger.info(path.basename(file))
-    if display_output:
-        logger.info(output.decode('utf-8'))
-
-
-def drop_tsql_from_file(file, engine, object_type):
-    '''Run DROP OBJECT command for object in SQL script file.
-
-    The drop command is based on object type and file name.
-
-    Parameters
-    ----------
-    file : str
-        SQL script file path.
-    engine : sqlalchemy.engine.Engine
-        SQL Alchemy engine.
-    object_type : str
-        Type of database object.
-    '''
-    parts = path.basename(file).split('.')
-    # SQL files are assumed to be named in format: schema.object.sql
-    # The only exception is assemblies. Assemblies don't have schema.
-    if object_type == 'ASSEMBLY':
-        object_name = parts[0]
-    else:
-        if len(parts) != 3:
-            raise RuntimeError(f'File {file} not in <schema.object.sql> format.')
-        object_name = parts[0] + '.' + parts[1]
-    query = f"BEGIN TRY DROP {object_type} {object_name} END TRY BEGIN CATCH END CATCH"
-    execute_try_catch(engine, query=query)
-
-
-def sql_file_loop(command, *args, file_list, max_loop=10):
-    '''Loop copy of file_list maximum max_loop times and execute the command to every file in
-    copy of file_list. If command succeeds, drop the the file from copy of file_list. If command
-    fails, keep the file in copy of file_list and execute the command again in next loop.
-
-    When max_loop is reached and there are files in copy of file_list, return the remaining
-    file names and related errors that surfaced during executions. Else return empty dict.
-
-    Parameters
-    ----------
-    command : function
-        Command to be executed to every file in file_list.
-    *args
-        Arguments passed to command.
-    file_list : list
-        List of file paths.
-    max_loop : int
-        Maximum number of loops.
-
-    Returns
-    -------
-    dict
-        Failed files and related errors. Empty if no fails.
-    '''
-    copy_list = file_list.copy()
-    copy_list_loop = copy_list.copy()
-    errors = defaultdict(set)
-    for _ in range(max_loop):
-        for file in copy_list_loop:
-            try:
-                command(file, *args)
-                copy_list.remove(file)
-            except Exception as error:
-                error_str = '\n------\n' + str(error)
-                errors[file].add(error_str)
-        copy_list_loop = copy_list.copy()
-    if len(copy_list) > 0:
-        return {f: list(errors[f]) for f in copy_list}
-    return {}
 
 
 def _add_cmdline_quotes(cmd_str):
