@@ -7,7 +7,7 @@
 
 SELECT 
     SCHEMA_NAME(s.[schema_id]) AS [schema_name]
-    ,s.[name] AS [func_name]
+    ,s.[name] AS [object_name]
     ,'function' AS [object_type]
     ,CONVERT(VARCHAR(8000), e.[name]) AS [property_name]
     ,CONVERT(VARCHAR(8000), e.[value]) AS [property_value]
@@ -16,4 +16,4 @@ FROM sys.objects AS s
 		ON e.[major_id] = s.[object_id]
 WHERE SCHEMA_NAME(s.[schema_id]) IN (?)
 	AND s.[type] IN ('FN', 'IF', 'FN', 'AF', 'FS', 'FT') 
-ORDER BY [schema_name], [func_name]
+ORDER BY [schema_name], [object_name]

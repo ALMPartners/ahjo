@@ -14,7 +14,6 @@ Global variable DB_OBJECTS is a dictionary holding the following information
 for listed object types:
 - file = where documented extended properties are stored
 - query = path to query that returns metadata and existing extended properties for this object type
-- columns = columns returned by the previously mentioned query
 - key_columns = list of columns whose values form an unique object key
 """
 import json
@@ -24,6 +23,7 @@ from os import makedirs, path
 from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query, get_schema_names
 from ahjo.operation_manager import OperationManager
+from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
 
@@ -35,43 +35,37 @@ DB_OBJECTS = {
     'schema': {
         'file': path.join(DOCS_DIR, 'schemas.json'),
         'query': 'resources/sql/queries/extended_properties_schemas.sql',
-        'columns': ['schema_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name']
     },
     'procedure': {
         'file': path.join(DOCS_DIR, 'procedures.json'),
         'query': 'resources/sql/queries/extended_properties_procedures.sql',
-        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'function': {
         'file': path.join(DOCS_DIR, 'functions.json'),
         'query': 'resources/sql/queries/extended_properties_functions.sql',
-        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'table': {
         'file': path.join(DOCS_DIR, 'tables.json'),
         'query': 'resources/sql/queries/extended_properties_tables.sql',
-        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'view': {
         'file': path.join(DOCS_DIR, 'views.json'),
         'query': 'resources/sql/queries/extended_properties_views.sql',
-        'columns': ['schema_name', 'object_name', 'object_type', 'property_name', 'property_value'],
         'key_columns': ['schema_name', 'object_name']
     },
     'column': {
         'file': path.join(DOCS_DIR, 'columns.json'),
         'query': 'resources/sql/queries/extended_properties_columns.sql',
-        'columns': ['schema_name', 'object_name', 'col_name', 'object_type', 'parent_type', 'property_name', 'property_value'],
-        'key_columns': ['schema_name', 'object_name', 'col_name']
+        'key_columns': ['schema_name', 'object_name', 'column_name']
     }
 }
 
 
-def update_db_object_properties(engine, schema_list):
+def update_db_object_properties(engine: Engine, schema_list: list):
     """Update extended properties from file to database.
 
     Arguments
@@ -89,20 +83,25 @@ def update_db_object_properties(engine, schema_list):
             schema_list = [s for s in get_schema_names(engine)
                            if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
-            logger.warning('No schemas allowed for update. Check variable "metadata_allowed_schemas".')
+            logger.warning(
+                'No schemas allowed for update. Check variable "metadata_allowed_schemas".')
             return
-        logger.debug(f'Updating extended properties for schemas {", ".join(schema_list)}')
+        logger.debug(
+            f'Updating extended properties for schemas {", ".join(schema_list)}')
         for object_type in DB_OBJECTS:
-            existing_metadata = query_metadata(engine, DB_OBJECTS[object_type], schema_list)
+            existing_metadata = query_metadata(
+                engine, DB_OBJECTS[object_type], schema_list)
             source_file = DB_OBJECTS[object_type]['file']
             if not path.exists(source_file):
-                logger.warning(f"Cannot update extended properties for {object_type}s. File {source_file} does not exist.")
+                logger.warning(
+                    f"Cannot update extended properties for {object_type}s. File {source_file} does not exist.")
                 continue
             try:
                 with open(source_file, 'r', encoding='utf-8') as f:
                     documented_properties = json.load(f)
             except Exception as err:
-                raise Exception(f'Failed to read extended properties for {object_type}') from err
+                raise Exception(
+                    f'Failed to read extended properties for {object_type}') from err
             for object_name, extended_properties in documented_properties.items():
                 schema_name = object_name.split('.')[0]
                 if schema_name in schema_list:
@@ -117,7 +116,7 @@ def update_db_object_properties(engine, schema_list):
                         )
 
 
-def exec_update_extended_properties(engine, object_name, object_metadata, extended_property_name, extended_property_value):
+def exec_update_extended_properties(engine: Engine, object_name: str, object_metadata: dict, extended_property_name: str, extended_property_value: str):
     """Update object's extended properties by calling either
     procedure sp_addextendedproperty or sp_updateextendedproperty.
     If object_metadata is None, object does not exist in database.
@@ -144,16 +143,17 @@ def exec_update_extended_properties(engine, object_name, object_metadata, extend
             params.extend([level1type, object_metadata.get('object_name')])
             if object_type == 'column':
                 procedure_call += ', @level2type=?, @level2name=?'
-                params.extend(['column', object_metadata.get('col_name')])
+                params.extend(['column', object_metadata.get('column_name')])
         execute_query(engine, procedure_call, tuple(params))
     except Exception as err:
-        logger.warning(f"Failed to update {object_name} extended property '{extended_property_name}'.")
+        logger.warning(
+            f"Failed to update {object_name} extended property '{extended_property_name}'.")
         logger.debug(f"Extended property value: {extended_property_value}")
         logger.debug(err, exc_info=1)
         logger.info("------")
 
 
-def update_file_object_properties(engine, schema_list):
+def update_file_object_properties(engine: Engine, schema_list: list):
     """Write extended properties to JSON file.
     If project doesn't have docs directory, create it.
 
@@ -175,42 +175,45 @@ def update_file_object_properties(engine, schema_list):
             schema_list = [s for s in get_schema_names(engine)
                            if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
-            logger.warning('No schemas allowed for document. Check variable "metadata_allowed_schemas".')
+            logger.warning(
+                'No schemas allowed for document. Check variable "metadata_allowed_schemas".')
             return
-        logger.debug(f'Fetching extended properties for schemas {", ".join(schema_list)}')
+        logger.debug(
+            f'Fetching extended properties for schemas {", ".join(schema_list)}')
         for object_type in DB_OBJECTS:
             existing_metadata = query_metadata(
                 engine,
                 DB_OBJECTS[object_type],
                 schema_list,
                 properties_only=True
-                )
+            )
             target_file = DB_OBJECTS[object_type]['file']
             with open(target_file, 'w+', encoding='utf-8', newline='') as f:
                 json.dump(existing_metadata, f, indent=4, ensure_ascii=False)
         logger.debug('Extended properties fetched')
 
 
-def query_metadata(engine, metadata, schema_list, properties_only=False):
+def query_metadata(engine: Engine, metadata: dict, schema_list: list, properties_only: bool = False) -> dict:
     query_path = path.join(AHJO_PATH, metadata['query'])
     query_result = prepare_and_exec_query(engine, query_path=query_path, param_list=schema_list)
-    return result_set_to_dict(query_result, metadata['columns'], metadata['key_columns'], properties_only)
+    return result_set_to_dict(query_result, metadata['key_columns'], properties_only)
 
 
-def prepare_and_exec_query(engine, query_path, param_list):
+def prepare_and_exec_query(engine: Engine, query_path: str, param_list: list) -> list:
     """Open query from query_path and set correct amount of
     parameter placeholders to question mark. Finally, execute query."""
     with open(query_path, 'r', encoding='utf-8') as file:
         query = file.read()
     param_placeholder = ','.join(['?'] * len(param_list))
     query = query.replace('?', param_placeholder)
-    result = execute_query(engine, query=query, variables=tuple(param_list))
+    result = execute_query(engine, query=query, variables=tuple(param_list), include_headers=True)
     return result
 
 
-def result_set_to_dict(result_set, columns, key_columns, properties_only):
+def result_set_to_dict(result_set: list, key_columns: list, properties_only: bool) -> dict:
     result = {}
-    for values in result_set:
+    columns = result_set[0]
+    for values in result_set[1:]:
         row = dict(zip(columns, values))
         object_key = '.'.join([row[k] for k in key_columns])
         if result.get(object_key) is None:

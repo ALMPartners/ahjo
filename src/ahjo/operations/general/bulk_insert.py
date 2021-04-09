@@ -7,13 +7,15 @@
 
 from logging import getLogger
 from time import time
+from typing import Generator, Optional
 
-from sqlalchemy import event
+from sqlalchemy import Table, event
+from sqlalchemy.engine import Engine, ExceptionContext
 
 logger = getLogger('ahjo')
 
 
-def bulk_insert_into_database(engine, reflected_table, records, chunk_size=1000):
+def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: dict, chunk_size: Optional[int] = 1000):
     """Insert multiple rows of data to target table.
     If error occurs, print and log only the original driver
     error (no insert statements).
@@ -38,11 +40,14 @@ def bulk_insert_into_database(engine, reflected_table, records, chunk_size=1000)
 
 class BulkInsertContext:
     """Before bulk insert, register event listeners.
-    If dialect is pyodbc, enable fast_executemany on 'before_cursor_execute' event.
-    Bind handler_bulk_insert_error to 'handle_error' event.
+
+    - If dialect is pyodbc, enable fast_executemany on 'before_cursor_execute' event.
+    - Bind handler_bulk_insert_error to 'handle_error' event.
+
     After bulk insert, remove event listeners.
     """
-    def __init__(self, engine, table_name):
+
+    def __init__(self, engine: Engine, table_name: str):
         self.engine = engine
         self.table_name = table_name
         self.enable_fast_executemany = True if engine.driver == 'pyodbc' else False
@@ -63,7 +68,8 @@ class BulkInsertContext:
                          handler_fast_executemany)
         if traceback is None:
             duration = time() - self.start_time
-            logger.info(f'{self.table_name} insert took {duration:.2f} seconds')
+            logger.info(
+                f'{self.table_name} insert took {duration:.2f} seconds')
 
 
 def handler_fast_executemany(conn, cursor, statement, params, context, executemany):
@@ -73,19 +79,15 @@ def handler_fast_executemany(conn, cursor, statement, params, context, executema
     cursor.fast_executemany = True
 
 
-def handler_bulk_insert_error(exception_context):
+def handler_bulk_insert_error(exception_context: ExceptionContext):
     """Raise originally caught exception if bulk insert fails.
     Binds to SQL Alchemy Core Event 'handle_error'.
-
-    Arguments
-    ----------
-    exception_context : sqlalchemy.engine.ExceptionContext
     """
     logger.error('Error during bulk insert:')
     raise Exception(exception_context.original_exception)
 
 
-def chunks(lst, n):
+def chunks(lst: list, n:int) -> Generator[list, None, None]:
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]

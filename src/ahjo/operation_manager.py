@@ -15,7 +15,8 @@ class OperationManager:
     """Class for handling operation context.
     Prints the message and lines at the end.
     """
-    def __init__(self, message):
+
+    def __init__(self, message: str):
         self.message = message
 
     def __enter__(self):
@@ -23,18 +24,13 @@ class OperationManager:
 
     def __exit__(self, exc_type, exc_value, traceback):
         if traceback is not None:
-            logger.error(''.join(format_exception(exc_type, exc_value, traceback)))
+            logger.error(''.join(format_exception(
+                exc_type, exc_value, traceback)))
         logger.info('------')
 
 
-def format_message(mssg):
-    '''Function for formatting messages.
-
-    Arguments
-    ---------
-    mssg
-        Message as string.
-    '''
+def format_message(mssg: str) -> str:
+    '''Add timestamp before the message.'''
     timestamp = datetime.now()
     time_string = timestamp.strftime('%Y-%m-%d %H:%M:%S')
     return '[{}] {}'.format(time_string, mssg)

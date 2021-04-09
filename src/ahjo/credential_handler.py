@@ -8,11 +8,12 @@ import getpass
 from base64 import b64decode, b64encode
 from logging import getLogger
 from pathlib import Path
+from typing import Tuple, Union
 
 logger = getLogger('ahjo')
 
 
-def obfuscate_credentials(credentials):
+def obfuscate_credentials(credentials: Tuple[str, str]) -> Tuple[str, str]:
     """Not secure encryption of credentials.
     At least it is not in plain text.
     """
@@ -21,7 +22,7 @@ def obfuscate_credentials(credentials):
     return username, obfuscated_password
 
 
-def deobfuscate_credentials(credentials):
+def deobfuscate_credentials(credentials: Tuple[str, str]) -> Tuple[str, str]:
     """Reverse of obfuscate_credentials.
     """
     username, obfuscated_password = credentials
@@ -29,8 +30,9 @@ def deobfuscate_credentials(credentials):
     return username, password
 
 
-def lookup_from_file(key, filename):
+def lookup_from_file(key: str, filename: str) -> Union[str, None]:
     """Return value from file.
+
     In cases where key exists but value doesn't (case: trusted connection), returns empty string.
     """
     if not Path(filename).is_file():
@@ -46,7 +48,7 @@ def lookup_from_file(key, filename):
     return None
 
 
-def store_to_file(key, val, filename):
+def store_to_file(key: str, val: str, filename: str):
     """Write key and value pairs to file.
     If file directory does not exists, create directory before writing.
     """
@@ -56,27 +58,27 @@ def store_to_file(key, val, filename):
         f.writelines(str(key)+'='+str(val))
 
 
-def get_credentials(usrn_file_path=None, pw_file_path=None, cred_key='cred', usrn_prompt="Username: ", pw_prompt="Password: "):
+def get_credentials(usrn_file_path: str = None, pw_file_path: str = None, cred_key: str = 'cred', usrn_prompt: str = "Username: ", pw_prompt: str = "Password: ") -> Tuple[str, str]:
     """Retrieves credentials or asks for them.
     The credentials are stored in a global variable.
 
     Arguments
     ---------
-    usrn_file_path:str
+    usrn_file_path
         The username file path or None for no storing
-    pw_file_path:str
+    pw_file_path
         The password file path or None for no storing
-    cred_file_path: str
+    cred_file_path
         The path to the credentials file.
         If None, the credentials are not stored.
-    usrn_prompt: str
+    usrn_prompt
         How the username is asked
-    pw_prompt: str
+    pw_prompt
         How the password is asked
 
     Returns
     -------
-    Tuple(str, str)
+    Tuple[str, str]
         The username and the password in a tuple.
     """
     global cred_dict
@@ -92,15 +94,18 @@ def get_credentials(usrn_file_path=None, pw_file_path=None, cred_key='cred', usr
                 pass
             else:
                 logger.info("Credentials are not yet defined.")
-                logger.info(f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
+                logger.info(
+                    f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
                 username = input(usrn_prompt)
                 new_password = getpass.getpass(pw_prompt)
-                username, password = obfuscate_credentials((username, new_password))
+                username, password = obfuscate_credentials(
+                    (username, new_password))
                 store_to_file(cred_key, username, usrn_file_path)
                 store_to_file(cred_key, password, pw_file_path)
         else:
             username = input(usrn_prompt)
             new_password = getpass.getpass(pw_prompt)
-            username, password = obfuscate_credentials((username, new_password))
+            username, password = obfuscate_credentials(
+                (username, new_password))
         cred_dict[cred_key] = (username, password)
     return deobfuscate_credentials(cred_dict[cred_key])

@@ -5,42 +5,47 @@
 
 from logging import getLogger
 from os import path
+from typing import Union
 
-from ahjo.interface_methods import load_json_conf
+from sqlalchemy.engine import Engine
+
 from ahjo.database_utilities import (create_conn_info,
                                      create_sqlalchemy_engine,
                                      create_sqlalchemy_url)
+from ahjo.interface_methods import load_json_conf
 
 logger = getLogger('ahjo')
 
 AHJO_PATH = path.dirname(__file__)
 
+
 class Context:
     """All the default stuff that is passed to actions, like configuration."""
-    def __init__(self, config_filename):
+
+    def __init__(self, config_filename: str):
         self.engine = None
         self.config_filename = config_filename
         self.configuration = load_json_conf(config_filename)
         if self.configuration is None:
             raise Exception("No configuration found")
 
-    def get_conn_info(self):
+    def get_conn_info(self) -> dict:
         return create_conn_info(self.configuration)
 
-    def get_engine(self):
+    def get_engine(self) -> Engine:
         """Create engine when needed first time."""
         if self.engine is None:
             url = create_sqlalchemy_url(self.get_conn_info())
             self.engine = create_sqlalchemy_engine(url)
         return self.engine
 
-    def get_master_engine(self):
+    def get_master_engine(self) -> Engine:
         """Create and return engine to 'master' database."""
         url = create_sqlalchemy_url(self.get_conn_info(), use_master_db=True)
         return create_sqlalchemy_engine(url)
 
 
-def filter_nested_dict(node, search_term):
+def filter_nested_dict(node, search_term: str) -> Union[dict, None]:
     """Filter a nested dictionary by leaf value."""
     if isinstance(node, (str, int)):
         if node == search_term:
@@ -62,8 +67,10 @@ def filter_nested_dict(node, search_term):
                 dupe_node[key] = cur_node
         return dupe_node or None
 
-def merge_nested_dicts(dict_a, dict_b, path=None):
+
+def merge_nested_dicts(dict_a: dict, dict_b: dict, path: str = None) -> dict:
     """Merge dictionary b to dictionary a.
+
     If keys conflict, that is, the same key exists in both dictionaries,
     overwrite the value of dictionary a with the value of dictionary b.
     """
@@ -74,14 +81,16 @@ def merge_nested_dicts(dict_a, dict_b, path=None):
             if isinstance(dict_a[key], dict) and isinstance(dict_b[key], dict):
                 merge_nested_dicts(dict_a[key], dict_b[key], path + [str(key)])
             elif dict_a[key] == dict_b[key]:
-                pass # same leaf value
+                pass  # same leaf value
             else:
-                dict_a[key] = dict_b[key] # replace dict_a value with dict_b value
+                # replace dict_a value with dict_b value
+                dict_a[key] = dict_b[key]
         else:
             dict_a[key] = dict_b[key]
     return dict_a
 
-def merge_config_files(config_filename):
+
+def merge_config_files(config_filename: str) -> dict:
     """Return the contents of config_filename or merged contents,
     if there exists a link to another config file in config_filename.
     """

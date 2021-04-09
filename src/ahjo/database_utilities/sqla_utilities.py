@@ -5,23 +5,26 @@
 
 """Utility functions for sqlalchemy
 """
+from typing import Iterable, List, Union
+
 from sqlalchemy import create_engine, inspect
+from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
-BATCH_SEPARATOR = {'mssql+pyodbc': 'GO'}
+BATCH_SEPARATOR = {'mssql': 'GO', 'postgresql': ';'}
 
 
-def create_sqlalchemy_url(conn_info, use_master_db=False):
+def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     """Create url for sqlalchemy/alembic.
     If use_master_db flag is on, pass 'master' database to url.
 
     Arguments
     ---------
-    conn_info: dict
+    conn_info
         Dictionary holding information needed to establish database connection.
-    use_master_db : bool
+    use_master_db
         Indicator to connect to 'master' database.
 
     Returns
@@ -70,14 +73,14 @@ def create_sqlalchemy_url(conn_info, use_master_db=False):
     )
 
 
-def create_sqlalchemy_engine(sqlalchemy_url, kwargs={}):
-    """Create new SQL Alchemy engine.
+def create_sqlalchemy_engine(sqlalchemy_url: URL, **kwargs) -> Engine:
+    """Create a new SQL Alchemy engine.
 
     Arguments
     ---------
-    sqlalchemy.engine.url.URL
+    sqlalchemy_url
         Connection url for sqlalchemy/alembic.
-    kwargs : dict
+    kwargs
         Named arguments passed to create_engine().
 
     Returns
@@ -89,21 +92,21 @@ def create_sqlalchemy_engine(sqlalchemy_url, kwargs={}):
     return engine
 
 
-def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT', include_headers=False):
+def execute_query(engine: Engine, query: str, variables: Union[list, tuple] = None, isolation_level: str = 'AUTOCOMMIT', include_headers: bool = False) -> List[Iterable]:
     """Execute query with chosen isolation level.
 
     Arguments
     ---------
-    engine : sqlalchemy.engine.Engine
+    engine
         SQL Alchemy engine.
-    query : str
+    query
         SQL query or statement to be executed.
-    variables : list or tuple
+    variables
         Variables for query.
-    isolation_level : str
+    isolation_level
         Transaction isolation level.
         See https://docs.sqlalchemy.org/en/13/core/connections.html#sqlalchemy.engine.Connection.execution_options.params.isolation_level
-    include_headers : bool
+    include_headers
         Indicator to add result headers to first returned row.
 
     Returns
@@ -125,19 +128,19 @@ def execute_query(engine, query, variables=None, isolation_level='AUTOCOMMIT', i
         return query_output
 
 
-def execute_try_catch(engine, query, variables=None, throw=False):
+def execute_try_catch(engine: Engine, query: str, variables: Union[list, tuple] = None, throw: bool = False):
     """Execute query with try catch.
     If throw is set to True, raise error in case query execution fails.
 
     Arguments
     ---------
-    engine : sqlalchemy.engine.Engine
+    engine
         SQL Alchemy engine.
-    query : str
+    query
         SQL query or statement to be executed.
-    variables : list or tuple
+    variables
         Variables for query.
-    throw : bool
+    throw
         Indicator to raise error if query execution fails.
     """
     with engine.connect() as connection:
@@ -154,19 +157,20 @@ def execute_try_catch(engine, query, variables=None, throw=False):
                 raise
 
 
-def execute_from_file(engine, file_path, variables=None, include_headers=False):
+def execute_from_file(engine: Engine, file_path: str, variables: Union[list, tuple] = None, include_headers: bool = False) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.
+
     Batches are split using the batch separator, which is defined by used dialect.
 
     Arguments
     ---------
-    engine : sqlalchemy.engine.Engine
+    engine
         SQL Alchemy engine.
-    file_path : str
+    file_path
         Full path to SQL script file.
-    variables : list or tuple
+    variables
         Variables for query.
-    include_headers : bool
+    include_headers
         Indicator to add result headers to first returned row.
 
     Returns
@@ -177,8 +181,11 @@ def execute_from_file(engine, file_path, variables=None, include_headers=False):
     # TODO: encoding varoitus
     with open(file_path, 'r') as f:
         sql = f.read()
-    batch_separator = BATCH_SEPARATOR.get(engine.name, 'GO')
-    batches = sql.split(batch_separator)
+    batch_separator = BATCH_SEPARATOR.get(engine.name)
+    if batch_separator:
+        batches = sql.split(batch_separator)
+    else:
+        batches = [sql]
     with engine.connect() as connection:
         connection.execution_options(isolation_level='AUTOCOMMIT')
         script_output = []
@@ -196,7 +203,7 @@ def execute_from_file(engine, file_path, variables=None, include_headers=False):
     return script_output
 
 
-def get_schema_names(engine):
+def get_schema_names(engine: Engine) -> List[str]:
     """Return schema names from database."""
     inspector = inspect(engine)
     db_list = inspector.get_schema_names()

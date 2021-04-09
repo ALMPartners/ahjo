@@ -8,51 +8,55 @@
 Global variable QUERIES holds SQL select statements to
 retrieve session and database ids from database.'''
 from os import path
+from typing import Union
 
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
+from sqlalchemy.engine import Engine
 
 QUERIES = {
-    'get_db_session' : 'SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = ?',
-    'get_db_id' : 'SELECT db_id(?)',
-    'get_existing_db' : 'SELECT name from sys.databases where name = ?'
+    'get_db_session': 'SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = ?',
+    'get_db_id': 'SELECT db_id(?)',
+    'get_existing_db': 'SELECT name from sys.databases where name = ?'
 }
 
 
-def create_db(engine, db_name, db_path, log_path, init_size, max_size, file_growth, compatibility_level, collation):
+def create_db(engine: Engine, db_name: str, db_path: str, log_path: str, init_size: int, max_size: int, file_growth: int, compatibility_level: str, collation: str):
     '''First, kill all database sessions. Second, drop database if it exists.
     Third, create database according to given parameters.
 
     Arguments
     ---------
-    engine : sqlalchemy.engine.Engine
+    engine
         SQL Alchemy engine connected to 'master' database.
-    db_name : str
+    db_name
         Name of the database.
-    db_path : str
+    db_path
         Path to database data file.
-    log_path : str
+    log_path
         Path to database log file.
-    init_size : int
+    init_size
         Initial size of database data file (MB).
-    max_size : int
+    max_size
         Max size of database data file (MB).
-    file_growth : int
+    file_growth
         How much the database data file will grow when it runs out of space (MB).
-    compatibility_level : int
+    compatibility_level
         Compatibility level of database.
-    collation : str
+    collation
         Collation of database.
     '''
-    def drop_database(database_id):
+    def drop_database(database_id: Union[str, int]):
         '''Kill all connections to database and connections made by given login.
         Drop login and database.
         '''
-        session_ids = execute_query(engine, QUERIES.get('get_db_session'), variables=[database_id])
+        session_ids = execute_query(
+            engine, QUERIES.get('get_db_session'),
+            variables=[database_id]
+        )
         for sid in session_ids:
             execute_query(engine, f'KILL {sid.session_id}')
         execute_query(engine, f'DROP DATABASE {db_name}')
-
 
     def create_database():
         '''Create database and alter its collation, compatibility level and recovery.'''
@@ -81,17 +85,30 @@ def create_db(engine, db_name, db_path, log_path, init_size, max_size, file_grow
 	            	)"""
         execute_query(engine, create_query)
         if collation is not None:
-            execute_query(engine, f'ALTER DATABASE {db_name} COLLATE {collation}')
+            execute_query(
+                engine,
+                f'ALTER DATABASE {db_name} COLLATE {collation}'
+            )
         if compatibility_level is not None:
-            execute_query(engine, f'ALTER DATABASE {db_name} SET COMPATIBILITY_LEVEL = {compatibility_level}')
+            execute_query(
+                engine,
+                f'ALTER DATABASE {db_name} SET COMPATIBILITY_LEVEL = {compatibility_level}'
+            )
         execute_query(engine, f'ALTER DATABASE {db_name} SET RECOVERY SIMPLE')
 
-
     with OperationManager('Creating database'):
-        db_id = execute_query(engine, QUERIES.get('get_db_id'), variables=[db_name])[0][0]
+        db_id = execute_query(
+            engine,
+            QUERIES.get('get_db_id'),
+            variables=[db_name]
+        )[0][0]
         if db_id is not None:
             drop_database(db_id)
 
-        database = execute_query(engine, QUERIES.get('get_existing_db'), variables=[db_name])
+        database = execute_query(
+            engine,
+            QUERIES.get('get_existing_db'),
+            variables=[db_name]
+        )
         if len(database) == 0:
             create_database()

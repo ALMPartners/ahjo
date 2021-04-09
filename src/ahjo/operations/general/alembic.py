@@ -11,6 +11,7 @@ from os import path
 from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
+from sqlalchemy.engine import Engine
 
 from alembic import command
 from alembic.config import Config
@@ -18,7 +19,7 @@ from alembic.config import Config
 logger = getLogger('ahjo')
 
 
-def alembic_config(config_filename):
+def alembic_config(config_filename: str) -> Config:
     """Return altered Alembic config.
 
     First, read project's alembic configuration (alembic.ini).
@@ -29,15 +30,17 @@ def alembic_config(config_filename):
     This way Alembic will use Ahjo's loggers and project's configurations
     when running Alembic operations.
     """
-    alembic_config = Config('alembic.ini')
-    main_section = alembic_config.config_ini_section
-    alembic_config.get_section(main_section)    # main section options are set when main section is read
-    alembic_config.cmd_opts = Namespace(x=["main_config=" + config_filename])
-    alembic_config.config_file_name = path.join(AHJO_PATH, 'resources/logger.ini')
-    return alembic_config
+    config = Config('alembic.ini')
+    main_section = config.config_ini_section
+    # main section options are set when main section is read
+    config.get_section(main_section)
+    config.cmd_opts = Namespace(x=["main_config=" + config_filename])
+    config.config_file_name = path.join(
+        AHJO_PATH, 'resources/logger.ini')
+    return config
 
 
-def upgrade_db_to_latest_alembic_version(config_filename):
+def upgrade_db_to_latest_alembic_version(config_filename: str):
     """Run Alembic 'upgrade head' in the same python-process
     by calling Alembic's API.
     """
@@ -45,7 +48,7 @@ def upgrade_db_to_latest_alembic_version(config_filename):
         command.upgrade(alembic_config(config_filename), 'head')
 
 
-def downgrade_db_to_alembic_base(config_filename):
+def downgrade_db_to_alembic_base(config_filename: str):
     """Run Alembic 'downgrade base' in the same python-process
     by calling Alembic's API.
     """
@@ -53,11 +56,13 @@ def downgrade_db_to_alembic_base(config_filename):
         command.downgrade(alembic_config(config_filename), 'base')
 
 
-def print_alembic_version(engine, alembic_version_table):
+def print_alembic_version(engine: Engine, alembic_version_table: str):
+    """Print last deployed revision number from Alembic version table."""
     with OperationManager('Checking Alembic version from database'):
         alembic_version_query = f"SELECT * FROM {alembic_version_table}"
         try:
             alembic_version = execute_query(engine=engine, query=alembic_version_query)[0][0]
             logger.info("Alembic version: " + alembic_version)
         except IndexError:
-            logger.info(f"Table {alembic_version_table} is empty. No deployed revisions.")
+            logger.info(
+                f"Table {alembic_version_table} is empty. No deployed revisions.")

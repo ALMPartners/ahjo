@@ -5,9 +5,10 @@
 
 """Module for build steps and other callable actions, that can be defined in a modular way."""
 from logging import getLogger
+from typing import Any, Callable, Union
 
-from ahjo.interface_methods import are_you_sure
 from ahjo.context import Context
+from ahjo.interface_methods import are_you_sure
 from ahjo.operation_manager import OperationManager
 
 logger = getLogger('ahjo')
@@ -17,19 +18,19 @@ logger = getLogger('ahjo')
 registered_actions = {}
 
 
-def action(name=None, affects_database=False, dependencies=[]):
+def action(name: str = None, affects_database: bool = False, dependencies: list[str] = []) -> Callable[[Context, Any], Any]:
     """Wrapper function for actions.
 
     Creates and registers an action.
 
     Arguments:
     ----------
-    name: str
+    name
         The name of the action, that acts as a key.
         Also used in printed messages.
-    affects_database: Boolean
+    affects_database
         If true, confirmation for the actions is asked at the start.
-    dependencies: list(str)
+    dependencies
         All the actions that need to be done before the action.
         Dependencies cause notifications at action start.
     """
@@ -37,14 +38,16 @@ def action(name=None, affects_database=False, dependencies=[]):
         action_name = name
         if action_name is None:
             action_name = func.__name__.replace('_', '-')
-        ActionRegisteration(func, action_name, affects_database, set(dependencies))
+        ActionRegisteration(func, action_name,
+                            affects_database, set(dependencies))
         return func
     return wrapper
 
 
 class ActionRegisteration:
     """The registeration information of an action."""
-    def __init__(self, function, name, affects_database, dependencies={}, baseactions=None):
+
+    def __init__(self, function: Callable[[Context, Any], Any], name: str, affects_database: bool, dependencies: dict = {}, baseactions: dict = None):
         self.function = function
         self.name = name
         self.affects_database = affects_database
@@ -57,7 +60,7 @@ class ActionRegisteration:
         global registered_actions
         registered_actions[self.name] = self
 
-    def pre_exec_check(self, context):
+    def pre_exec_check(self, context: Context) -> bool:
         """Prints dependencies and asks permission for database operations.
         Called before action execution.
         """
@@ -77,71 +80,78 @@ class ActionRegisteration:
         if self.name == 'complete-build':
             return
         for dep in self.dependencies:
-            logger.info("Note ! this command ("+self.name+") assumes that the "+ dep +" action has been successfully completed already")
-        
+            logger.info("Note ! this command ("+self.name+") assumes that the " +
+                        dep + " action has been successfully completed already")
 
-def create_multiaction(action_name, subactions, description=''):
+
+def create_multiaction(action_name: str, subactions: list[str], description: str = '') -> Callable[[Context, Any], Any]:
     """Creates and registers an action that only executes the subactions in order.
     Dependencies and allowation rules are inferred from subactions.
-    Subactions must be defined first, because the function uses registered definintions!
+    Subactions must be defined first, because the function uses registered definitions!
 
     Argumens
     --------
-    action_name: str
+    action_name
         Name of the new action that acts as a key
-    subactions: list(str)
+    subactions
         The subactions in the execution order.
         The subactions must be registered before the multiaction.
+    description
+        Human readable action description.
 
     Returns
     -------
-    func: function
+    function
         The combination of subaction functions.
     """
-    global registered_actions
     registerations = [registered_actions[sa] for sa in subactions]
     affects_database = any([r.affects_database for r in registerations])
-    baseactions = {baseaction for r in registerations for baseaction in r.baseactions}
-    dependencies = {dep for r in registerations for dep in r.dependencies} - baseactions
+    baseactions = {
+        baseaction for r in registerations for baseaction in r.baseactions}
+    dependencies = {
+        dep for r in registerations for dep in r.dependencies} - baseactions
+
     def func(*args, **kwargs):
         returns = [r.function(*args, **kwargs) for r in registerations]
         return returns
     func.__doc__ = description
-    ActionRegisteration(func, action_name, affects_database, dependencies, baseactions)
+    ActionRegisteration(func, action_name, affects_database,
+                        dependencies, baseactions)
     return func
 
 
-def check_action_validity(action_name, registered_actions, allowed_actions):
+def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -> bool:
     """Check if given action is permitted and registered.
 
     Arguments
     ---------
-    action_name: str
+    action_name
         The name of the action to execute
-    registered_actions: list(str)
-        The registered actions: if the action is not registered it cannot be executed.
-    allowed_actions: list(str)
+    allowed_actions
         The actions allowed in the configuration file.
     Returns
     -------
-    Boolean
+    bool
         Is the action valid or not?
     """
     if action_name not in allowed_actions and 'ALL' not in allowed_actions:
-        logger.error("Action " + action_name + " is not permitted, allowed actions: " + ', '.join(allowed_actions))
+        logger.error("Action " + action_name +
+                     " is not permitted, allowed actions: " + ', '.join(allowed_actions))
         return False
     if len(registered_actions) == 0:
         logger.error("No actions defined")
         return False
     if registered_actions.get(action_name) is None:
         logger.error("No action " + action_name + " found.")
-        logger.error("Available actions: " + ', '.join(registered_actions.keys()))
+        logger.error("Available actions: " +
+                     ', '.join(registered_actions.keys()))
         return False
     return True
 
 
-def execute_action(action_name, config_filename, *args, **kwargs):
-    """Prepares and executes given action.
+def execute_action(action_name: str, config_filename: str, *args, **kwargs):
+    """Prepare and execute given action.
+
     Does the logging and error handling for preparation.
 
     Arguments
@@ -153,16 +163,12 @@ def execute_action(action_name, config_filename, *args, **kwargs):
     """
     logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
-        # environment
         context = Context(config_filename)
-
-        # fetching action (if allowed)
-        global registered_actions
-        if not check_action_validity(action_name, registered_actions, context.configuration.get('allowed_actions', [])):
+        # validity check
+        if not check_action_validity(action_name, context.configuration.get('allowed_actions', [])):
             return
         action = registered_actions.get(action_name)
-
-        # execution
+        # user confirmation
         if not action.pre_exec_check(context):
             return
 
@@ -174,4 +180,5 @@ def list_actions():
     logger.info('List of available actions')
     logger.info('-------------------------------')
     for key, registeration in sorted(registered_actions.items()):
-        logger.info(f"'{key}': {registeration.function.__doc__ or 'No description available.'}")
+        logger.info(
+            f"'{key}': {registeration.function.__doc__ or 'No description available.'}")

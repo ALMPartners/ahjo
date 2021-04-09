@@ -26,7 +26,7 @@ PROJECT_STRUCTURE = {
         "env.py": "resources/files/env.py",
         "README": "empty file",
         "script.py.mako": "resources/files/script.py.mako"
-        },
+    },
     "database": {
         "data": {
             "testdata": {"schema.tableName.sql": "resources/sql/templates/schema.tableName.sql"}
@@ -38,14 +38,15 @@ PROJECT_STRUCTURE = {
         "views":  {"schema.viewName.sql": "resources/sql/templates/schema.viewName.sql"},
         "tests": {}
     },
-    ".gitignore" : "resources/files/.gitignore",
+    ".gitignore": "resources/files/.gitignore",
     "ahjo_actions.py": "resources/files/ahjo_actions.py",
     "alembic.ini": "resources/files/alembic.ini",
     "config_development.jsonc": "resources/files/config_development.jsonc",
     "README.md": "empty file"
 }
 
-def create_local_config_base(config_filename):
+
+def create_local_config_base(config_filename: str):
     """Check the existence and create local config file,
     if key 'LOCAL' exists in configuration file (config_filename).
 
@@ -54,7 +55,7 @@ def create_local_config_base(config_filename):
     """
     with OperationManager('Initializing local config file'):
         if not Path(config_filename).is_file():
-            print("File not found: "+ config_filename)
+            print("File not found: " + config_filename)
             return
         config_data = load_json_conf(config_filename, key='')
         local_path = config_data.get('LOCAL', None)
@@ -74,7 +75,7 @@ def create_local_config_base(config_filename):
                 print('Problem creating local config file: {}'.format(err))
 
 
-def create_new_project(project_name, init_location, message):
+def create_new_project(project_name: str, init_location: str, message: str):
     '''Create project root directory and call populate_project.'''
     with OperationManager(message):
         project_root = path.join(init_location, project_name)
@@ -86,7 +87,7 @@ def create_new_project(project_name, init_location, message):
         print(f'Project {project_root} created.')
 
 
-def populate_project(root_path, dir_dict):
+def populate_project(root_path: str, dir_dict: str):
     '''Recursively create given file structure to root location.'''
     for key in dir_dict:
         object_path = path.join(root_path, key)

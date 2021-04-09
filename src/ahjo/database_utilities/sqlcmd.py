@@ -8,23 +8,26 @@
 from logging import getLogger
 from re import search
 from subprocess import PIPE, Popen, list2cmdline
+from typing import Union
 
 logger = getLogger('ahjo')
 
 
-def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
+def invoke_sqlcmd(conn_info: dict, infile: str = None, query: str = None, variable: Union[str, list] = None) -> bytes:
     """Runs a t-sql script or query using sqlcmd.exe
     Prints sql-errors and returns the standard output.
 
     Arguments
     ---------
-    infile: str
+    conn_info
+        Dictionary holding information needed to establish database connection.
+    infile
         The input file path, from which the sqlcmd reads the queries.
         Alternative to query string passing (next argument).
-    query: str
+    query
         The sql query as a string.
         Alternative to input-file query passing.
-    variable: list of str or str
+    variable
         Variables for the sqlcmd query.
         Takes a list of strings or a string.
     """
@@ -36,7 +39,7 @@ def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
     subprocess_args += ["-S", server]
     if database is not None:
         subprocess_args += ["-d", str(database)]
-    if username != "" and password !=  "":
+    if username != "" and password != "":
         subprocess_args += ["-U", username, "-P", str(password)]
     else:
         subprocess_args += ["-E"]  # trusted connection
@@ -76,23 +79,24 @@ def invoke_sqlcmd(conn_info, infile=None, query=None, variable=None):
     return output
 
 
-def _add_cmdline_quotes(cmd_str):
+def _add_cmdline_quotes(cmd_str: str) -> str:
     """Add extra quotes to command line string containing SQL variables.
 
     DB_PATH='C:\\temp\\crdm\\data\\BD:mdf' => DB_PATH="'C:\\temp\\crdm\\data\\BD:mdf'"
 
     Arguments
     ---------
-    cmd_str : str
+    cmd_str
         Command line string containing SQL variables.
 
     Returns
     -------
-    cmd_str : str
+    str
         Command line string with extra quotes.
     """
     match = search("='[^']*'", cmd_str)
     if match is not None:
-        quoted_cmd_str = cmd_str[:match.start() + 1] + '"' + cmd_str[match.start() + 1: match.end()] + '"' + cmd_str[match.end():]
+        quoted_cmd_str = cmd_str[:match.start(
+        ) + 1] + '"' + cmd_str[match.start() + 1: match.end()] + '"' + cmd_str[match.end():]
         cmd_str = _add_cmdline_quotes(quoted_cmd_str)
     return cmd_str
