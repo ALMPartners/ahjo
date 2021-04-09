@@ -14,12 +14,11 @@ def new_sample(prepared_sample):
 """
 from base64 import b64encode
 from distutils.dir_util import copy_tree
-from os import getcwd, path
+from os import environ, getcwd, path
 
 import commentjson as json
 import pytest
 
-from.conftest import TEST_DB_NAME
 
 PROJECT_ROOT = getcwd()
 
@@ -30,8 +29,8 @@ def project_root():
 
 
 @pytest.fixture(scope='session')
-def test_db_name():
-    return TEST_DB_NAME
+def git_setup(project_root):
+    environ["GIT_DIR"] = path.join(project_root, '.git')
 
 
 @pytest.fixture(scope='session')
@@ -46,17 +45,6 @@ def ahjo_config():
             config = config['BACKEND']
         return config
     return read_samples_ahjo_config
-
-
-@pytest.fixture(scope='session')
-def mssql_sample(prepared_sample):
-    return prepared_sample(
-        sample_name='mssql_project',
-        host_param='mssql_host',
-        port_param='mssql_port',
-        usrn_param='mssql_username',
-        pass_param='mssql_password'
-    )
 
 
 @pytest.fixture(scope='session')

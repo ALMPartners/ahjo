@@ -13,7 +13,8 @@ from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
-BATCH_SEPARATOR = {'mssql': 'GO', 'postgresql': ';'}
+BATCH_SEPARATOR = {'mssql': '\nGO', 'postgresql': ';\n'}
+SCRIPT_VARIABLE_PATTERN = {'mssql': '$({})', 'postgresql': ':{}'}
 
 
 def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
@@ -157,8 +158,9 @@ def execute_try_catch(engine: Engine, query: str, variables: Union[list, tuple] 
                 raise
 
 
-def execute_from_file(engine: Engine, file_path: str, variables: Union[list, tuple] = None, include_headers: bool = False) -> List[Iterable]:
+def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict = None, include_headers: bool = False) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.
+    File is expected to be UTF-8 or UTF-8 with BOM.
 
     Batches are split using the batch separator, which is defined by used dialect.
 
@@ -168,8 +170,10 @@ def execute_from_file(engine: Engine, file_path: str, variables: Union[list, tup
         SQL Alchemy engine.
     file_path
         Full path to SQL script file.
-    variables
-        Variables for query.
+    scripting_variables
+        Variables that are used in scripts. Works in similar manner as scripting variables in SQLCMD.
+        Notice, that variable values are inserted into raw SQL before execute and are not escaped!
+        Therefore these can be utilized in SQL injection attack. USE CAREFULLY!
     include_headers
         Indicator to add result headers to first returned row.
 
@@ -179,8 +183,12 @@ def execute_from_file(engine: Engine, file_path: str, variables: Union[list, tup
         Query output as list. If query returns no output, empty list is returned.
     """
     # TODO: encoding varoitus
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8-sig') as f:
         sql = f.read()
+    if scripting_variables:
+        for variable_name, variable_value in scripting_variables.items():
+            pattern = SCRIPT_VARIABLE_PATTERN.get(engine.name, '{}')
+            sql = sql.replace(pattern.format(variable_name), variable_value)
     batch_separator = BATCH_SEPARATOR.get(engine.name)
     if batch_separator:
         batches = sql.split(batch_separator)
@@ -192,10 +200,7 @@ def execute_from_file(engine: Engine, file_path: str, variables: Union[list, tup
         for batch in batches:
             if not batch:
                 continue
-            if variables is not None and isinstance(variables, (tuple, list)):
-                result_set = connection.execute(text(batch), *variables)
-            else:
-                result_set = connection.execute(text(batch))
+            result_set = connection.execute(text(batch))
             if result_set.returns_rows:
                 if script_output == [] and include_headers is True:
                     script_output.append(list(result_set.keys()))

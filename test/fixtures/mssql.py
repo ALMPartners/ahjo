@@ -1,14 +1,17 @@
-"""Fixtures related to operations."""
-from os import environ, path
-
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 
 
 @pytest.fixture(scope='session')
-def git_setup(project_root):
-    environ["GIT_DIR"] = path.join(project_root, '.git')
+def mssql_sample(prepared_sample):
+    return prepared_sample(
+        sample_name='mssql_project',
+        host_param='mssql_host',
+        port_param='mssql_port',
+        usrn_param='mssql_username',
+        pass_param='mssql_password'
+    )
 
 
 @pytest.fixture(scope='session')

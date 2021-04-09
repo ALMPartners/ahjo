@@ -53,3 +53,10 @@ def test_create_sqlalchemy_url_should_return_url_for_mssql_master_db():
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
     assert url.database == 'master'
     assert 'Database=master' in url.query['odbc_connect']
+
+#@pytest.mark.mssql
+#class TestWithSQLServer():
+#
+#    @pytest.fixture(scope='function', autouse=True)
+#    def sqla_utilities_mssql_setup_and_teardown(self, mssql_engine):
+#        self.engine = mssql_engine

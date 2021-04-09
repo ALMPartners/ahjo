@@ -8,7 +8,8 @@ from collections import defaultdict
 from logging import getLogger
 from os import listdir, path
 from pathlib import Path
-from typing import Any, Callable, Union
+from traceback import format_exc
+from typing import Any, Callable
 
 from ahjo.database_utilities import execute_from_file, execute_try_catch
 from ahjo.interface_methods import format_to_table
@@ -18,7 +19,7 @@ from sqlalchemy.engine import Engine
 logger = getLogger('ahjo')
 
 
-def deploy_sqlfiles(engine: Engine, directory: str, message: str, display_output: bool = False, variables: Union[list, tuple] = None) -> bool:
+def deploy_sqlfiles(engine: Engine, directory: str, message: str, display_output: bool = False, scripting_variables: dict = None) -> bool:
     """Run every SQL script file found in given directory and print the executed file names.
 
     If any file in directory cannot be deployed after multiple tries, raise an exeption and
@@ -54,7 +55,7 @@ def deploy_sqlfiles(engine: Engine, directory: str, message: str, display_output
         files = [path.join(directory, f)
                  for f in listdir(directory) if f.endswith('.sql')]
         failed = sql_file_loop(deploy_sql_from_file, engine,
-                               display_output, variables, file_list=files, max_loop=len(files))
+                               display_output, scripting_variables, file_list=files, max_loop=len(files))
         if len(failed) > 0:
             error_msg = "Failed to deploy the following files:\n{}".format(
                 '\n'.join(failed.keys()))
@@ -103,7 +104,7 @@ def drop_sqlfile_objects(engine: Engine, object_type: str, directory: str, messa
             raise RuntimeError(error_msg)
 
 
-def deploy_sql_from_file(file: str, engine: Engine, display_output: bool, variables: Union[list, tuple]):
+def deploy_sql_from_file(file: str, engine: Engine, display_output: bool, scripting_variables: dict):
     '''Run single SQL script file.
 
     Print output as formatted table.
@@ -119,7 +120,12 @@ def deploy_sql_from_file(file: str, engine: Engine, display_output: bool, variab
     variables
         Variables passed to SQL script.
     '''
-    output = execute_from_file(engine, file_path=file, variables=variables, include_headers=True)
+    output = execute_from_file(
+        engine,
+        file_path=file,
+        scripting_variables=scripting_variables,
+        include_headers=True
+    )
     logger.info(path.basename(file))
     if display_output:
         logger.info(format_to_table(output))
@@ -152,7 +158,7 @@ def drop_sql_from_file(file: str, engine: Engine, object_type: str):
     execute_try_catch(engine, query=query)
 
 
-def sql_file_loop(command: Callable[..., Any], *args : Any, file_list: list, max_loop: int = 10) -> dict:
+def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_loop: int = 10) -> dict:
     '''Loop copy of file_list maximum max_loop times and execute the command to every file in
     copy of file_list. If command succeeds, drop the the file from copy of file_list. If command
     fails, keep the file in copy of file_list and execute the command again in next loop.
@@ -184,8 +190,8 @@ def sql_file_loop(command: Callable[..., Any], *args : Any, file_list: list, max
             try:
                 command(file, *args)
                 copy_list.remove(file)
-            except Exception as error:
-                error_str = '\n------\n' + str(error)
+            except:
+                error_str = '\n------\n' + format_exc()
                 errors[file].add(error_str)
         copy_list_loop = copy_list.copy()
     if len(copy_list) > 0:

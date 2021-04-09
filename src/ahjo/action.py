@@ -5,7 +5,7 @@
 
 """Module for build steps and other callable actions, that can be defined in a modular way."""
 from logging import getLogger
-from typing import Any, Callable, Union
+from typing import Any, Callable, List, Union
 
 from ahjo.context import Context
 from ahjo.interface_methods import are_you_sure
@@ -18,7 +18,7 @@ logger = getLogger('ahjo')
 registered_actions = {}
 
 
-def action(name: str = None, affects_database: bool = False, dependencies: list[str] = []) -> Callable[[Context, Any], Any]:
+def action(name: str = None, affects_database: bool = False, dependencies: List[str] = []) -> Callable[[Context, Any], Any]:
     """Wrapper function for actions.
 
     Creates and registers an action.
@@ -84,7 +84,7 @@ class ActionRegisteration:
                         dep + " action has been successfully completed already")
 
 
-def create_multiaction(action_name: str, subactions: list[str], description: str = '') -> Callable[[Context, Any], Any]:
+def create_multiaction(action_name: str, subactions: List[str], description: str = '') -> Callable[[Context, Any], Any]:
     """Creates and registers an action that only executes the subactions in order.
     Dependencies and allowation rules are inferred from subactions.
     Subactions must be defined first, because the function uses registered definitions!

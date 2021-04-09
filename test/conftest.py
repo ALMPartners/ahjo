@@ -43,9 +43,14 @@ def pytest_addoption(parser):
 
 
 pytest_plugins = [
-    "test.fixtures",
-    "test.operations.fixtures"
+    "test.fixtures.general",
+    "test.fixtures.mssql"
     ]
+
+
+@pytest.fixture(scope='session')
+def test_db_name():
+    return TEST_DB_NAME
 
 
 def pytest_configure(config):
