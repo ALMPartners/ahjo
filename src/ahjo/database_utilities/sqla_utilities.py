@@ -5,6 +5,7 @@
 
 """Utility functions for sqlalchemy
 """
+from re import DOTALL, sub
 from typing import Iterable, List, Union
 
 from sqlalchemy import create_engine, inspect
@@ -13,8 +14,17 @@ from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
-BATCH_SEPARATOR = {'mssql': '\nGO', 'postgresql': ';\n'}
-SCRIPT_VARIABLE_PATTERN = {'mssql': '$({})', 'postgresql': ':{}'}
+DIALECT_PATTERNS = {
+    'mssql': {
+        'comment_patterns': [r'/\*.+?\*/', r'--.[ \S]+?\n'],
+        'batch_separator': '\nGO',
+        'script_variable_pattern': '$({})'
+    },
+    'postgresql':{
+        'comment_patterns': [r'/\*.+?\*/', r'--.[ \S]+?\n'],
+        'batch_separator': ';\n',
+        'script_variable_pattern': ':{}'}
+}
 
 
 def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
@@ -185,11 +195,17 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     # TODO: encoding varoitus
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         sql = f.read()
+    dialect = DIALECT_PATTERNS.get(engine.name, {})
+    # remove comment blocks
+    comments = dialect.get('comment_patterns')
+    for comment in comments:
+        sql = sub(comment, '', sql, flags=DOTALL)
+    # insert scripting variables into SQL, use pattern according to dialect
     if scripting_variables:
         for variable_name, variable_value in scripting_variables.items():
-            pattern = SCRIPT_VARIABLE_PATTERN.get(engine.name, '{}')
+            pattern = dialect.get('script_variable_pattern', '{}')
             sql = sql.replace(pattern.format(variable_name), variable_value)
-    batch_separator = BATCH_SEPARATOR.get(engine.name)
+    batch_separator = dialect.get('batch_separator')
     if batch_separator:
         batches = sql.split(batch_separator)
     else:

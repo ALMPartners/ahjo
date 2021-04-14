@@ -69,7 +69,9 @@ def remove_special_chars(in_string: str) -> str:
 
 def format_to_table(lst_of_iter: List[Iterable]) -> str:
     """Format list of iterables to nice human-readable table."""
-    col_widths = [0]*len(lst_of_iter)
+    if not lst_of_iter:
+        return 'No output.'
+    col_widths = [0]*len(lst_of_iter[0])
     for row in lst_of_iter:
         for i, cell in enumerate(row):
             col_widths[i] = max(col_widths[i], len(str(cell)))

@@ -23,7 +23,7 @@ GO
 
 -- Second, create view
 
-CREATE PROCEDURE [schema].[viewName] 
+CREATE VIEW [schema].[viewName] 
 AS
 
 
