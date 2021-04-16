@@ -5,7 +5,6 @@ from os import chdir, getcwd
 import ahjo.operations.tsql.db_object_properties as dop
 import pytest
 
-from .utils import run_alembic_action
 
 DESC_QUERY = """
     SELECT 
@@ -40,7 +39,7 @@ FLAG_QUERY = """
 class TestWithSQLServer():
 
     @pytest.fixture(scope='function', autouse=True)
-    def db_objects_setup_and_teardown(self, mssql_sample, mssql_engine):
+    def db_objects_setup_and_teardown(self, mssql_sample, mssql_engine, run_alembic_action):
         """Deploy objects without updating object properties and git version."""
         self.engine = mssql_engine
         old_cwd = getcwd()

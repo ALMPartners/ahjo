@@ -12,15 +12,20 @@ def obfuscate(stng):
 
 @pytest.fixture(scope="function")
 def execute_get_credentials_with_varying_input(tmp_path, monkeypatch):
-    """First, create username/password files with given content and store
-        file paths to list created_records.
-    Second, set username/password input with monkeypatch.
-    Third, execute ahjo.get_credentials with created username/password file
-        paths as parameters (None if no file created).
-    Fourth, reset global variable of Ahjo's credential_handler module.
+    """First, reset global variable of Ahjo's credential_handler module.
         If this is not done, tests will affect one another.
-    Finally, reset the global variable delete created username/password files.
+    Second, create username/password files with given content and store
+        file paths to list created_records.
+    Third, set username/password input with monkeypatch.
+    Fourth, execute ahjo.get_credentials with created username/password file
+        paths as parameters (None if no file created).
+    Fifth, reset global variable of Ahjo's credential_handler module.
+        If this is not done, tests will affect one another.
+    Finally, delete created username/password files.
     """
+    # reset global variable
+    ahjo.cred_dict = {}
+
     created_records = []
 
     def get_credentials(usrn_file_name, usrn_file_content, pw_file_name, pw_file_content, usrn_input, pw_input):

@@ -17,10 +17,10 @@ MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
 DIALECT_PATTERNS = {
     'mssql': {
         'comment_patterns': [r'/\*.+?\*/', r'--.[ \S]+?\n'],
-        'batch_separator': '\nGO',
+        'batch_separator': '\nGO',    # GO must always be on its own line
         'script_variable_pattern': '$({})'
     },
-    'postgresql':{
+    'postgresql': {
         'comment_patterns': [r'/\*.+?\*/', r'--.[ \S]+?\n'],
         'batch_separator': ';\n',
         'script_variable_pattern': ':{}'}
@@ -196,20 +196,10 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         sql = f.read()
     dialect = DIALECT_PATTERNS.get(engine.name, {})
-    # remove comment blocks
-    comments = dialect.get('comment_patterns')
-    for comment in comments:
-        sql = sub(comment, '', sql, flags=DOTALL)
-    # insert scripting variables into SQL, use pattern according to dialect
+    sql = _remove_comments(dialect, sql)
     if scripting_variables:
-        for variable_name, variable_value in scripting_variables.items():
-            pattern = dialect.get('script_variable_pattern', '{}')
-            sql = sql.replace(pattern.format(variable_name), variable_value)
-    batch_separator = dialect.get('batch_separator')
-    if batch_separator:
-        batches = sql.split(batch_separator)
-    else:
-        batches = [sql]
+        sql = _insert_script_variables(dialect, sql, scripting_variables)
+    batches = _split_to_batches(dialect, sql)
     with engine.connect() as connection:
         connection.execution_options(isolation_level='AUTOCOMMIT')
         script_output = []
@@ -222,6 +212,34 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
                     script_output.append(list(result_set.keys()))
                 script_output.extend([row for row in result_set])
     return script_output
+
+
+def _remove_comments(dialect_patterns: dict, sql: str):
+    """Remove comment blocks from SQL according to dialect patterns."""
+    comments = dialect_patterns.get('comment_patterns')
+    for comment in comments:
+        sql = sub(comment, '', sql, flags=DOTALL)
+    return sql
+
+
+def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variables: dict):
+    """Insert scripting variables into SQL,
+    use pattern according to dialect."""
+    for variable_name, variable_value in scripting_variables.items():
+        pattern = dialect_patterns.get('script_variable_pattern', '{}')
+        sql = sql.replace(pattern.format(variable_name), variable_value)
+    return sql
+
+
+def _split_to_batches(dialect_patterns: dict, sql: str):
+    """Split SQL into bacthes according to barch separator,
+    which depends on dialect."""
+    batch_separator = dialect_patterns.get('batch_separator')
+    if batch_separator:
+        batches = sql.split(batch_separator)
+    else:
+        batches = [sql]
+    return batches
 
 
 def get_schema_names(engine: Engine) -> List[str]:

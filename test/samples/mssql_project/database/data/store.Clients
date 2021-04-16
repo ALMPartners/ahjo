@@ -1,0 +1,6 @@
+name;email;phone;address;zip_code;country;date_of_birth
+Salla Haverinen;salla.haverinen@almpartners.fi;;Mechelininkatu 1 A;00180;Finland;2000-01-01
+Sam Testguy;sam.testguy@gmail.com;0404668585;;00600;Finland;1990-06-01
+Client Person;client.person@example.com;;Long road;77843;Kenya;1984-02-05
+ALM Partners Oy;;;Mechelininkatu 1 A;00180:Finland;2011-01-01
+Malli Mallinen;malli.m.mallinen@malli.com;;;23556;Russia;1975-10-10

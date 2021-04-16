@@ -5,13 +5,13 @@ import ahjo.operations.general.alembic as alembic
 import pytest
 from sqlalchemy.exc import ProgrammingError
 
-LATEST_REVISION = '46f7c0d382af'   # from sample project
+LATEST_REVISION = 'a8877159cdff'   # from sample project
 
 @pytest.mark.mssql
 class TestWithSQLServer():
 
     @pytest.fixture(scope='function', autouse=True)
-    def alembic_mssql_setup_and_teardown(self, ahjo_config, mssql_sample, mssql_engine):
+    def alembic_mssql_setup_and_teardown(self, ahjo_config, mssql_sample, mssql_engine, run_alembic_action):
         self.config = ahjo_config(mssql_sample)
         self.alembic_table = self.config['alembic_version_table_schema'] + '.' + self.config['alembic_version_table']
         self.config_filepath = path.join(mssql_sample, 'config_development.jsonc')
@@ -19,6 +19,12 @@ class TestWithSQLServer():
         old_cwd = getcwd()
         chdir(mssql_sample)
         yield
+        try:
+            run_alembic_action('downgrade', 'base')
+            query = f"DROP TABLE {self.alembic_table}"
+            self.engine.execute(query)
+        except:
+            pass
         chdir(old_cwd)
 
     def test_alembic_version_table_should_not_exist(self):

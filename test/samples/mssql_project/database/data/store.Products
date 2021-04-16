@@ -1,0 +1,4 @@
+name;category_id;description;unit_price;units_in_package;package_weight;manufacturer
+Fazer Puikula;2;Ruispuikula;0.20;9;0.500;Fazer
+Vaasan kauratyynyt;3;Halkaistu kaurasekaleipä;0.23;6;0.360;Vaasan
+Alkuperäinen jälkiuunileipä;2;;0.28;8;0.480;Oululainen

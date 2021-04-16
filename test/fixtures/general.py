@@ -12,15 +12,20 @@ def new_sample(prepared_sample):
         pass_param='new_password_param'
     )
 """
+import csv
+from argparse import Namespace
 from base64 import b64encode
 from distutils.dir_util import copy_tree
 from os import environ, getcwd, path
 
 import commentjson as json
 import pytest
-
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import MetaData, Table
 
 PROJECT_ROOT = getcwd()
+SAMPLE_DATA_DIR = './database/data'
 
 
 @pytest.fixture(scope='session')
@@ -99,3 +104,51 @@ def write_sample_password_files(sample_root, username, password):
     password = 'cred=' + b64encode(password.encode()).decode()
     with open(password_file, 'w', encoding='utf-8') as f:
         f.write(password)
+
+
+@pytest.fixture(scope='function')
+def run_alembic_action():
+    """When executing, CWD must be set correctly to sample root!"""
+    def execute_alembic(action, target):
+        alembic_config = Config('alembic.ini')
+        # main section options are set when main section is read
+        main_section = alembic_config.config_ini_section
+        alembic_config.get_section(main_section)
+        alembic_config.cmd_opts = Namespace(
+            x=["main_config=config_development.jsonc"])
+        if action == 'upgrade':
+            command.upgrade(alembic_config, target)
+        elif action == 'downgrade':
+            command.downgrade(alembic_config, target)
+    return execute_alembic
+
+
+@pytest.fixture(scope='function')
+def populate_table():
+    """When executing, CWD must be set correctly to sample root!"""
+    def insert_to_table(engine, table_name):
+        source_file = path.join(SAMPLE_DATA_DIR, table_name)
+        splitted = table_name.split('.')
+        if len(splitted) > 1:
+            table_name = splitted[1]
+            table_schema = splitted[0]
+            target_table = Table(table_name, MetaData(
+                bind=engine), schema=table_schema, autoload=True)
+        else:
+            target_table = Table(table_name, MetaData(
+                bind=engine), autoload=True)
+        for rows in chunkreader(source_file):
+            engine.execute(target_table.insert(), rows)
+    return insert_to_table
+
+
+def chunkreader(file_path, chunksize=200):
+    with open(file_path, 'r', encoding='utf-8', newline='') as f:
+        reader = csv.DictReader(f, delimiter=';')
+        chunk = []
+        for i, line in enumerate(reader):
+            if (i % chunksize == 0 and i > 0):
+                yield chunk
+                chunk = []
+            chunk.append(line)
+        yield chunk
