@@ -5,26 +5,17 @@
 
 """Utility functions for sqlalchemy
 """
-from re import DOTALL, sub
+from re import DOTALL
 from typing import Iterable, List, Union
 
+from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
+                       restOfLine)
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
-DIALECT_PATTERNS = {
-    'mssql': {
-        'comment_patterns': [r'/\*.+?\*/', r'--.[ \S]+?\n'],
-        'batch_separator': '\nGO',    # GO must always be on its own line
-        'script_variable_pattern': '$({})'
-    },
-    'postgresql': {
-        'comment_patterns': [r'/\*.+?\*/', r'--.[ \S]+?\n'],
-        'batch_separator': ';\n',
-        'script_variable_pattern': ':{}'}
-}
 
 
 def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
@@ -192,11 +183,11 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     list
         Query output as list. If query returns no output, empty list is returned.
     """
+
     # TODO: encoding varoitus
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         sql = f.read()
-    dialect = DIALECT_PATTERNS.get(engine.name, {})
-    sql = _remove_comments(dialect, sql)
+    dialect = get_dialect_patterns(engine.name)
     if scripting_variables:
         sql = _insert_script_variables(dialect, sql, scripting_variables)
     batches = _split_to_batches(dialect, sql)
@@ -214,14 +205,6 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     return script_output
 
 
-def _remove_comments(dialect_patterns: dict, sql: str):
-    """Remove comment blocks from SQL according to dialect patterns."""
-    comments = dialect_patterns.get('comment_patterns')
-    for comment in comments:
-        sql = sub(comment, '', sql, flags=DOTALL)
-    return sql
-
-
 def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variables: dict):
     """Insert scripting variables into SQL,
     use pattern according to dialect."""
@@ -232,13 +215,41 @@ def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variabl
 
 
 def _split_to_batches(dialect_patterns: dict, sql: str):
-    """Split SQL into bacthes according to barch separator,
-    which depends on dialect."""
+    """Split SQL into batches according to batch separator,
+    which depends on dialect. Ignore comments and literals while parsing.
+    If no batch separator given or no batch separator instance
+    found in SQL, do not split SQL.
+    """
     batch_separator = dialect_patterns.get('batch_separator')
-    if batch_separator:
-        batches = sql.split(batch_separator)
-    else:
-        batches = [sql]
+    one_line_comment = dialect_patterns.get('one_line_comment')
+    multiline_comment = dialect_patterns.get('multiline_comment')
+    quoted_strings = dialect_patterns.get('quoted_strings')
+    # if no batch separator given, return
+    if not batch_separator:
+        return [sql]
+    # look for batch separators while ignoring comments and literals
+    sql_batch = batch_separator
+    if one_line_comment:
+        sql_batch.ignore(one_line_comment)
+    if multiline_comment:
+        sql_batch.ignore(multiline_comment)
+    for quote_str in quoted_strings:
+        sql_batch.ignore(quote_str)
+
+    # Pyparsing implicitly calls str.expandtabs before running its parse/scan methods
+    sql = sql.expandtabs()
+    found_separators = sql_batch.scanString(sql)
+    sep_indexes = [(start, end) for _, start, end in found_separators]
+    # if no batch separator instance found in SQL, return
+    if not sep_indexes:
+        return [sql]
+    batches = []
+    for i, _ in enumerate(sep_indexes):
+        if i == 0:
+            batches.append(sql[:sep_indexes[i][0]])
+        else:
+            batches.append(sql[sep_indexes[i-1][1]:sep_indexes[i][0]])
+    batches.append(sql[sep_indexes[-1][1]:])
     return batches
 
 
@@ -247,3 +258,41 @@ def get_schema_names(engine: Engine) -> List[str]:
     inspector = inspect(engine)
     db_list = inspector.get_schema_names()
     return db_list
+
+
+def get_dialect_patterns(dialect_name):
+    """Return dialect patterns (used in SQL parsing), given dialect name.
+    If dialect name not recorded, return empty dictionary.
+    """
+    # Notice, that if DIALECT_PATTERS is a global variable, pyparsing slows down remarkably.
+    DIALECT_PATTERNS = {
+        'mssql': {
+            'quoted_strings': [    # depends on how QUOTED_IDENTIFIER is set
+                QuotedString("'", escQuote="''", multiline=True),
+                QuotedString('"', escQuote='""', multiline=True)
+            ],
+            'one_line_comment': Combine('--' + restOfLine),
+            'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
+            # GO must be on its own line
+            'batch_separator': Combine(LineStart() + Literal('GO')),
+            'script_variable_pattern': '$({})'
+        },
+        'postgresql': {    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
+            'quoted_strings': [
+                QuotedString("'", escQuote="''", multiline=True),
+                QuotedString('"', escQuote='""', multiline=True),
+                QuotedString('$$', multiline=True)
+            ],
+            'one_line_comment': Combine('--' + restOfLine),
+            'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
+            'batch_separator': Literal(';'),
+            'script_variable_pattern': ':{}'
+        },
+        'sqlite': {    # https://sqlite.org/lang.html
+            'quoted_strings': [QuotedString("'", escQuote="''", multiline=True)],
+            'one_line_comment': Combine('--' + restOfLine),
+            'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
+            'batch_separator': Literal(';')
+        }
+    }
+    return DIALECT_PATTERNS.get(dialect_name, {})

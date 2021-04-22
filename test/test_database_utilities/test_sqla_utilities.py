@@ -1,5 +1,4 @@
 from os import chdir, getcwd
-from re import DOTALL, search
 
 import ahjo.database_utilities.sqla_utilities as ahjo
 import pytest
@@ -29,7 +28,8 @@ CONN_INFO = [{
     'azure_auth': 'ActiveDirectoryPassword'
 }]
 
-MSSQL_PATTERNS = ahjo.DIALECT_PATTERNS.get('mssql')
+MSSQL_PATTERNS = ahjo.get_dialect_patterns('mssql')
+POSTGESQL_PATTERNS = ahjo.get_dialect_patterns('postgresql')
 
 
 @pytest.mark.filterwarnings('ignore::sqlalchemy.exc.SADeprecationWarning')
@@ -58,27 +58,6 @@ def test_create_sqlalchemy_url_should_return_url_for_mssql_master_db():
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
     assert url.database == 'master'
     assert 'Database=master' in url.query['odbc_connect']
-
-
-def test_remove_comments_should_remove_all_tsql_comments():
-    tsql_with_comments = """/**This is comment*/
-SELECT * FROM store.Clients -- Test
-/**
-Another comment GO
-*/
-GO
--- Another select
-SELECT TOP 1 * FROM store.Clients
--- """
-    tsql_without_comments = ahjo._remove_comments(
-        dialect_patterns=MSSQL_PATTERNS,
-        sql=tsql_with_comments
-        )
-    comments = MSSQL_PATTERNS.get('comment_patterns')
-    for comment in comments:
-        match = search(comment, tsql_without_comments, flags=DOTALL)
-        assert match is None
-    assert tsql_without_comments == "\nSELECT * FROM store.Clients \nGO\nSELECT TOP 1 * FROM store.Clients\n-- "
 
 
 def test_insert_script_variables_should_replace_all_instances():
@@ -140,7 +119,33 @@ EXEC store.UpdateClients
         sql=tsql_with_batches
     )
     assert len(batches) == 3
-    assert batches[0] == 'SET NOCOUNT ON'
+    assert batches[0] == """SET NOCOUNT ON
+"""
+    assert batches[1] == """
+SELECT * FROM store.Clients
+"""
+    assert batches[2] == """
+-- GO AND UPDATE TABLE
+EXEC store.UpdateClients
+-- GOVERMENT"""
+
+
+def test_split_to_batches_should_split_sql_with_semicolon():
+    sql_with_batches = """
+SELECT * FROM store.Clients;SELECT * FROM store.Products;
+-- GOVERMENT;
+"""
+    batches = ahjo._split_to_batches(
+        dialect_patterns=POSTGESQL_PATTERNS,
+        sql=sql_with_batches
+    )
+    assert len(batches) == 3
+    assert batches[0] == """
+SELECT * FROM store.Clients"""
+    assert batches[1] == """SELECT * FROM store.Products"""
+    assert batches[2] == """
+-- GOVERMENT;
+"""
 
 
 @pytest.mark.mssql
