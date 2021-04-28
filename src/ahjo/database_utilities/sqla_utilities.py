@@ -161,9 +161,9 @@ def execute_try_catch(engine: Engine, query: str, variables: Union[list, tuple] 
 
 def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict = None, include_headers: bool = False) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.
-    File is expected to be UTF-8 or UTF-8 with BOM.
+    File is must be UTF-8 or UTF-8 with BOM.
 
-    Batches are split using the batch separator, which is defined by used dialect.
+    Batches are split using a dialect dependent batch separator.
 
     Arguments
     ---------
@@ -172,9 +172,11 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     file_path
         Full path to SQL script file.
     scripting_variables
-        Variables that are used in scripts. Works in similar manner as scripting variables in SQLCMD.
-        Notice, that variable values are inserted into raw SQL before execute and are not escaped!
-        Therefore these can be utilized in SQL injection attack. USE CAREFULLY!
+        Variables that are used in scripts.
+        Works in a similar manner as scripting variables in SQLCMD.
+
+        **WARNING** variable values are inserted without escaping into raw SQL before execute!
+        Therefore scripting variables can be utilized in SQL injection attack. USE CAREFULLY!
     include_headers
         Indicator to add result headers to first returned row.
 
@@ -183,10 +185,11 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     list
         Query output as list. If query returns no output, empty list is returned.
     """
-
-    # TODO: encoding varoitus
-    with open(file_path, 'r', encoding='utf-8-sig') as f:
-        sql = f.read()
+    try:
+        with open(file_path, 'r', encoding='utf-8-sig', errors='strict') as f:
+            sql = f.read()
+    except ValueError as err:
+        raise ValueError(f'File {file_path} is not UTF-8 or UTF-8 BOM encoded!') from err
     dialect = get_dialect_patterns(engine.name)
     if scripting_variables:
         sql = _insert_script_variables(dialect, sql, scripting_variables)
@@ -214,7 +217,7 @@ def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variabl
     return sql
 
 
-def _split_to_batches(dialect_patterns: dict, sql: str):
+def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
     """Split SQL into batches according to batch separator,
     which depends on dialect. Ignore comments and literals while parsing.
     If no batch separator given or no batch separator instance
@@ -260,7 +263,7 @@ def get_schema_names(engine: Engine) -> List[str]:
     return db_list
 
 
-def get_dialect_patterns(dialect_name):
+def get_dialect_patterns(dialect_name: str) -> dict:
     """Return dialect patterns (used in SQL parsing), given dialect name.
     If dialect name not recorded, return empty dictionary.
     """
