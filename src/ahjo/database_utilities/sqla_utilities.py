@@ -274,14 +274,14 @@ def get_dialect_patterns(dialect_name):
             'one_line_comment': Combine('--' + restOfLine),
             'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
             # GO must be on its own line
+            # TODO: GO with count
             'batch_separator': Combine(LineStart() + Literal('GO')),
             'script_variable_pattern': '$({})'
         },
         'postgresql': {    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
             'quoted_strings': [
                 QuotedString("'", escQuote="''", multiline=True),
-                QuotedString('"', escQuote='""', multiline=True),
-                QuotedString('$$', multiline=True)
+                QuotedString('$$', multiline=True)    # TODO: dollar quote with tag
             ],
             'one_line_comment': Combine('--' + restOfLine),
             'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
