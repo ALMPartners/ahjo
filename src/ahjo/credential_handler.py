@@ -65,16 +65,17 @@ def get_credentials(usrn_file_path: str = None, pw_file_path: str = None, cred_k
     Arguments
     ---------
     usrn_file_path
-        The username file path or None for no storing
+        The username file path or None for no storing.
     pw_file_path
-        The password file path or None for no storing
+        The password file path or None for no storing.
     cred_file_path
         The path to the credentials file.
         If None, the credentials are not stored.
     usrn_prompt
-        How the username is asked
+        How the username is asked.
     pw_prompt
-        How the password is asked
+        How the password is asked.
+        If None, password is not asked from user.
 
     Returns
     -------
@@ -97,14 +98,14 @@ def get_credentials(usrn_file_path: str = None, pw_file_path: str = None, cred_k
                 logger.info(
                     f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
                 username = input(usrn_prompt)
-                new_password = getpass.getpass(pw_prompt)
+                new_password = getpass.getpass(pw_prompt) if pw_prompt else ''
                 username, password = obfuscate_credentials(
                     (username, new_password))
                 store_to_file(cred_key, username, usrn_file_path)
                 store_to_file(cred_key, password, pw_file_path)
         else:
             username = input(usrn_prompt)
-            new_password = getpass.getpass(pw_prompt)
+            new_password = getpass.getpass(pw_prompt) if pw_prompt else ''
             username, password = obfuscate_credentials(
                 (username, new_password))
         cred_dict[cred_key] = (username, password)

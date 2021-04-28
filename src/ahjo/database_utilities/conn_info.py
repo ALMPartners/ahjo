@@ -24,10 +24,6 @@ def create_conn_info(conf: dict) -> dict:
         Dictionary with the following keys: host, port, server, database, driver,
         dialect, username, password and azure_auth.
     """
-    username_file = conf.get("username_file")
-    password_file = conf.get("password_file")
-    username, password = get_credentials(
-        usrn_file_path=username_file, pw_file_path=password_file)
     host = conf.get('target_server_hostname')
     port = conf.get('sql_port')
     server = _create_server_string(host, port)
@@ -35,6 +31,19 @@ def create_conn_info(conf: dict) -> dict:
     driver = conf.get('sql_driver')
     dialect = conf.get('sql_dialect', 'mssql+pyodbc')
     azure_auth = conf.get('azure_authentication')
+    username_file = conf.get("username_file")
+    password_file = conf.get("password_file")
+    if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
+        username, password = get_credentials(
+            usrn_file_path=username_file,
+            pw_file_path=password_file,
+            pw_prompt=None    # do not ask for password
+        )
+    else:
+        username, password = get_credentials(
+            usrn_file_path=username_file,
+            pw_file_path=password_file
+        )
     return {
         'host': host,
         'port': port,
