@@ -15,6 +15,7 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 ## Common
 * [alembic](https://pypi.org/project/alembic/)
 * [commentjson](https://pypi.org/project/commentjson/)
+* [pyparsing](https://pypi.org/project/pyparsing/)
 * [SQL Alchemy](https://pypi.org/project/SQLAlchemy/)
 
 ## Platform-specific
@@ -82,7 +83,7 @@ Before running actions:
 
 1. Install Ahjo (see "Install Guide")
 2. Initialize project using ahjo-init-project (see "Project Initialization")
-3. Have your development database server running (Sql Server for the example)
+3. Have your development database server running (SQL Server for the example)
 4. Fill database connection information to the config-file
 
 To create a database without objects, run the following command in the project root:
@@ -156,7 +157,7 @@ Pre-defined actions include:
 
 * deploy
     * Runs alembic migrations, creates views, procedures and functions. 
-        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT commit to GIT version table.
+        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT version (`git describe`) to GIT version table.
 
 * data
     * Runs data insertion scripts.
@@ -282,13 +283,13 @@ from ahjo.action import action, create_multiaction
 
 
 @action(affects_database=True)
-def init(context):
-    """New init action."""
-    op.create_db(context.get_conn_info(), None, None)
-    op.create_db_structure(context.get_conn_info())
+def structure(context):
+    """New structure action."""
+    from models import Base
+    Base.metadata.create_all(context.get_engine())
 
 # overwrite Ahjo complete-build
-create_multiaction("complete-build", ["init", "deploy", "data", "testdata", "create-db-permissions", "test"])
+create_multiaction("complete-build", ["init", "structure", "deploy", "data", "test"])
 ```
 
 # License

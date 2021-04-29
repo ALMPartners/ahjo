@@ -1,0 +1,70 @@
+empty:
+    query1:
+        variables: {'ZIP_VAR': 'zip_code', 'CLIENT_TABLE': 'store.Clients'}
+        sql_with_variables: |
+                        SELECT * FROM store.Clients WHERE ZIP_VAR = '00180';
+                        -- Another select
+                        SELECT TOP 1 * FROM CLIENT_TABLE;
+        sql_with_value: |
+                      SELECT * FROM store.Clients WHERE zip_code = '00180';
+                      -- Another select
+                      SELECT TOP 1 * FROM store.Clients;
+        batches:
+          - |
+            SELECT * FROM store.Clients WHERE zip_code = '00180';
+            -- Another select
+            SELECT TOP 1 * FROM CLIENT_TABLE;
+mssql:
+    query1:
+        variables: {'ZIP_VAR': 'zip_code', 'CLIENT_TABLE': 'store.Clients'}
+        sql_with_variables: |
+                        SELECT * FROM store.Clients WHERE $(ZIP_VAR) = '00180'
+                        GO
+                        -- Another select
+                        SELECT TOP 1 * FROM $(CLIENT_TABLE)
+        sql_with_value: |
+                      SELECT * FROM store.Clients WHERE zip_code = '00180'
+                      GO
+                      -- Another select
+                      SELECT TOP 1 * FROM store.Clients
+        batches:
+          - |
+            SELECT * FROM store.Clients WHERE zip_code = '00180'
+
+          - |
+            
+            -- Another select
+            SELECT TOP 1 * FROM store.Clients
+    query2:
+      sql_with_value: |
+                    SET NOCOUNT ON
+                    GO
+                    SELECT * FROM store.Clients
+                    GO
+                    -- GO AND UPDATE TABLE
+                    EXEC store.UpdateClients
+                    -- GOVERMENT
+      batches:
+        - |
+          SET NOCOUNT ON
+
+        - |
+          
+          SELECT * FROM store.Clients
+        - |
+          
+          -- GO AND UPDATE TABLE
+          EXEC store.UpdateClients
+          -- GOVERMENT
+
+postgresql:
+  query1:
+    sql_with_value: |
+                    SELECT * FROM store.Clients;SELECT * FROM store.Products;
+                    -- GOVERMENT;
+    batches:
+      - SELECT * FROM store.Clients
+      - SELECT * FROM store.Products
+      - |
+        
+        -- GOVERMENT;
