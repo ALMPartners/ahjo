@@ -102,6 +102,12 @@ class TestWithPopulatedSQLServer():
         )
         assert query_result == result_set
 
+    @pytest.mark.parametrize("file_name", ['test_colon_escaping'])
+    def test_execute_from_file_should_not_raise_error_if_file_contains_colon(self, mssql_sample, file_name):
+        ahjo.execute_from_file(
+            self.engine, 
+            path.join(mssql_sample, f'database/tests/{file_name}.sql')
+        )
 
 def get_query(dialect_name, query_key):
     """Get query used in test from config."""

@@ -5,7 +5,7 @@
 
 """Utility functions for sqlalchemy
 """
-from re import DOTALL
+from re import DOTALL, sub
 from typing import Iterable, List, Union
 
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
@@ -200,6 +200,7 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
         for batch in batches:
             if not batch:
                 continue
+            batch = sub(':', r'\:', batch)
             result_set = connection.execute(text(batch))
             if result_set.returns_rows:
                 if script_output == [] and include_headers is True:

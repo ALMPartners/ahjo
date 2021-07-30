@@ -100,6 +100,7 @@ def deploy_mssql_objects():
                 for batch in batches:
                     if not batch:
                         continue
+                    batch = sub(':', r'\:', batch)
                     connection.execute(text(batch))
     return deploy_objects
 
