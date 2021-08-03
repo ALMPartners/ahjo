@@ -1,0 +1,4 @@
+GO
+	SELECT(LEN('		'))
+GO
+	SELECT(LEN('	'))

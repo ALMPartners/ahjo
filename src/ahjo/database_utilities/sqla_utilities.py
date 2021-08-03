@@ -240,8 +240,8 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
     for quote_str in quoted_strings:
         sql_batch.ignore(quote_str)
 
-    # Pyparsing implicitly calls str.expandtabs before running its parse/scan methods
-    sql = sql.expandtabs()
+    # Override default behavior of converting tabs to spaces before parsing the input string
+    sql_batch.parseWithTabs()
     found_separators = sql_batch.scanString(sql)
     sep_indexes = [(start, end) for _, start, end in found_separators]
     # if no batch separator instance found in SQL, return

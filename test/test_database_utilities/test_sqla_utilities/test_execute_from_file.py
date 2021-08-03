@@ -63,6 +63,15 @@ class TestWithSQLServer():
             path.join(mssql_sample, f'database/tests/{file_name}.sql')
         )
 
+    @pytest.mark.parametrize("file_name", ['tab_count'])
+    def test_split_to_batches_should_preserve_tabs(self, mssql_sample, file_name):
+        result = ahjo.execute_from_file(
+            self.engine,
+            path.join(mssql_sample, f'database/tests/{file_name}.sql')
+        )
+        assert result[0][0] == 2
+        assert result[1][0] == 1
+
 @pytest.mark.mssql
 class TestWithPopulatedSQLServer():
     @pytest.fixture(scope='function', autouse=True)
