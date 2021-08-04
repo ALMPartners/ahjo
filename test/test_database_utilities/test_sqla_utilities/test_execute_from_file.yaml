@@ -56,6 +56,33 @@ mssql:
           -- GO AND UPDATE TABLE
           EXEC store.UpdateClients
           -- GOVERMENT
+    query3:
+      sql_with_value: |
+                    SET NOCOUNT ON
+                    GO
+                    SELECT TOP 1 * FROM store.Clients
+                    go
+                    SELECT TOP 1 * FROM store.Clients
+                    Go
+                    SELECT TOP 1 * FROM store.Clients
+                    gO
+                    SET NOCOUNT OFF
+      batches:
+        - |
+          SET NOCOUNT ON
+
+        - |
+          
+          SELECT TOP 1 * FROM store.Clients
+        - |
+          
+          SELECT TOP 1 * FROM store.Clients
+        - |
+          
+          SELECT TOP 1 * FROM store.Clients
+        - |
+          
+          SET NOCOUNT OFF
 
 postgresql:
   query1:

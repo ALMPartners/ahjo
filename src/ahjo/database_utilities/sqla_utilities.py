@@ -9,7 +9,7 @@ from re import DOTALL, sub
 from typing import Iterable, List, Union
 
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
-                       restOfLine)
+                       restOfLine, CaselessLiteral)
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
@@ -279,7 +279,7 @@ def get_dialect_patterns(dialect_name: str) -> dict:
             'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
             # GO must be on its own line
             # TODO: GO with count
-            'batch_separator': Combine(LineStart() + Literal('GO')),
+            'batch_separator': Combine(LineStart() + CaselessLiteral('GO')),
             'script_variable_pattern': '$({})'
         },
         'postgresql': {    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html

@@ -7,6 +7,10 @@ from yaml import safe_load
 MSSQL_PATTERNS = ahjo.get_dialect_patterns('mssql')
 POSTGRESQL_PATTERNS = ahjo.get_dialect_patterns('postgresql')
 
+def query_batches_equals_result_batches(batches, query):
+    assert len(batches) == len(query['batches'])
+    for i in range(len(batches)):
+        assert batches[i] == query['batches'][i]
 
 @pytest.mark.parametrize("file_name", ['store.vwClients_UTF_16'])
 def test_execute_from_file_should_raise_error_if_file_is_not_utf_8_bom(mssql_sample, file_name):
@@ -192,10 +196,18 @@ def test_split_to_batches_with_mssql_dialect_should_split_with_go(query_key):
         dialect_patterns=MSSQL_PATTERNS,
         sql=query['sql_with_value']
     )
-    assert len(batches) == len(query['batches'])
-    for i in range(len(batches)):
-        assert batches[i] == query['batches'][i]
+    query_batches_equals_result_batches(batches, query)
 
+@pytest.mark.parametrize('query_key', ['query3'])
+def test_split_to_batches_with_mssql_dialect_should_split_with_case_insensitive_go(query_key):
+    query = get_query('mssql', query_key)
+    query_batches_equals_result_batches(
+        ahjo._split_to_batches(
+            dialect_patterns=MSSQL_PATTERNS,
+            sql=query['sql_with_value']
+        ), 
+        query
+    )
 
 @pytest.mark.parametrize('query_key', ['query1'])
 def test_split_to_batches_with_postgresql_dialect_should_split_with_semicolon(query_key):
@@ -204,6 +216,4 @@ def test_split_to_batches_with_postgresql_dialect_should_split_with_semicolon(qu
         dialect_patterns=POSTGRESQL_PATTERNS,
         sql=query['sql_with_value']
     )
-    assert len(batches) == len(query['batches'])
-    for i in range(len(batches)):
-        assert batches[i] == query['batches'][i]
+    query_batches_equals_result_batches(batches, query)
