@@ -83,7 +83,22 @@ mssql:
         - |
           
           SET NOCOUNT OFF
+    query_goto:
+      sql_with_value: |
+        GOTO label
+        label: SELECT 1
+        GO
+        GOTO label
+        label: SELECT 1
+      batches:
+        - |
+          GOTO label
+          label: SELECT 1
 
+        - |
+          
+          GOTO label
+          label: SELECT 1
 postgresql:
   query1:
     sql_with_value: |
