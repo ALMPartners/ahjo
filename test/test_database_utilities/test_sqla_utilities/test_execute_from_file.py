@@ -75,6 +75,15 @@ class TestWithSQLServer():
         )
         assert result[0][0] == 2
         assert result[1][0] == 1
+        
+    @pytest.mark.parametrize("file_name", ['go_with_indentations'])
+    def test_split_to_batches_with_mssql_dialect_should_split_with_indented_go(self, mssql_sample, file_name):
+        result = ahjo.execute_from_file(
+            self.engine,
+            path.join(mssql_sample, f'database/tests/{file_name}.sql')
+        )
+        assert result[0][0] == 1
+        assert result[1][0] == 2
 
 @pytest.mark.mssql
 class TestWithPopulatedSQLServer():
