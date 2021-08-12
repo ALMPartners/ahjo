@@ -9,7 +9,7 @@ from re import DOTALL, sub
 from typing import Iterable, List, Union
 
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
-                       restOfLine, CaselessKeyword)
+                       restOfLine, CaselessKeyword, Word, nums)
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
@@ -242,18 +242,24 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
 
     # Override default behavior of converting tabs to spaces before parsing the input string
     sql_batch.parseWithTabs()
-    found_separators = sql_batch.scanString(sql)
-    sep_indexes = [(start, end) for _, start, end in found_separators]
+    
+    scan_matches = list(sql_batch.scanString(sql))
     # if no batch separator instance found in SQL, return
-    if not sep_indexes:
+    if not scan_matches:
         return [sql]
     batches = []
-    for i, _ in enumerate(sep_indexes):
-        if i == 0:
-            batches.append(sql[:sep_indexes[i][0]])
-        else:
-            batches.append(sql[sep_indexes[i-1][1]:sep_indexes[i][0]])
-    batches.append(sql[sep_indexes[-1][1]:])
+    for i, _ in enumerate(scan_matches):
+        try:
+            count = int(scan_matches[i][0][1])
+        except IndexError:
+            count = 1
+        for _ in range(0, count):
+            if i == 0:
+                batches.append(sql[:scan_matches[i][1]])
+            else:
+                batches.append(sql[scan_matches[i-1][2]:scan_matches[i][1]])
+    batches.append(sql[scan_matches[-1][2]:])
+    
     return batches
 
 
@@ -278,8 +284,7 @@ def get_dialect_patterns(dialect_name: str) -> dict:
             'one_line_comment': Combine('--' + restOfLine),
             'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
             # GO must be on its own line
-            # TODO: GO with count
-            'batch_separator': LineStart().leaveWhitespace() + CaselessKeyword('GO'),
+            'batch_separator': LineStart().leaveWhitespace() + ( ( CaselessKeyword('GO') + Word(nums) ) | CaselessKeyword('GO') ),
             'script_variable_pattern': '$({})'
         },
         'postgresql': {    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html

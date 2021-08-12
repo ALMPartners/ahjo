@@ -229,6 +229,17 @@ def test_split_to_batches_with_mssql_dialect_should_not_split_with_goto(query_ke
         query
     )
 
+@pytest.mark.parametrize('query_key', ['query_go_count'])
+def test_split_to_batches_with_mssql_dialect_should_split_with_go_count(query_key):
+    query = get_query('mssql', query_key)
+    query_batches_equals_result_batches(
+        ahjo._split_to_batches(
+            dialect_patterns=MSSQL_PATTERNS,
+            sql=query['sql_with_value']
+        ), 
+        query
+    )
+
 @pytest.mark.parametrize('query_key', ['query1'])
 def test_split_to_batches_with_postgresql_dialect_should_split_with_semicolon(query_key):
     query = get_query('postgresql', query_key)

@@ -94,11 +94,41 @@ mssql:
         - |
           GOTO label
           label: SELECT 1
-
         - |
           
           GOTO label
           label: SELECT 1
+    query_go_count:
+      sql_with_value: |
+        SELECT(1)
+        GO
+        SELECT(2)
+        GO 2
+        SELECT(3)
+        GO 3
+        SELECT(1)
+      batches:
+        - |
+          SELECT(1)
+
+        - |
+
+          SELECT(2)
+        - |
+
+          SELECT(2)
+        - |
+
+          SELECT(3)
+        - |
+
+          SELECT(3)
+        - |
+
+          SELECT(3)
+        - |
+
+          SELECT(1)
 postgresql:
   query1:
     sql_with_value: |
