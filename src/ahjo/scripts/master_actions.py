@@ -101,6 +101,23 @@ def assembly(context):
 def data(context):
     """Insert data."""
     op.deploy_sqlfiles(context.get_engine(), './database/data/', "Inserting data")
+    op.update_git_version(
+        context.get_engine(),
+        context.configuration.get('git_table_schema', 'dbo'),
+        context.configuration.get('git_table', 'git_version'),
+        context.configuration.get('url_of_remote_git_repository')
+    )
+
+
+@action(affects_database=True, dependencies=['deploy'])
+def update_git_version(context):
+    """Store the Git remote, branch and commit information to database."""
+    op.update_git_version(
+        context.get_engine(),
+        context.configuration.get('git_table_schema', 'dbo'),
+        context.configuration.get('git_table', 'git_version'),
+        context.configuration.get('url_of_remote_git_repository')
+    )
 
 
 @action(affects_database=True, dependencies=['data'])
