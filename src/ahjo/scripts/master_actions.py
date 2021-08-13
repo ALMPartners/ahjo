@@ -76,16 +76,16 @@ def deploy(context):
     op.deploy_sqlfiles(context.get_engine(), "./database/functions/", "Deploying functions")
     op.deploy_sqlfiles(context.get_engine(), "./database/views/", "Deploying views")
     op.deploy_sqlfiles(context.get_engine(), "./database/procedures/", "Deploying procedures")
-    op.update_db_object_properties(
-        context.get_engine(),
-        context.configuration.get('metadata_allowed_schemas')
-        )
     op.update_git_version(
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
         context.configuration.get('url_of_remote_git_repository')
-        )
+    )
+    op.update_db_object_properties(
+        context.get_engine(),
+        context.configuration.get('metadata_allowed_schemas')
+    )
 
 
 @action(affects_database=True, dependencies=['init'])
