@@ -16,6 +16,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          # Version range or exact version of a Python version to use, using SemVer's version range syntax.
+          python-version: 3.6
+          
+      - name: Install Ahjo
+        run: pip install .
+        
+      - name: Install Safety
+        run: pip install safety
 
-      - name: Run Python Safety vulnerability scan
-        uses: aufdenpunkt/python-safety-check@v1.0.5
+      - name: Run vulnerability scan
+        run: safety check
+
