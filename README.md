@@ -161,7 +161,7 @@ Pre-defined actions include:
 
 * deploy-files
     * Runs alembic migrations, creates database objects from locations listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
-    * Example usage: ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql
+    * Example usage: `ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql` .
 
 * data
     * Runs data insertion scripts.
@@ -179,7 +179,7 @@ Pre-defined actions include:
 
 * drop-files
     * Drops database objects from locations that are listed in --files argument. Database objects can be views, procedures, functions or assemblies. Object type is read from --object_type argument. Acceptable --object_type parameters: view, procedure, function, assembly.
-    * Example usage: ahjo drop-files .\config_development.jsonc --files ./database/procedures/dbo.procedure_1.sql ./database/procedures/dbo.procedure_2.sql --object_type procedure
+    * Example usage: `ahjo drop-files .\config_development.jsonc --files ./database/procedures/dbo.procedure_1.sql ./database/procedures/dbo.procedure_2.sql --object_type procedure` .
 
 * downgrade
     * Reverts the database back to basic structure.
