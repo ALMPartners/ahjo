@@ -36,13 +36,23 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", help="Action to execute", type=str)
     parser.add_argument("config_filename", help="Configuration filename", type=str, nargs='?')
+    parser.add_argument('--files', nargs='*', default=[], help='Files')
+    parser.add_argument('--object_type', nargs=1, default=[], help='Object type', choices=['view', 'procedure', 'function', 'assembly'])
     args = parser.parse_args()
     logger.debug(f'Action:  {args.action}')
     logger.debug(f'Config file:  {args.config_filename}')
+    logger.debug(f'File(s):  {args.files}')
+    logger.debug(f'Object type:  {args.object_type}')
     if args.action == 'list':
         list_actions()
     else:
-        execute_action(args.action, args.config_filename)
+        kwargs = {}
+        if len(args.files) > 0 : kwargs['files'] = args.files
+        if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type
+        execute_action(
+            *[args.action, args.config_filename],
+            **kwargs
+        )
 
 if __name__ == '__main__':
     main()

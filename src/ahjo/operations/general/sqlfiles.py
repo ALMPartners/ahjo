@@ -9,7 +9,7 @@ from logging import getLogger
 from os import listdir, path
 from pathlib import Path
 from traceback import format_exc
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 from ahjo.database_utilities import execute_from_file, execute_try_catch
 from ahjo.interface_methods import format_to_table
@@ -18,24 +18,43 @@ from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
 
+def sql_files_found(data_src):
+    files = []
+    if isinstance(data_src, str) and len(data_src) > 0:
+        if not Path(data_src).is_dir():
+            logger.warning("Directory not found: " + data_src)
+        files = [path.join(data_src, f) for f in listdir(data_src) if f.endswith('.sql')]
+    elif isinstance(data_src, list):
+        invalid_params = []
+        for arg in data_src:
+            if arg.endswith('.sql'):
+                files.append(arg)
+            else:
+                invalid_params.append(arg)
+        if len(invalid_params) > 0:
+            logger.warning("SQL file(s) not found from: " + ' '.join(invalid_params))
+    else:
+        logger.warning("Parameter 'data_src' should be non-empty string or list.")
+    return files
 
-def deploy_sqlfiles(engine: Engine, directory: str, message: str, display_output: bool = False, scripting_variables: dict = None) -> bool:
-    """Run every SQL script file found in given directory and print the executed file names.
+def deploy_sqlfiles(engine: Engine, data_src: Union[str, list], message: str, display_output: bool = False, scripting_variables: dict = None) -> bool:
+    """Run every SQL script file found in given directory/filelist and print the executed file names.
 
-    If any file in directory cannot be deployed after multiple tries, raise an exeption and
+    If any file in directory/filelist cannot be deployed after multiple tries, raise an exeption and
     list failed files to user.
 
     Parameters
     ----------
     engine
         SQL Alchemy engine.
-    directory
-        Path of directory holding the SQL script files.
+    data_src
+        If data_src is string: path of directory holding the SQL script files.
+        If data_src is list: list of filepaths referencing to the SQL scripts.
     message
         Message passed to OperationManager.
     display_output
         Indicator to print script output.
-    variables
+    scripting_variables
         Variables passed to SQL script.
 
     Raises
@@ -43,19 +62,28 @@ def deploy_sqlfiles(engine: Engine, directory: str, message: str, display_output
     ValueError
         If engine is not instance of sqlalchemy.engine.Engine.
     RuntimeError
-        If any of the files in given directory fail to deploy after multiple tries.
+        If any of the files in given directory/filelist fail to deploy after multiple tries.
     """
     with OperationManager(message):
+
         if isinstance(engine, dict):
             raise ValueError(
-                "First parameter of function 'deploy_sqlfiles' should be instance of sqlalchemy engine. Check your custom actions!")
-        if not Path(directory).is_dir():
-            logger.warning("Directory not found: " + directory)
-            return False
-        files = [path.join(directory, f)
-                 for f in listdir(directory) if f.endswith('.sql')]
-        failed = sql_file_loop(deploy_sql_from_file, engine,
-                               display_output, scripting_variables, file_list=files, max_loop=len(files))
+                "First parameter of function 'deploy_sqlfiles' should be instance of sqlalchemy engine. Check your custom actions!"
+            )
+
+        files = sql_files_found(data_src)
+        n_files = len(files)
+        if n_files == 0: return False
+
+        failed = sql_file_loop(
+            deploy_sql_from_file, 
+            engine,
+            display_output, 
+            scripting_variables, 
+            file_list = files, 
+            max_loop = n_files
+        )
+
         if len(failed) > 0:
             error_msg = "Failed to deploy the following files:\n{}".format(
                 '\n'.join(failed.keys()))
@@ -64,10 +92,11 @@ def deploy_sqlfiles(engine: Engine, directory: str, message: str, display_output
                 logger.debug(f'----- Error for object {fail_object} -----')
                 logger.debug(''.join(fail_messages))
             raise RuntimeError(error_msg)
+
         return True
 
 
-def drop_sqlfile_objects(engine: Engine, object_type: str, directory: str, message: str):
+def drop_sqlfile_objects(engine: Engine, object_type: str, data_src: Union[str, list], message: str):
     """Drop all the objects created in SQL script files of an directory.
 
     The naming of the files should be consistent!
@@ -78,27 +107,33 @@ def drop_sqlfile_objects(engine: Engine, object_type: str, directory: str, messa
         SQL Alchemy engine.
     object_type
         Type of database object.
-    directory
-        Path of directory holding the SQL script files.
+    data_src
+        If data_src is string: path of directory holding the SQL script files.
+        If data_src is list: list of filepaths referencing to the SQL script locations.
     message
         Message passed to OperationManager.
 
     Raises
     ------
     RuntimeError
-        If any of the files in given directory fail to drop after multiple tries.
+        If any of the files in given directory/filelist fail to drop after multiple tries.
     """
     with OperationManager(message):
-        if not Path(directory).is_dir():
-            logger.warning("Directory not found: " + directory)
-            return
-        files = [path.join(directory, f)
-                 for f in listdir(directory) if f.endswith('.sql')]
-        failed = sql_file_loop(drop_sql_from_file, engine,
-                               object_type, file_list=files, max_loop=len(files))
+
+        files = sql_files_found(data_src)
+        n_files = len(files)
+        if n_files == 0: return False
+
+        failed = sql_file_loop(
+            drop_sql_from_file, 
+            engine,
+            object_type, 
+            file_list = files, 
+            max_loop = n_files
+        )
+
         if len(failed) > 0:
-            error_msg = "Failed to drop the following files:\n{}".format(
-                '\n'.join(failed.keys()))
+            error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed.keys()))
             for fail_messages in failed.values():
                 error_msg = error_msg + ''.join(fail_messages)
             raise RuntimeError(error_msg)

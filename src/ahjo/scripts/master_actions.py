@@ -87,6 +87,22 @@ def deploy(context):
         context.configuration.get('metadata_allowed_schemas')
     )
 
+@action(affects_database=True, dependencies=['init'])
+def deploy_files(context, **kwargs):
+    """(MSSQL) Run 'alembic upgrade head' Deploy files. Update Git version."""
+    deploy_files = kwargs["files"] if "files" in kwargs else None
+    if isinstance(deploy_files, list) and len(deploy_files) > 0:
+        op.upgrade_db_to_latest_alembic_version(context.config_filename)
+        op.deploy_sqlfiles(context.get_engine(), deploy_files, "Deploying sql files")
+        op.update_git_version(
+            context.get_engine(),
+            context.configuration.get('git_table_schema', 'dbo'),
+            context.configuration.get('git_table', 'git_version'),
+            context.configuration.get('url_of_remote_git_repository')
+        )
+    else :
+        logger.warning('Check argument: "files".')
+        return
 
 @action(affects_database=True, dependencies=['init'])
 def assembly(context):
@@ -141,6 +157,20 @@ def drop(context):
     op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
     op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
 
+@action(affects_database=True, dependencies=["init"])
+def drop_files(context, **kwargs):
+    """(MSSQL) Drop sql file objects."""
+    files = kwargs["files"] if "files" in kwargs else None
+    if not(isinstance(files, list) and len(files) > 0):
+        logger.warning('Check variable: "files".')
+        return
+        
+    object_type = kwargs["object_type"] if "object_type" in kwargs else None
+    if not(isinstance(object_type, list) and len(object_type) > 0):
+        logger.warning('Check variable: "object_type".')
+        return
+
+    op.drop_sqlfile_objects(context.get_engine(), object_type[0], files, "Dropping files")
 
 @action(affects_database=True, dependencies=["init"])
 def downgrade(context):
