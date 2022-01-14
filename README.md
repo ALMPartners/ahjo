@@ -160,7 +160,7 @@ Pre-defined actions include:
         * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT version (`git describe`) to GIT version table.
 
 * deploy-files
-    * Runs alembic migrations, creates database objects from locations listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
+    * Runs *alembic upgrade head*, creates database objects by executing all SQL files listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
     * Example usage: `ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql` .
 
 * data
