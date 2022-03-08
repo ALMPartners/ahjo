@@ -23,6 +23,7 @@ def sql_files_found(data_src):
     if isinstance(data_src, str) and len(data_src) > 0:
         if not Path(data_src).is_dir():
             logger.warning("Directory not found: " + data_src)
+            return files
         files = [path.join(data_src, f) for f in listdir(data_src) if f.endswith('.sql')]
     elif isinstance(data_src, list):
         invalid_params = []
