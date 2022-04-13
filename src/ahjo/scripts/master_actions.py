@@ -80,7 +80,8 @@ def deploy(context):
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
-        context.configuration.get('url_of_remote_git_repository')
+        repository = context.configuration.get('url_of_remote_git_repository'),
+        git_version_info_path = context.configuration.get('git_version_info_path')
     )
     op.update_db_object_properties(
         context.get_engine(),
@@ -98,7 +99,8 @@ def deploy_files(context, **kwargs):
             context.get_engine(),
             context.configuration.get('git_table_schema', 'dbo'),
             context.configuration.get('git_table', 'git_version'),
-            context.configuration.get('url_of_remote_git_repository')
+            repository = context.configuration.get('url_of_remote_git_repository'),
+            git_version_info_path = context.configuration.get('git_version_info_path')
         )
     else :
         logger.warning('Check argument: "files".')
@@ -121,7 +123,8 @@ def data(context):
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
-        context.configuration.get('url_of_remote_git_repository')
+        repository = context.configuration.get('url_of_remote_git_repository'),
+        git_version_info_path = context.configuration.get('git_version_info_path')
     )
 
 
@@ -132,7 +135,8 @@ def update_git_version(context):
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
-        context.configuration.get('url_of_remote_git_repository')
+        repository = context.configuration.get('url_of_remote_git_repository'),
+        git_version_info_path = context.configuration.get('git_version_info_path')
     )
 
 

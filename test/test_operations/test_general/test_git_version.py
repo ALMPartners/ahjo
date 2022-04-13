@@ -1,9 +1,9 @@
-import logging
-from os import environ
-from subprocess import check_output
-
 import ahjo.operations.general.git_version as git
+import logging
 import pytest
+from ahjo.interface_methods import load_json_conf
+from os import environ, path
+from subprocess import check_output
 from sqlalchemy import Column, MetaData, String, Table, select
 from sqlalchemy.exc import NoSuchTableError
 
@@ -39,6 +39,8 @@ class TestWithSQLServer():
         self.git_table = config['git_table']
         self.git_table_schema = config['git_table_schema']
         self.sample_repository = config['url_of_remote_git_repository']
+        current_dir = path.dirname(path.realpath(__file__))
+        self.git_version_info_path = path.join(current_dir, "test_git_version.json")
         self.engine = mssql_engine
         yield
         with self.engine.connect() as connection:
@@ -54,18 +56,14 @@ class TestWithSQLServer():
         with pytest.raises(NoSuchTableError):
             self.reflected_git_table()
 
-    @pytest.mark.git
-    def test_git_version_table_should_exist_after_update(self):
-        git.update_git_version(self.engine, self.git_table_schema, self.git_table)
+    def git_version_table_should_exist(self):
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]
         assert 'Repository' in git_version_table_columns
         assert 'Branch' in git_version_table_columns
-        assert 'Commit' in git_version_table_columns
+        assert 'Commit' in git_version_table_columns        
 
-    @pytest.mark.git
-    def test_git_version_table_should_store_commit_after_update(self):
-        git.update_git_version(self.engine, self.git_table_schema, self.git_table)
+    def get_commit_info_from_git_table(self):
         git_version_table = self.reflected_git_table()
         result = self.engine.execute(
             select([
@@ -73,36 +71,57 @@ class TestWithSQLServer():
                 git_version_table.c.Branch,
                 git_version_table.c.Commit
             ]))
-        row = result.fetchall()[0]
-        git_remote = check_output(
-            ["git", "remote", "get-url", "origin"]).decode('utf-8').strip()
-        git_branch = check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip()
-        git_commit = check_output(
-            ["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
-        assert row.Repository == git_remote
-        assert row.Branch == git_branch
-        assert row.Commit == git_commit
+        return result.fetchall()[0]
+
+    def assert_git_version_table_results(self, row, repository, branch, commit):
+        assert row.Repository == repository
+        assert row.Branch == branch
+        assert row.Commit == commit
+
+    @pytest.mark.git
+    def test_git_version_table_should_exist_after_update(self):
+        git.update_git_version(self.engine, self.git_table_schema, self.git_table)
+        self.git_version_table_should_exist()
+
+    @pytest.mark.git
+    def test_git_version_table_should_exist_after_update_using_json_version_info(self):
+        git.update_git_version(self.engine, self.git_table_schema, self.git_table, 
+                                repository=None, git_version_info_path=self.git_version_info_path)
+        self.git_version_table_should_exist()
+
+    @pytest.mark.git
+    def test_git_version_table_should_store_commit_after_update(self):
+        git.update_git_version(self.engine, self.git_table_schema, self.git_table)
+        self.assert_git_version_table_results(
+            self.get_commit_info_from_git_table(), 
+            check_output(["git", "remote", "get-url", "origin"]).decode('utf-8').strip(), 
+            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip(), 
+            check_output(["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
+        )
+
+    @pytest.mark.git
+    def test_git_version_table_should_store_commit_after_update_using_json_version_info(self):
+        git.update_git_version(self.engine, self.git_table_schema, 
+                                self.git_table, repository=None, 
+                                git_version_info_path=self.git_version_info_path)
+        git_version_info = load_json_conf(self.git_version_info_path)
+        self.assert_git_version_table_results(
+            self.get_commit_info_from_git_table(),
+            git_version_info["repository"],
+            git_version_info["branch"],
+            git_version_info["commit"]
+        )
 
     @pytest.mark.git
     def test_git_version_table_should_store_repository_from_ahjo_config(self):
         git.update_git_version(self.engine, self.git_table_schema,
                                self.git_table, self.sample_repository)
-        git_version_table = self.reflected_git_table()
-        result = self.engine.execute(
-            select([
-                git_version_table.c.Repository,
-                git_version_table.c.Branch,
-                git_version_table.c.Commit
-            ]))
-        row = result.fetchall()[0]
-        git_branch = check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip()
-        git_commit = check_output(
-            ["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
-        assert row.Repository == self.sample_repository
-        assert row.Branch == git_branch
-        assert row.Commit == git_commit
+        self.assert_git_version_table_results(
+            self.get_commit_info_from_git_table(),
+            self.sample_repository,
+            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip(),
+            check_output(["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
+        )
 
     @pytest.mark.git
     def test_git_version_table_should_update_if_previously_existed(self):

@@ -11,6 +11,7 @@ from typing import Tuple
 
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
+from ahjo.interface_methods import load_json_conf
 from sqlalchemy import Column, MetaData, String, Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NoSuchTableError
@@ -29,35 +30,42 @@ def _sqla_git_table(metadata: MetaData, git_table_schema: str, git_table: str) -
     )
 
 
-def update_git_version(engine: Engine, git_table_schema: str, git_table: str, repository: str = None):
+def update_git_version(engine: Engine, git_table_schema: str, git_table: str, repository: str = None, git_version_info_path: str = None):
     """Store the Git remote, branch and commit information to database.
-
     Alembic version does not catch changes to views and procedures, but git version catches.
     """
     with OperationManager("Updating Git version table"):
         try:
-            git_table_name = git_table_schema + "." + git_table
-            logger.info(f'GIT version table: {git_table_name}')
-            # get the repository info and commit info
-            if repository is None:
-                origin_url_command = split("git config --get remote.origin.url")
-                repository = check_output(origin_url_command).decode("utf-8").strip()
+            if git_version_info_path:
+                branch, commit, repository = _load_git_commit_info_json(
+                    git_version_info_path = git_version_info_path
+                )
+            else:
+                branch, commit = _get_git_commit_info()
                 if repository is None:
-                    repository = ''
-            branch, commit = _get_git_commit_info()
+                    origin_url_command = split("git config --get remote.origin.url")
+                    repository = check_output(origin_url_command).decode("utf-8").strip()
+                    if repository is None:
+                        repository = ''                  
         except Exception as error:
-            logger.error(
-                'Failed to retrieve Git commit. See log for detailed error message.')
+            logger.error('Failed to retrieve Git commit. See log for detailed error message.')
             logger.debug(error)
             return
         try:
+            logger.info("GIT version table: " + git_table_schema + "." + git_table)
             _update_git_db_record(engine, git_table_schema,
                                   git_table, repository, branch, commit)
         except Exception as error:
-            logger.error(
-                'Failed to update Git version table. See log for detailed error message.')
+            logger.error('Failed to update Git version table. See log for detailed error message.')
             logger.debug(error)
 
+
+def _load_git_commit_info_json(git_version_info_path: str) -> Tuple[str, str, str]:
+    """Retrieve git commit information from a JSON file. 
+    Fails if the file is not found or properly defined.
+    """
+    git_version_info = load_json_conf(git_version_info_path)
+    return git_version_info["branch"], git_version_info["commit"], git_version_info["repository"]
 
 def _get_git_commit_info() -> Tuple[str, str]:
     """Retrieve branch and commit information with 'git rev-parse'
