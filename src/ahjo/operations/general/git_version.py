@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Module for Git version operations."""
+import os
 from logging import getLogger
 from shlex import split
 from subprocess import check_output
@@ -15,6 +16,7 @@ from ahjo.interface_methods import load_json_conf
 from sqlalchemy import Column, MetaData, String, Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NoSuchTableError
+from pathlib import PurePath, Path
 
 logger = getLogger('ahjo')
 
@@ -36,10 +38,15 @@ def update_git_version(engine: Engine, git_table_schema: str, git_table: str, re
     """
     with OperationManager("Updating Git version table"):
         try:
+            default_git_version_info_path = PurePath(os.getcwd(), "git_version.json")
             if git_version_info_path:
                 branch, commit, repository = _load_git_commit_info_json(
                     git_version_info_path = git_version_info_path
                 )
+            elif Path(default_git_version_info_path).is_file():
+                branch, commit, repository = _load_git_commit_info_json(
+                    git_version_info_path = default_git_version_info_path
+                )                
             else:
                 branch, commit = _get_git_commit_info()
                 if repository is None:
