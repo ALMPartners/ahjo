@@ -15,5 +15,5 @@ FROM sys.objects AS s
     LEFT JOIN sys.extended_properties AS e 
 		ON e.[major_id] = s.[object_id]
 WHERE SCHEMA_NAME(s.[schema_id]) IN (?)
-	AND s.[type] IN ('FN', 'IF', 'FN', 'AF', 'FS', 'FT') 
+	AND s.[type] IN ('FN', 'IF', 'FN', 'AF', 'FS', 'FT', 'TF') 
 ORDER BY [schema_name], [object_name]
