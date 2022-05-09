@@ -64,7 +64,7 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
             uid=conn_info.get('username'),
             auth=authentication
         )
-    return URL(
+    return URL.create(
         drivername=conn_info.get('dialect'),
         username=conn_info.get('username'),
         password=conn_info.get('password'),

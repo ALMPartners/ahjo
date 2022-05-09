@@ -29,7 +29,7 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
     """Create engine for MSSQL server master database.
     """
     config = ahjo_config(mssql_sample)
-    connection_url = URL(
+    connection_url = URL.create(
         drivername="mssql+pyodbc",
         username=request.config.getoption('mssql_username'),
         password=request.config.getoption('mssql_password'),
@@ -46,7 +46,7 @@ def mssql_engine(request, ahjo_config, mssql_sample):
     """Create engine for MSSQL server test database.
     """
     config = ahjo_config(mssql_sample)
-    connection_url = URL(
+    connection_url = URL.create(
         drivername="mssql+pyodbc",
         username=request.config.getoption('mssql_username'),
         password=request.config.getoption('mssql_password'),

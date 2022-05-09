@@ -103,7 +103,7 @@ def ensure_mssql_ready_for_tests(config):
     try:
         if not config.getoption('mssql_host'):
             raise Exception('MSSQL Server not given')
-        connection_url = URL(
+        connection_url = URL.create(
             drivername="mssql+pyodbc",
             username=config.getoption('mssql_username'),
             password=config.getoption('mssql_password'),
