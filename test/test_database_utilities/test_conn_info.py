@@ -64,7 +64,12 @@ def test_conn_info_should_store_credentials(read_config):
     password_file = read_config['password_file']
     with open(password_file, 'r') as f:
         password = f.read()
-    # vertaa
     conn_info = ahjo.create_conn_info(read_config)
+    pw = password.split('=')[1]
+    # Add padding: Divide the length of the input string by 4, take the remainder. 
+    # If it is 2, add two = characters at the end. If it is 3, add one = character at the end.
+    extra = len(pw) % 4
+    if extra > 0:
+        pw = pw + ('=' * (4 - extra))
     assert conn_info['username'] == username.split('=')[1]
-    assert conn_info['password'] == b64decode(password.split('=')[1].encode()).decode()
+    assert conn_info['password'] == b64decode(pw.encode()).decode()
