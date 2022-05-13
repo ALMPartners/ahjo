@@ -25,8 +25,8 @@ def _sqla_git_table(metadata: MetaData, git_table_schema: str, git_table: str) -
     """Return Git table definition given by schema and table name."""
     return Table(
         git_table, metadata,
-        Column('Repository', String(50), primary_key=True),
-        Column('Branch', String(50), primary_key=True),
+        Column('Repository', String(255), primary_key=True),
+        Column('Branch', String(255), primary_key=True),
         Column('Commit', String(50)),
         schema=git_table_schema
     )
