@@ -134,10 +134,12 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -
     bool
         Is the action valid or not?
     """
-    if action_name not in allowed_actions and 'ALL' not in allowed_actions:
-        logger.error("Action " + action_name +
-                     " is not permitted, allowed actions: " + ', '.join(allowed_actions))
+    if (isinstance(allowed_actions, str) and allowed_actions != "ALL") and action_name != allowed_actions:
+        logger.error("Action " + action_name + " is not permitted, allowed action: " + allowed_actions)
         return False
+    if isinstance(allowed_actions, list) and action_name not in allowed_actions:
+        logger.error("Action " + action_name + " is not permitted, allowed actions: " + ', '.join(allowed_actions))
+        return False  
     if len(registered_actions) == 0:
         logger.error("No actions defined")
         return False
