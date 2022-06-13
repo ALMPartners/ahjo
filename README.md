@@ -264,6 +264,8 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | target_server_hostname | Yes | Host name of target database server. | str | |
 | url_of_remote_git_repository | No | URL of project's remote repository. | str | |
 | username_file | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
+| db_permissions | No | File locations & scripting variables for setting up database permissions from sql file(s). | list of dict | |
+| db_permission_invoke_method | No | Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy". | str | |
 
 
 ## Using Alembic with Ahjo

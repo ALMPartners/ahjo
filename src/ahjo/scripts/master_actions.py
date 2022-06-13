@@ -149,7 +149,11 @@ def testdata(context):
 @action(affects_database=True, dependencies=['init'])
 def create_db_permissions(context):
     """(MSSQL) Set permissions for users."""
-    op.create_db_permissions(context.get_conn_info())
+    kwargs = dict(
+        connection = context.get_engine() if context.configuration.get("db_permission_invoke_method") == "sqlalchemy" else context.get_conn_info(),
+        db_permissions = context.configuration.get("db_permissions")
+    )
+    op.create_db_permissions(**{k: v for k, v in kwargs.items() if v is not None})
 
 
 @action(affects_database=True, dependencies=["init"])
