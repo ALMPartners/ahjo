@@ -21,4 +21,4 @@ def create_db_permissions(connection: Union[dict, Engine], db_permissions: list 
             if connection.__class__.__name__ == "Engine":
                 deploy_sql_from_file(src_file, connection, False, permission.get("variables"))
             else:
-                invoke_sqlcmd(connection, infile = src_file)
+                invoke_sqlcmd(connection, infile = src_file, variable=permission.get("variables"))
