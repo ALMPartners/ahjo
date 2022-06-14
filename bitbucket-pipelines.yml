@@ -1,4 +1,4 @@
-image: python:3.9
+image: python:3.10.4
 
 pipelines:
   default:
@@ -8,4 +8,4 @@ pipelines:
         script:
           - apt-get update && apt-get -y install unixodbc-dev
           - pip install tox
-          - tox -e py39
+          - tox -e py310
