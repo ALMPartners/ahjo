@@ -15,7 +15,7 @@ def new_sample(prepared_sample):
 import csv
 from argparse import Namespace
 from base64 import b64encode
-from distutils.dir_util import copy_tree
+from shutil import copytree
 from os import environ, getcwd, path
 
 import commentjson as json
@@ -76,7 +76,7 @@ def copy_sample_project(test_root, sample_name, sample_target):
     """Copy sample project to temporary directory."""
     tests_dir = path.join(test_root, 'test')
     sample_source = path.join(tests_dir, 'samples', sample_name)
-    copy_tree(sample_source, sample_target)
+    copytree(sample_source, sample_target, dirs_exist_ok=True)
 
 
 def rewrite_sample_configuration(sample_root, hostname, port_number):
