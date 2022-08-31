@@ -39,7 +39,6 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
         query={'driver': config['sql_driver']}
     )
     return create_engine(connection_url)
-    #return create_engine(connection_url, future=True)
 
 
 @pytest.fixture(scope='session')
@@ -57,7 +56,6 @@ def mssql_engine(request, ahjo_config, mssql_sample):
         query={'driver': config['sql_driver']}
     )
     return create_engine(connection_url)
-    #return create_engine(connection_url, future=True)
 
 
 @pytest.fixture(scope='session')

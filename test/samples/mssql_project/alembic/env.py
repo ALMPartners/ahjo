@@ -89,7 +89,6 @@ def run_migrations_online():
 
     """
     connectable = create_engine(create_sqlalchemy_url(conn_info))
-    #connectable = create_engine(create_sqlalchemy_url(conn_info), future=True)
 
     with connectable.connect() as connection:
         context.configure(
