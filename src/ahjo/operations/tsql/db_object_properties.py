@@ -128,23 +128,25 @@ def exec_update_extended_properties(engine: Engine, object_name: str, object_met
             procedure_call = 'EXEC sp_addextendedproperty '
         else:
             procedure_call = 'EXEC sp_updateextendedproperty '
-        procedure_call += '@name=?, @value=?, @level0type=?, @level0name=?'
-        params = [
-            extended_property_name,
-            extended_property_value,
-            'schema',
-            object_metadata.get('schema_name')
-        ]
+        procedure_call += '@name=:name, @value=:value, @level0type=:level0type, @level0name=:level0name'
+        params = {
+            "name": extended_property_name,
+            "value": extended_property_value,
+            "level0type": 'schema',
+            "level0name": object_metadata.get('schema_name')
+        }
         object_type = object_metadata.get('object_type')
         parent_type = object_metadata.get('parent_type')
         if object_type in ('view', 'table', 'function', 'procedure', 'column'):
             level1type = parent_type if parent_type is not None else object_type
-            procedure_call += ', @level1type=?, @level1name=?'
-            params.extend([level1type, object_metadata.get('object_name')])
+            procedure_call += ', @level1type=:level1type, @level1name=:level1name'
+            params["level1type"] = level1type
+            params["level1name"] = object_metadata.get('object_name')
             if object_type == 'column':
-                procedure_call += ', @level2type=?, @level2name=?'
-                params.extend(['column', object_metadata.get('column_name')])
-        execute_query(engine, procedure_call, tuple(params))
+                procedure_call += ', @level2type=:level2type, @level2name=:level2name'
+                params["level2type"] = 'column'
+                params["level2name"] = object_metadata.get('column_name')
+        execute_query(engine, procedure_call, params)
     except Exception as err:
         logger.warning(
             f"Failed to update {object_name} extended property '{extended_property_name}'.")
@@ -204,9 +206,19 @@ def prepare_and_exec_query(engine: Engine, query_path: str, param_list: list) ->
     parameter placeholders to question mark. Finally, execute query."""
     with open(query_path, 'r', encoding='utf-8') as file:
         query = file.read()
-    param_placeholder = ','.join(['?'] * len(param_list))
+    param_placeholder = ""
+    variables = {}
+    for param in param_list:
+        param_placeholder = param_placeholder + ":" + param + ","
+        variables[param] = param
+    param_placeholder = param_placeholder[:-1]
     query = query.replace('?', param_placeholder)
-    result = execute_query(engine, query=query, variables=tuple(param_list), include_headers=True)
+    result = execute_query(
+        engine, 
+        query=query, 
+        variables=variables,
+        include_headers=True
+    )
     return result
 
 

@@ -15,9 +15,9 @@ from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine
 
 QUERIES = {
-    'get_db_session': 'SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = ?',
-    'get_db_id': 'SELECT db_id(?)',
-    'get_existing_db': 'SELECT name from sys.databases where name = ?'
+    'get_db_session': 'SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = :database_id',
+    'get_db_id': 'SELECT db_id(:db_name)',
+    'get_existing_db': 'SELECT name from sys.databases where name = :db_name'
 }
 
 
@@ -52,7 +52,7 @@ def create_db(engine: Engine, db_name: str, db_path: str, log_path: str, init_si
         '''
         session_ids = execute_query(
             engine, QUERIES.get('get_db_session'),
-            variables=[database_id]
+            variables={"database_id": database_id}
         )
         for sid in session_ids:
             execute_query(engine, f'KILL {sid.session_id}')
@@ -100,7 +100,7 @@ def create_db(engine: Engine, db_name: str, db_path: str, log_path: str, init_si
         db_id = execute_query(
             engine,
             QUERIES.get('get_db_id'),
-            variables=[db_name]
+            variables={"db_name": db_name}
         )[0][0]
         if db_id is not None:
             drop_database(db_id)
@@ -108,7 +108,7 @@ def create_db(engine: Engine, db_name: str, db_path: str, log_path: str, init_si
         database = execute_query(
             engine,
             QUERIES.get('get_existing_db'),
-            variables=[db_name]
+            variables={"db_name": db_name}
         )
         if len(database) == 0:
             create_database()

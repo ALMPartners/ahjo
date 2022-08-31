@@ -94,7 +94,7 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, **kwargs) -> Engine:
     return engine
 
 
-def execute_query(engine: Engine, query: str, variables: Union[list, tuple] = None, isolation_level: str = 'AUTOCOMMIT', include_headers: bool = False) -> List[Iterable]:
+def execute_query(engine: Engine, query: str, variables: Union[dict, list, tuple] = None, isolation_level: str = 'AUTOCOMMIT', include_headers: bool = False) -> List[Iterable]:
     """Execute query with chosen isolation level.
 
     Arguments
@@ -118,10 +118,12 @@ def execute_query(engine: Engine, query: str, variables: Union[list, tuple] = No
     """
     with engine.connect() as connection:
         connection.execution_options(isolation_level=isolation_level)
-        if variables is not None and isinstance(variables, (tuple, list)):
-            result_set = connection.execute(query, *variables)
+        if variables is not None and isinstance(variables, (dict, list, tuple)):
+            if isinstance(variables, (list, tuple)):
+                query, variables = _create_sql_construct(query, variables)
+            result_set = connection.execute(text(query), variables)
         else:
-            result_set = connection.execute(query)
+            result_set = connection.execute(text(query)) if isinstance(query, str) else connection.execute(query)
         query_output = []
         if result_set.returns_rows:
             if include_headers is True:
@@ -130,7 +132,7 @@ def execute_query(engine: Engine, query: str, variables: Union[list, tuple] = No
         return query_output
 
 
-def execute_try_catch(engine: Engine, query: str, variables: Union[list, tuple] = None, throw: bool = False):
+def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw: bool = False):
     """Execute query with try catch.
     If throw is set to True, raise error in case query execution fails.
 
@@ -148,10 +150,12 @@ def execute_try_catch(engine: Engine, query: str, variables: Union[list, tuple] 
     with engine.connect() as connection:
         trans = connection.begin()
         try:
-            if variables is not None and isinstance(variables, (tuple, list)):
-                connection.execute(query, *variables)
+            if variables is not None and isinstance(variables, (dict, list, tuple)):
+                if isinstance(variables, (list, tuple)): 
+                    query, variables = _create_sql_construct(query, variables)
+                connection.execute(text(query), variables)
             else:
-                connection.execute(query)
+                connection.execute(text(query)) if isinstance(query, str) else connection.execute(query)
             trans.commit()
         except:
             trans.rollback()
@@ -216,6 +220,18 @@ def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variabl
         pattern = dialect_patterns.get('script_variable_pattern', '{}')
         sql = sql.replace(pattern.format(variable_name), variable_value)
     return sql
+
+
+def _create_sql_construct(query: str, variables: Union[list, tuple]):
+    """Create a SQL statement construct. 
+    Bind variables into SQL string from list/tuple."""
+    variables_dict = {}
+    for var in variables:
+        bind_var = ":p_" + str(var)
+        query = sub(r"\?", bind_var, query, count=1)
+        variables_dict[bind_var[1:]] = var
+    variables = variables_dict
+    return query, variables
 
 
 def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:

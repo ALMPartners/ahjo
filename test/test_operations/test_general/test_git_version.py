@@ -6,6 +6,7 @@ from os import environ, path
 from subprocess import check_output
 from sqlalchemy import Column, MetaData, String, Table, select
 from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.sql import text
 
 
 @pytest.fixture(scope='function')
@@ -45,7 +46,7 @@ class TestWithSQLServer():
         yield
         with self.engine.connect() as connection:
             connection.execution_options(isolation_level="AUTOCOMMIT")
-            connection.execute(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}")
+            connection.execute(text(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}"))
 
     def reflected_git_table(self):
         return Table(self.git_table, MetaData(),

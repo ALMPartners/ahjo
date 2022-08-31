@@ -1,6 +1,7 @@
 import json
 import logging
 from os import chdir, getcwd
+from sqlalchemy.sql import text
 
 import ahjo.operations.tsql.db_object_properties as dop
 import pytest
@@ -50,18 +51,18 @@ class TestWithSQLServer():
         chdir(old_cwd)
 
     def test_objects_should_not_have_external_properties_before_update(self):
-        result = self.engine.execute(DESC_QUERY)
+        result = self.engine.execute(text(DESC_QUERY))
         descriptions = result.fetchall()
-        result = self.engine.execute(FLAG_QUERY)
+        result = self.engine.execute(text(FLAG_QUERY))
         flags = result.fetchall()
         assert len(descriptions) == 0
         assert len(flags) == 0
 
     def test_objects_should_have_external_properties_after_update(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(DESC_QUERY)
+        result = self.engine.execute(text(DESC_QUERY))
         descriptions = result.fetchall()
-        result = self.engine.execute(FLAG_QUERY)
+        result = self.engine.execute(text(FLAG_QUERY))
         flags = result.fetchall()
         assert len(descriptions) > 0
         assert len(flags) > 0
@@ -74,7 +75,7 @@ class TestWithSQLServer():
 
     def test_all_descs_in_db_should_be_found_in_file(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(DESC_QUERY)
+        result = self.engine.execute(text(DESC_QUERY))
         db_decs = result.fetchall()
         column_description_file = './docs/db_objects/columns.json'
         with open(column_description_file, 'r') as f:
@@ -84,7 +85,7 @@ class TestWithSQLServer():
 
     def test_all_descs_in_file_should_be_found_in_db(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(DESC_QUERY)
+        result = self.engine.execute(text(DESC_QUERY))
         db_decs = result.fetchall()
         db_decs = dict(db_decs)
         column_description_file = './docs/db_objects/columns.json'

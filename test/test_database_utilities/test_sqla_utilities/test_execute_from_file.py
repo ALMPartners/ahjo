@@ -3,6 +3,7 @@ from os import chdir, getcwd, path
 import ahjo.database_utilities.sqla_utilities as ahjo
 import pytest
 from yaml import safe_load
+from sqlalchemy.sql import text
 
 MSSQL_PATTERNS = ahjo.get_dialect_patterns('mssql')
 POSTGRESQL_PATTERNS = ahjo.get_dialect_patterns('postgresql')
@@ -33,31 +34,35 @@ class TestWithSQLServer():
         yield
         drop_mssql_objects(self.engine)
         run_alembic_action('downgrade', 'base')
-        query = f"DROP TABLE {self.alembic_table}"
-        self.engine.execute(query)
+        self.engine.execute(text(f"DROP TABLE {self.alembic_table}"))
         chdir(old_cwd)
 
     @pytest.mark.parametrize("object_name", ['store.vwClients', 'store.vwProducts'])
     def test_execute_from_file_should_create_view(self, object_name):
         schema, name = object_name.split('.')
-        query = "SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
-        result = self.engine.execute(query, (schema, name)).fetchall()
+        result = self.engine.execute(
+            text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
+            {"schema": schema, "name": name}
+        ).fetchall()
         assert not result
         ahjo.execute_from_file(
             self.engine,
             f'database/views/{object_name}.sql'
             )
-        result = self.engine.execute(query, (schema, name)).fetchall()
+        result = self.engine.execute(
+            text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
+            {"schema": schema, "name": name}
+        ).fetchall()
         assert len(result) == 1
 
     # possibility to parametrize
     def test_execute_from_file_should_insert_data(self):
         object_name = 'store.ProductCategory'
         query = f"SELECT COUNT(*) FROM {object_name}"
-        result = self.engine.execute(query).fetchall()
+        result = self.engine.execute(text(query)).fetchall()
         assert result[0] == (0,)
         ahjo.execute_from_file(self.engine, f'database/data/{object_name}.sql')
-        result = self.engine.execute(query).fetchall()
+        result = self.engine.execute(text(query)).fetchall()
         assert result[0] == (3,)
 
     @pytest.mark.parametrize("file_name", ['test_colon_escaping'])
@@ -103,7 +108,7 @@ class TestWithPopulatedSQLServer():
         drop_mssql_objects(self.engine)
         run_alembic_action('downgrade', 'base')
         query = f"DROP TABLE {self.alembic_table}"
-        self.engine.execute(query)
+        self.engine.execute(text(query))
         chdir(old_cwd)
 
     @pytest.mark.parametrize("query_name,result_set", [

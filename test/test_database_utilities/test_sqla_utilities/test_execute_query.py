@@ -3,6 +3,7 @@ from os import chdir, getcwd
 import ahjo.database_utilities.sqla_utilities as ahjo
 import pytest
 from sqlalchemy.exc import DBAPIError, ProgrammingError
+from sqlalchemy.sql import text
 
 
 @pytest.mark.mssql
@@ -23,7 +24,7 @@ class TestWithPopulatedSQLServer():
         drop_mssql_objects(self.engine)
         run_alembic_action('downgrade', 'base')
         query = f"DROP TABLE {self.alembic_table}"
-        self.engine.execute(query)
+        self.engine.execute(text(query))
         chdir(old_cwd)
 
     def test_execute_query_should_return_rows(self):
@@ -33,14 +34,22 @@ class TestWithPopulatedSQLServer():
         )
         assert result
 
-    def test_execute_query_should_accept_list_params(self):
+    def test_execute_query_should_accept_dict_param(self):
         result = ahjo.execute_query(
             self.engine,
-            query='SELECT * FROM store.Clients WHERE country = ?',
-            variables=['Finland']
+            query='SELECT * FROM store.Clients WHERE country = :country',
+            variables={'country': 'Finland'}
         )
         assert result
 
+    def test_execute_query_should_accept_dict_params(self):
+        result = ahjo.execute_query(
+            self.engine,
+            query='SELECT * FROM store.Clients WHERE country = :country AND zip_code = :zip_code',
+            variables={'country': 'Finland', 'zip_code': '00180'}
+        )
+        assert result
+    
     def test_execute_query_should_accept_tuple_param(self):
         result = ahjo.execute_query(
             self.engine,
@@ -57,13 +66,21 @@ class TestWithPopulatedSQLServer():
         )
         assert result
 
-    def test_execute_query_should_not_accept_dict_params(self):
-        with pytest.raises(DBAPIError):
-            ahjo.execute_query(
-                self.engine,
-                query='SELECT * FROM store.Clients WHERE country = ? AND zip_code = ?',
-                variables={'country': 'Finland', 'zip_code': '00180'}
-            )
+    def test_execute_query_should_accept_list_param(self):
+        result = ahjo.execute_query(
+            self.engine,
+            query='SELECT * FROM store.Clients WHERE country = ?',
+            variables=['Finland']
+        )
+        assert result
+
+    def test_execute_query_should_accept_list_params(self):
+        result = ahjo.execute_query(
+            self.engine,
+            query='SELECT * FROM store.Clients WHERE country = ? AND zip_code = ?',
+            variables=['Finland', '00180']
+        )
+        assert result
 
     def test_execute_query_should_not_accept_str_param(self):
         with pytest.raises(DBAPIError):
@@ -111,6 +128,6 @@ class TestWithPopulatedSQLServer():
             isolation_level='AUTOCOMMIT'    # default
         )
         query = "SELECT name, phone FROM store.Clients WHERE phone = 112"
-        result = self.engine.execute(query).fetchall()
+        result = self.engine.execute(text(query)).fetchall()
         assert result[0] == ('Test_1', '112')
         assert result[1] == ('Test_2', '112')

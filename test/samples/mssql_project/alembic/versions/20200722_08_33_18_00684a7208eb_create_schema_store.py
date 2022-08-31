@@ -6,6 +6,7 @@ Create Date: 2020-07-22 08:33:18.368134
 
 """
 from alembic import op
+from sqlalchemy.sql import text
 import sqlalchemy as sa
 
 
@@ -23,4 +24,4 @@ def upgrade():
 
 def downgrade():
     connection = op.get_bind()
-    connection.execute("DROP SCHEMA store")
+    connection.execute(text("DROP SCHEMA store"))

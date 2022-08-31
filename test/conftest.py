@@ -8,6 +8,7 @@ from subprocess import check_output
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
+from sqlalchemy.sql import text
 
 TEST_DB_NAME = 'AHJO_TEST'
 
@@ -114,8 +115,10 @@ def ensure_mssql_ready_for_tests(config):
         )
         engine = create_engine(connection_url)
         with engine.connect() as connection:
-            query = "SELECT name FROM sys.databases WHERE UPPER(name) = ?"
-            result = connection.execute(query, (TEST_DB_NAME, ))
+            result = connection.execute(
+                text("SELECT name FROM sys.databases WHERE UPPER(name) = :TEST_DB_NAME"), 
+                {"TEST_DB_NAME": TEST_DB_NAME}
+            )
             if result.fetchall():
                 raise Exception(f"There already exists a database with name '{TEST_DB_NAME}'")
         return True
