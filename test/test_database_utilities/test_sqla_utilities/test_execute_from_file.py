@@ -34,36 +34,39 @@ class TestWithSQLServer():
         yield
         drop_mssql_objects(self.engine)
         run_alembic_action('downgrade', 'base')
-        self.engine.execute(text(f"DROP TABLE {self.alembic_table}"))
+        with self.engine.begin() as connection:
+            connection.execute(text(f"DROP TABLE {self.alembic_table}"))
         chdir(old_cwd)
 
     @pytest.mark.parametrize("object_name", ['store.vwClients', 'store.vwProducts'])
     def test_execute_from_file_should_create_view(self, object_name):
         schema, name = object_name.split('.')
-        result = self.engine.execute(
-            text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
-            {"schema": schema, "name": name}
-        ).fetchall()
-        assert not result
-        ahjo.execute_from_file(
-            self.engine,
-            f'database/views/{object_name}.sql'
-            )
-        result = self.engine.execute(
-            text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
-            {"schema": schema, "name": name}
-        ).fetchall()
-        assert len(result) == 1
+        with self.engine.begin() as connection:
+            result = connection.execute(
+                text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
+                {"schema": schema, "name": name}
+            ).fetchall()
+            assert not result
+            ahjo.execute_from_file(
+                self.engine,
+                f'database/views/{object_name}.sql'
+                )
+            result = connection.execute(
+                text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
+                {"schema": schema, "name": name}
+            ).fetchall()
+            assert len(result) == 1
 
     # possibility to parametrize
     def test_execute_from_file_should_insert_data(self):
         object_name = 'store.ProductCategory'
         query = f"SELECT COUNT(*) FROM {object_name}"
-        result = self.engine.execute(text(query)).fetchall()
-        assert result[0] == (0,)
-        ahjo.execute_from_file(self.engine, f'database/data/{object_name}.sql')
-        result = self.engine.execute(text(query)).fetchall()
-        assert result[0] == (3,)
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query)).fetchall()
+            assert result[0] == (0,)
+            ahjo.execute_from_file(self.engine, f'database/data/{object_name}.sql')
+            result = connection.execute(text(query)).fetchall()
+            assert result[0] == (3,)
 
     @pytest.mark.parametrize("file_name", ['test_colon_escaping'])
     def test_execute_from_file_should_not_raise_error_if_file_contains_colon(self, mssql_sample, file_name):
@@ -108,7 +111,8 @@ class TestWithPopulatedSQLServer():
         drop_mssql_objects(self.engine)
         run_alembic_action('downgrade', 'base')
         query = f"DROP TABLE {self.alembic_table}"
-        self.engine.execute(text(query))
+        with self.engine.begin() as connection:
+            connection.execute(text(query))
         chdir(old_cwd)
 
     @pytest.mark.parametrize("query_name,result_set", [

@@ -24,7 +24,8 @@ class TestWithPopulatedSQLServer():
         drop_mssql_objects(self.engine)
         run_alembic_action('downgrade', 'base')
         query = f"DROP TABLE {self.alembic_table}"
-        self.engine.execute(text(query))
+        with self.engine.begin() as connection:
+            connection.execute(text(query))
         chdir(old_cwd)
 
     def test_execute_query_should_return_rows(self):
@@ -128,6 +129,7 @@ class TestWithPopulatedSQLServer():
             isolation_level='AUTOCOMMIT'    # default
         )
         query = "SELECT name, phone FROM store.Clients WHERE phone = 112"
-        result = self.engine.execute(text(query)).fetchall()
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query)).fetchall()
         assert result[0] == ('Test_1', '112')
         assert result[1] == ('Test_2', '112')

@@ -66,13 +66,14 @@ class TestWithSQLServer():
 
     def get_commit_info_from_git_table(self):
         git_version_table = self.reflected_git_table()
-        result = self.engine.execute(
-            select([
-                git_version_table.c.Repository,
-                git_version_table.c.Branch,
-                git_version_table.c.Commit
-            ]))
-        return result.fetchall()[0]
+        with self.engine.begin() as connection:
+            result = connection.execute(
+                select([
+                    git_version_table.c.Repository,
+                    git_version_table.c.Branch,
+                    git_version_table.c.Commit
+                ]))
+            return result.fetchall()[0]
 
     def assert_git_version_table_results(self, row, repository, branch, commit):
         assert row.Repository == repository
@@ -144,7 +145,8 @@ class TestWithSQLServer():
             Branch="dev",
             Commit_hash="commit"
             )
-        self.engine.execute(insert)
+        with self.engine.begin() as connection:
+            connection.execute(insert)
         git.update_git_version(self.engine, self.git_table_schema, self.git_table)
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]

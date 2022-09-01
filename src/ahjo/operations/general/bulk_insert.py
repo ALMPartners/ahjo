@@ -33,9 +33,10 @@ def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: d
     """
     table_name_with_schema = (
         reflected_table.schema + '.' if reflected_table.schema else "") + reflected_table.name
-    with BulkInsertContext(engine, table_name_with_schema):
-        for r in chunks(records, chunk_size):
-            engine.execute(reflected_table.insert(), r)
+    with engine.begin() as connection:
+        with BulkInsertContext(engine, table_name_with_schema):
+            for r in chunks(records, chunk_size):
+                connection.execute(reflected_table.insert(), r)
 
 
 class BulkInsertContext:

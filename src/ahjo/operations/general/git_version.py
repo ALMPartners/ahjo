@@ -115,11 +115,14 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
     logger.info(f"Repository: {repository}")
     logger.info(f"Branch: {branch}")
     logger.info(f"Version: {commit}")
-    engine.execute(git_version_table.delete())
-    update_query = git_version_table.insert().values(Repository=repository,
-                                                     Branch=branch,
-                                                     Commit=commit)
-    engine.execute(update_query)
+    with engine.begin() as connection:
+        connection.execute(git_version_table.delete())
+        update_query = git_version_table.insert().values(
+            Repository=repository,
+            Branch=branch,
+            Commit=commit
+        )
+        connection.execute(update_query)
 
 
 def print_git_version(engine: Engine, git_table_schema: str, git_table: str):

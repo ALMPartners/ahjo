@@ -23,27 +23,31 @@ class TestWithSQLServer():
         try:
             run_alembic_action('downgrade', 'base')
             query = f"DROP TABLE {self.alembic_table}"
-            self.engine.execute(text(query))
+            with self.engine.begin() as connection:
+                connection.execute(text(query))
         except:
             pass
         chdir(old_cwd)
 
     def test_alembic_version_table_should_not_exist(self):
         query = f"SELECT * FROM {self.alembic_table}"
-        with pytest.raises(ProgrammingError):
-            self.engine.execute(text(query))
+        with self.engine.begin() as connection:
+            with pytest.raises(ProgrammingError):
+                connection.execute(text(query))
 
     def test_alembic_version_table_should_contain_latest_revision_after_upgrade_head(self):
         alembic.upgrade_db_to_latest_alembic_version(self.config_filepath)
         query = f"SELECT * FROM {self.alembic_table}"
-        result = self.engine.execute(text(query))
-        assert result.fetchone()[0] == LATEST_REVISION
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query))
+            assert result.fetchone()[0] == LATEST_REVISION
 
     def test_alembic_version_table_should_be_empty_after_downgrade(self):
         alembic.downgrade_db_to_alembic_base(self.config_filepath)
         query = f"SELECT * FROM {self.alembic_table}"
-        result = self.engine.execute(text(query))
-        assert result.fetchone() is None    # no revisions
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query))
+            assert result.fetchone() is None    # no revisions
 
     def test_latest_revision_should_be_printed(self, caplog):
         caplog.set_level(logging.INFO)
@@ -54,7 +58,8 @@ class TestWithSQLServer():
     def test_printing_alembic_version_should_fail(self):
         alembic.downgrade_db_to_alembic_base(self.config_filepath)
         query = f"DROP TABLE {self.alembic_table}"
-        self.engine.execute(text(query))
+        with self.engine.begin() as connection:
+            connection.execute(text(query))
         with pytest.raises(ProgrammingError):
             alembic.print_alembic_version(self.engine, self.alembic_table)
 

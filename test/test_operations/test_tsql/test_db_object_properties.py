@@ -51,21 +51,23 @@ class TestWithSQLServer():
         chdir(old_cwd)
 
     def test_objects_should_not_have_external_properties_before_update(self):
-        result = self.engine.execute(text(DESC_QUERY))
-        descriptions = result.fetchall()
-        result = self.engine.execute(text(FLAG_QUERY))
-        flags = result.fetchall()
-        assert len(descriptions) == 0
-        assert len(flags) == 0
+        with self.engine.begin() as connection:
+            result = connection.execute(text(DESC_QUERY))
+            descriptions = result.fetchall()
+            result = connection.execute(text(FLAG_QUERY))
+            flags = result.fetchall()
+            assert len(descriptions) == 0
+            assert len(flags) == 0
 
     def test_objects_should_have_external_properties_after_update(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(text(DESC_QUERY))
-        descriptions = result.fetchall()
-        result = self.engine.execute(text(FLAG_QUERY))
-        flags = result.fetchall()
-        assert len(descriptions) > 0
-        assert len(flags) > 0
+        with self.engine.begin() as connection:
+            result = connection.execute(text(DESC_QUERY))
+            descriptions = result.fetchall()
+            result = connection.execute(text(FLAG_QUERY))
+            flags = result.fetchall()
+            assert len(descriptions) > 0
+            assert len(flags) > 0
 
     def test_update_should_not_span_warnings_when_all_schemas_are_not_updated(self, caplog):
         caplog.set_level(logging.WARNING)
@@ -75,22 +77,24 @@ class TestWithSQLServer():
 
     def test_all_descs_in_db_should_be_found_in_file(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(text(DESC_QUERY))
-        db_decs = result.fetchall()
-        column_description_file = './docs/db_objects/columns.json'
-        with open(column_description_file, 'r') as f:
-            file_descs = json.load(f)
-        for row in db_decs:
-            assert row[1] == file_descs[row[0]]['Description']
+        with self.engine.begin() as connection:
+            result = connection.execute(text(DESC_QUERY))
+            db_decs = result.fetchall()
+            column_description_file = './docs/db_objects/columns.json'
+            with open(column_description_file, 'r') as f:
+                file_descs = json.load(f)
+            for row in db_decs:
+                assert row[1] == file_descs[row[0]]['Description']
 
     def test_all_descs_in_file_should_be_found_in_db(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
-        result = self.engine.execute(text(DESC_QUERY))
-        db_decs = result.fetchall()
-        db_decs = dict(db_decs)
-        column_description_file = './docs/db_objects/columns.json'
-        with open(column_description_file, 'r') as f:
-            file_descs = json.load(f)
-        for object_name in file_descs:
-            if file_descs[object_name].get('Description'):
-                assert file_descs[object_name]['Description'] == db_decs[object_name]
+        with self.engine.begin() as connection:
+            result = connection.execute(text(DESC_QUERY))
+            db_decs = result.fetchall()
+            db_decs = dict(db_decs)
+            column_description_file = './docs/db_objects/columns.json'
+            with open(column_description_file, 'r') as f:
+                file_descs = json.load(f)
+            for object_name in file_descs:
+                if file_descs[object_name].get('Description'):
+                    assert file_descs[object_name]['Description'] == db_decs[object_name]

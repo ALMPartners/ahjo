@@ -137,8 +137,9 @@ def populate_table():
         else:
             target_table = Table(table_name, MetaData(
                 bind=engine), autoload=True)
-        for rows in chunkreader(source_file):
-            engine.execute(target_table.insert(), rows)
+        with engine.begin() as connection:
+            for rows in chunkreader(source_file):
+                connection.execute(target_table.insert(), rows)
     return insert_to_table
 
 
