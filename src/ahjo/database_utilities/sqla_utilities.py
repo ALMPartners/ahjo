@@ -118,18 +118,19 @@ def execute_query(engine: Engine, query: str, variables: Union[dict, list, tuple
     """
     with engine.connect() as connection:
         connection.execution_options(isolation_level=isolation_level)
-        if variables is not None and isinstance(variables, (dict, list, tuple)):
-            if isinstance(variables, (list, tuple)):
-                query, variables = _create_sql_construct(query, variables)
-            result_set = connection.execute(text(query), variables)
-        else:
-            result_set = connection.execute(text(query)) if isinstance(query, str) else connection.execute(query)
-        query_output = []
-        if result_set.returns_rows:
-            if include_headers is True:
-                query_output.append(list(result_set.keys()))
-            query_output.extend([row for row in result_set])
-        return query_output
+        with connection.begin():
+            if variables is not None and isinstance(variables, (dict, list, tuple)):
+                if isinstance(variables, (list, tuple)):
+                    query, variables = _create_sql_construct(query, variables)
+                result_set = connection.execute(text(query), variables)
+            else:
+                result_set = connection.execute(text(query)) if isinstance(query, str) else connection.execute(query)
+            query_output = []
+            if result_set.returns_rows:
+                if include_headers is True:
+                    query_output.append(list(result_set.keys()))
+                query_output.extend([row for row in result_set])
+            return query_output
 
 
 def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw: bool = False):
@@ -198,18 +199,19 @@ def execute_from_file(engine: Engine, file_path: str, scripting_variables: dict 
     if scripting_variables:
         sql = _insert_script_variables(dialect, sql, scripting_variables)
     batches = _split_to_batches(dialect, sql)
+    script_output = []
     with engine.connect() as connection:
         connection.execution_options(isolation_level='AUTOCOMMIT')
-        script_output = []
-        for batch in batches:
-            if not batch:
-                continue
-            batch = sub(':', r'\:', batch)
-            result_set = connection.execute(text(batch))
-            if result_set.returns_rows:
-                if script_output == [] and include_headers is True:
-                    script_output.append(list(result_set.keys()))
-                script_output.extend([row for row in result_set])
+        with connection.begin():
+            for batch in batches:
+                if not batch:
+                    continue
+                batch = sub(':', r'\:', batch)
+                result_set = connection.execute(text(batch))
+                if result_set.returns_rows:
+                    if script_output == [] and include_headers is True:
+                        script_output.append(list(result_set.keys()))
+                    script_output.extend([row for row in result_set])
     return script_output
 
 

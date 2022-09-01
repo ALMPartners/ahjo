@@ -46,7 +46,8 @@ class TestWithSQLServer():
         yield
         with self.engine.connect() as connection:
             connection.execution_options(isolation_level="AUTOCOMMIT")
-            connection.execute(text(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}"))
+            with connection.begin():
+                connection.execute(text(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}"))
 
     def reflected_git_table(self):
         return Table(self.git_table, MetaData(),

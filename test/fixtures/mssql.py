@@ -68,16 +68,18 @@ def mssql_setup_and_teardown(mssql_master_engine, test_db_name):
     """
     with mssql_master_engine.connect() as connection:
         connection.execution_options(isolation_level="AUTOCOMMIT")
-        connection.execute(text(f'CREATE DATABASE {test_db_name}'))
+        with connection.begin():
+            connection.execute(text(f'CREATE DATABASE {test_db_name}'))
     yield
     with mssql_master_engine.connect() as connection:
         connection.execution_options(isolation_level="AUTOCOMMIT")
-        result = connection.execute(
-            text('SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = DB_ID(:test_db_name)'), {"test_db_name": test_db_name}
-            )
-        for row in result.fetchall():
-            connection.execute(text(f'KILL {row.session_id}'))
-        connection.execute(text(f'DROP DATABASE {test_db_name}'))
+        with connection.begin():
+            result = connection.execute(
+                text('SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = DB_ID(:test_db_name)'), {"test_db_name": test_db_name}
+                )
+            for row in result.fetchall():
+                connection.execute(text(f'KILL {row.session_id}'))
+            connection.execute(text(f'DROP DATABASE {test_db_name}'))
 
 
 @pytest.fixture(scope='function')
@@ -98,11 +100,12 @@ def deploy_mssql_objects():
     
             with engine.connect() as connection:
                 connection.execution_options(isolation_level='AUTOCOMMIT')
-                for batch in batches:
-                    if not batch:
-                        continue
-                    batch = sub(':', r'\:', batch)
-                    connection.execute(text(batch))
+                with connection.begin():
+                    for batch in batches:
+                        if not batch:
+                            continue
+                        batch = sub(':', r'\:', batch)
+                        connection.execute(text(batch))
     return deploy_objects
 
 
@@ -118,5 +121,6 @@ def drop_mssql_objects():
         for db_object in database_objects:
             with engine.connect() as connection:
                 connection.execution_options(isolation_level='AUTOCOMMIT')
-                connection.execute(text(f"BEGIN TRY DROP {db_object} END TRY BEGIN CATCH END CATCH"))
+                with connection.begin():
+                    connection.execute(text(f"BEGIN TRY DROP {db_object} END TRY BEGIN CATCH END CATCH"))
     return drop_objects
