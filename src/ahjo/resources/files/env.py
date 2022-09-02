@@ -7,7 +7,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import MetaData, create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url
 from ahjo.interface_methods import load_json_conf
