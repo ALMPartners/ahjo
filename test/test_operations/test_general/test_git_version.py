@@ -71,11 +71,11 @@ class TestWithSQLServer():
         git_version_table = self.reflected_git_table()
         with self.engine.begin() as connection:
             result = connection.execute(
-                select([
+                select(
                     git_version_table.c.Repository,
                     git_version_table.c.Branch,
                     git_version_table.c.Commit
-                ]))
+                ))
             return result.fetchall()[0]
 
     def assert_git_version_table_results(self, row, repository, branch, commit):
