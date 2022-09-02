@@ -132,11 +132,18 @@ def populate_table():
         if len(splitted) > 1:
             table_name = splitted[1]
             table_schema = splitted[0]
-            target_table = Table(table_name, MetaData(
-                bind=engine), schema=table_schema, autoload=True)
+            target_table = Table(
+                table_name, 
+                MetaData(bind=engine), 
+                schema=table_schema, 
+                autoload_with=engine
+            )
         else:
-            target_table = Table(table_name, MetaData(
-                bind=engine), autoload=True)
+            target_table = Table(
+                table_name, 
+                MetaData(bind=engine), 
+                autoload_with=engine
+            )
         with engine.begin() as connection:
             for rows in chunkreader(source_file):
                 connection.execute(target_table.insert(), rows)

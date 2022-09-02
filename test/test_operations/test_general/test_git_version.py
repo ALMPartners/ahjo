@@ -50,9 +50,11 @@ class TestWithSQLServer():
                 connection.execute(text(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}"))
 
     def reflected_git_table(self):
-        return Table(self.git_table, MetaData(),
-                     autoload=True, autoload_with=self.engine,
-                     schema=self.git_table_schema)
+        return Table(
+            self.git_table, MetaData(),
+            autoload_with=self.engine,
+            schema=self.git_table_schema
+        )
 
     def test_git_version_table_should_not_exist(self):
         with pytest.raises(NoSuchTableError):

@@ -91,7 +91,7 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
     """Update or create a Git version table."""
     metadata = MetaData(engine)
     try:
-        git_version_table = Table(git_table, metadata, autoload=True, schema=git_table_schema)
+        git_version_table = Table(git_table, metadata, autoload_with=engine, schema=git_table_schema)
     except NoSuchTableError as error:
         logger.info(
             f'Table {git_table_schema + "." + git_table} not found. Creating the table.')
