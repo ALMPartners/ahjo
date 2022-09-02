@@ -89,7 +89,7 @@ def _get_git_commit_info() -> Tuple[str, str]:
 
 def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
     """Update or create a Git version table."""
-    metadata = MetaData(engine)
+    metadata = MetaData()
     try:
         git_version_table = Table(git_table, metadata, autoload_with=engine, schema=git_table_schema)
     except NoSuchTableError as error:
@@ -97,7 +97,7 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
             f'Table {git_table_schema + "." + git_table} not found. Creating the table.')
         git_version_table = _sqla_git_table(metadata, git_table_schema, git_table)
         try:
-            metadata.create_all()
+            metadata.create_all(engine)
         except Exception as error:
             raise Exception(
                 'Git version table creation failed. See log for detailed error message.') from error
@@ -105,10 +105,10 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
     if 'Commit_hash' in git_version_table_columns:
         logger.info(f'Re-creating table {git_table_schema + "." + git_table}.')
         try:
-            metadata.drop_all()
-            new_metadata = MetaData(engine)
+            metadata.drop_all(engine)
+            new_metadata = MetaData()
             git_version_table = _sqla_git_table(new_metadata, git_table_schema, git_table)
-            new_metadata.create_all()
+            new_metadata.create_all(engine)
         except Exception as error:
             raise Exception(
                 'Failed to re-create Git version table. See log for detailed error message.') from error
@@ -128,7 +128,7 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
 def print_git_version(engine: Engine, git_table_schema: str, git_table: str):
     with OperationManager('Checking Git version from database'):
         try:
-            metadata = MetaData(engine)
+            metadata = MetaData()
             git_version_table = _sqla_git_table(
                 metadata, git_table_schema, git_table)
             git_version_query = git_version_table.select()

@@ -134,14 +134,14 @@ def populate_table():
             table_schema = splitted[0]
             target_table = Table(
                 table_name, 
-                MetaData(bind=engine), 
+                MetaData(), 
                 schema=table_schema, 
                 autoload_with=engine
             )
         else:
             target_table = Table(
                 table_name, 
-                MetaData(bind=engine), 
+                MetaData(), 
                 autoload_with=engine
             )
         with engine.begin() as connection:
