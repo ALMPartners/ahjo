@@ -22,8 +22,9 @@ AHJO_PATH = path.dirname(__file__)
 class Context:
     """All the default stuff that is passed to actions, like configuration."""
 
-    def __init__(self, config_filename: str):
+    def __init__(self, config_filename: str, master_engine: Engine = None):
         self.engine = None
+        self.master_engine = master_engine
         self.config_filename = config_filename
         self.configuration = load_json_conf(config_filename)
         if self.configuration is None:
@@ -40,9 +41,11 @@ class Context:
         return self.engine
 
     def get_master_engine(self) -> Engine:
-        """Create and return engine to 'master' database."""
-        url = create_sqlalchemy_url(self.get_conn_info(), use_master_db=True)
-        return create_sqlalchemy_engine(url)
+        """Return engine to 'master' database."""
+        if self.master_engine is None:
+            url = create_sqlalchemy_url(self.get_conn_info(), use_master_db=True)
+            return create_sqlalchemy_engine(url)
+        return self.master_engine
 
 
 def filter_nested_dict(node, search_term: str) -> Union[dict, None]:

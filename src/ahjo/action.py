@@ -10,6 +10,7 @@ from typing import Any, Callable, List, Union
 from ahjo.context import Context
 from ahjo.interface_methods import are_you_sure
 from ahjo.operation_manager import OperationManager
+from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
 
@@ -151,7 +152,7 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -
     return True
 
 
-def execute_action(action_name: str, config_filename: str, *args, **kwargs):
+def execute_action(action_name: str, config_filename: str, master_engine: Engine = None, *args, **kwargs):
     """Prepare and execute given action.
 
     Does the logging and error handling for preparation.
@@ -165,7 +166,7 @@ def execute_action(action_name: str, config_filename: str, *args, **kwargs):
     """
     logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
-        context = Context(config_filename)
+        context = Context(config_filename, master_engine)
         # validity check
         if not check_action_validity(action_name, context.configuration.get('allowed_actions', [])):
             return

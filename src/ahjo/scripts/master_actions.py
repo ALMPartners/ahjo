@@ -13,6 +13,7 @@ from logging import getLogger
 
 import ahjo.operations as op
 from ahjo.action import action, create_multiaction, registered_actions
+from sqlalchemy.sql import text
 
 logger = getLogger('ahjo')
 
@@ -27,7 +28,12 @@ def init_config(context):
 def init(context):
     """(MSSQL) Create the database. If database exists, drop it first."""
     # Create new engine connected to 'master' database
-    master_engine = context.get_master_engine()
+    dispose_master_engine = True
+    if context.master_engine is not None:
+        master_engine = context.master_engine
+        dispose_master_engine = False
+    else:
+        master_engine = context.get_master_engine()
     try:
         db_name = context.configuration.get('target_database_name')
         db_path = context.configuration.get('database_data_path')
@@ -40,7 +46,11 @@ def init(context):
         op.create_db(master_engine, db_name, db_path, log_path, init_size,
                      max_size, file_growth, compatibility_level, collation)
     finally:
-        master_engine.dispose()
+        if dispose_master_engine:
+            master_engine.dispose()
+        else:
+            with master_engine.connect() as con:
+                con.execute(text('USE ' + db_name + ';'))
 
 
 @action(affects_database=True, dependencies=['init'])
