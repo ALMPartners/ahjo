@@ -65,6 +65,3 @@ def run_multi_project_build(master_config_path):
         # Run ahjo actions
         for project_action in project_actions:
             execute_action(project_action, project_config_path, master_engine)
-
-            # Delete project specific ahjo action from the global registered_actions
-            registered_actions.pop(project_action, None)
