@@ -16,7 +16,7 @@ def run_multi_project_build(master_config_path):
 
     # Load master-job config
     anchor_path = load_json_conf(master_config_path, "projects_path")
-    config_conn_info = load_json_conf(master_config_path, "conn_info")
+    config_conn_info = load_json_conf(master_config_path, "connection_info")
     ahjo_projects = load_json_conf(master_config_path, "projects")
     anchor_parent_path_str = str(Path(anchor_path).parent)
     anchor_name = Path(anchor_path).parts[-1]

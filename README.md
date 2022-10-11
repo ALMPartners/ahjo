@@ -280,6 +280,56 @@ alembic -x main_config=config_development.jsonc downgrade -1
 
 The [env.py](./ahjo/resources/files/env.py) is created in initialize-project command.
 
+
+# Running actions from multiple projects
+To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used (python 3.7+ only):
+
+```
+ahjo-multi-project-build path/to/config_file.jsonc
+```
+
+Below is an example of JSONC config file. With the following definition, multi-project-build command executes complete-build actions of three ahjo projects:
+
+```
+{
+    "projects_path": "path/to/projects_folder",
+    "connection_info": {
+        "sql_port": 14330,
+        "sql_driver": "SQL Server",
+        "target_server_hostname": "localhost"
+    },
+    "projects": {
+        "ahjo_project_1_name": {
+            "config": "path/to/projects_folder/ahjo_project_1_name/config_development.jsonc",
+            "actions": [
+                "complete-build"
+            ]
+        },
+        "ahjo_project_2_name": {
+            "config": "path/to/projects_folder/ahjo_project_2_name/config_development.jsonc",
+            "actions": [
+                "complete-build"
+            ]        
+        },
+        "ahjo_project_3_name": {
+            "config": "path/to/projects_folder/ahjo_project_3_name/config_development.jsonc",
+            "actions": [
+                "complete-build"
+            ]        
+        }
+    }
+}
+```
+
+Settings under "connection_info" contains database server definitions in the same format as in ahjo project config file (excluding "target_database_name" parameter, which is not used here).
+Currently in this version ahjo projects should be located under the folder specified in "projects_path" setting.
+Ahjo project names are listed under "projects" section in run order. In this example, the actions of project "ahjo_project_1_name" are executed first and the actions of project ahjo_project_3_name are executed last.
+
+The following settings are defined under the name of the ahjo project(s):
+config - File path to the project-specific config file
+actions - List of project actions to be executed
+
+
 # Logging
 Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file ahjo.log.
 
