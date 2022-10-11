@@ -322,12 +322,14 @@ Below is an example of JSONC config file. With the following definition, multi-p
 ```
 
 Settings under "connection_info" contains database server definitions in the same format as in ahjo project config file (excluding "target_database_name" parameter, which is not used here).
+
 Currently in this version ahjo projects should be located under the folder specified in "projects_path" setting.
+
 Ahjo project names are listed under "projects" section in run order. In this example, the actions of project "ahjo_project_1_name" are executed first and the actions of project ahjo_project_3_name are executed last.
 
 The following settings are defined under the name of the ahjo project(s):
-config - File path to the project-specific config file
-actions - List of project actions to be executed
+* config - File path to the project-specific config file
+* actions - List of project actions to be executed
 
 
 # Logging
