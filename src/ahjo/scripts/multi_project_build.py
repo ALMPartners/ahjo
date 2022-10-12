@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 '''
-    Ahjo master-job
+    Ahjo multi-project-build command entrypoint.
 '''
 
 import argparse
