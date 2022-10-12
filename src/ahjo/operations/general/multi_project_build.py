@@ -1,3 +1,8 @@
+# Ahjo - Database deployment framework
+#
+# Copyright 2019, 2020, 2021, 2022 ALM Partners Oy
+# SPDX-License-Identifier: Apache-2.0
+
 import ahjo.scripts.master_actions
 import os
 import importlib
@@ -12,7 +17,15 @@ from pathlib import Path
 from sqlalchemy import create_engine
 
 
-def run_multi_project_build(master_config_path):
+def run_multi_project_build(master_config_path: str):
+    """
+        Run all selected actions from different projects at once.
+
+        Parameters
+        ----------
+        master_config_path
+            Path to JSON/JSONC config file.
+    """
 
     # Load master-job config
     anchor_path = load_json_conf(master_config_path, "projects_path")
