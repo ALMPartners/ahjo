@@ -13,10 +13,16 @@ from ahjo.operations.general.multi_project_build import run_multi_project_build
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("config_filename", help="Configuration filename", type=str, nargs="?")
-    print('This is Ahjo multi-project build command.')
 
-    args = parser.parse_args()
-    run_multi_project_build(args.config_filename)
+    info_msg = "This is Ahjo multi-project build command."
+    line = "-" * len(info_msg)
+    print(line)
+    print('This is Ahjo multi-project build command.')
+    print(line)
+
+    run_multi_project_build(
+        parser.parse_args().config_filename
+    )
 
 if __name__ == '__main__':
     main()

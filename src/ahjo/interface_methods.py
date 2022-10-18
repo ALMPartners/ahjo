@@ -6,7 +6,7 @@
 from logging import getLogger
 from pathlib import Path
 from re import sub
-from typing import Iterable, List
+from typing import Iterable, List, Union
 
 import commentjson as cjson
 
@@ -31,29 +31,37 @@ def load_json_conf(conf_file: str, key: str = 'BACKEND') -> dict:
     return data
 
 
-def are_you_sure(message: str) -> bool:
+def are_you_sure(message: Union[str, list], use_logger: bool = True) -> bool:
     """Ask confirmation for action.
 
     Arguments
     ---------
-    message
-        Message to display before user confirmation.
+    message: str or list
+        Message(s) to display before user confirmation.
+    use_logger: bool
+        If false, logger is disabled.
 
     Returns
     -------
     bool
         True if the action is going to happen, False if the user does not permit the action.
     """
-    logger.info(message)
-    logger.info('Are you sure you want to proceed?')
+    display_message(message, use_logger)
+    display_message("Are you sure you want to proceed?", use_logger)
     choise = input('[Y/N] (N): ')
     if choise == 'y' or choise == 'Y':
-        logger.info('confirmed')
+        display_message('confirmed', use_logger)
         return True
-    else:
-        logger.info('cancelled')
-        return False
+    display_message('cancelled', use_logger)
+    return False
 
+def display_message(message: Union[str, list], use_logger: bool = True):
+    """ Print or log a message (str) or multiple messages (list). """
+    if isinstance(message, list):
+        for msg in message:
+            logger.info(msg) if use_logger else print(msg)
+    else:
+        logger.info(message) if use_logger else print(message)
 
 def remove_special_chars(in_string: str) -> str:
     '''Return a cleared string, that is, remove all characters except
