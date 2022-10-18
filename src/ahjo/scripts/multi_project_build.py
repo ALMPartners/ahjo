@@ -14,10 +14,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("config_filename", help="Configuration filename", type=str, nargs="?")
 
-    info_msg = "This is Ahjo multi-project build command."
+    info_msg = "Ahjo multi-project build"
     line = "-" * len(info_msg)
     print(line)
-    print('This is Ahjo multi-project build command.')
+    print(info_msg)
     print(line)
 
     run_multi_project_build(
