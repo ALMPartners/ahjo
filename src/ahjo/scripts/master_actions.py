@@ -12,6 +12,7 @@ This file can be broken to multiple files, as long as every action is imported t
 from logging import getLogger
 
 import ahjo.operations as op
+import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
 from sqlalchemy.sql import text
 
@@ -189,6 +190,14 @@ def drop_files(context, **kwargs):
         return
 
     op.drop_sqlfile_objects(context.get_engine(), object_type[0], files, "Dropping files")
+
+@action('drop-obsolete', True)
+def drop_obsolete(context):
+    """Drop obsolete database objects."""
+    du.execute_from_file(
+        context.get_engine(),
+        './database/drop_obsolete_objects.sql'
+    )
 
 @action(affects_database=True, dependencies=["init"])
 def downgrade(context):
