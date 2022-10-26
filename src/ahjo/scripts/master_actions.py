@@ -14,6 +14,7 @@ from logging import getLogger
 import ahjo.operations as op
 import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
+from ahjo.operations.tsql.set_statements import set_xact_abort_and_nocount
 from sqlalchemy.sql import text
 
 logger = getLogger('ahjo')
@@ -128,8 +129,10 @@ def assembly(context):
 
 @action(affects_database=True, dependencies=['deploy'])
 def data(context):
-    """Insert data."""
+    """(MSSQL) Insert data."""
+    set_xact_abort_and_nocount(context.get_engine())
     op.deploy_sqlfiles(context.get_engine(), './database/data/', "Inserting data")
+    set_xact_abort_and_nocount(context.get_engine(), "OFF")
     op.update_git_version(
         context.get_engine(),
         context.configuration.get('git_table_schema', 'dbo'),
