@@ -288,6 +288,7 @@ To run all selected actions from different projects at once, a single command "a
 ahjo-multi-project-build path/to/config_file.jsonc
 ```
 
+Use `-c` or `--confirm` flag to enable confirmation messages for ahjo actions.  
 Below is an example of JSONC config file. With the following definition, multi-project-build command executes complete-build actions of three ahjo projects:
 
 ```
