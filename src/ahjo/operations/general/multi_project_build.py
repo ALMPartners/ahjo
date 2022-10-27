@@ -17,7 +17,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 
 
-def run_multi_project_build(master_config_path: str):
+def run_multi_project_build(master_config_path: str, skip_project_confirmation = True):
     """
         Run all selected actions from different projects at once.
 
@@ -91,5 +91,5 @@ def run_multi_project_build(master_config_path: str):
                 project_action, 
                 project_config_path, 
                 master_engine, 
-                skip_confirmation = True
+                skip_confirmation = skip_project_confirmation
             )

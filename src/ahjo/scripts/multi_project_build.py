@@ -13,6 +13,8 @@ from ahjo.operations.general.multi_project_build import run_multi_project_build
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("config_filename", help="Configuration filename", type=str, nargs="?")
+    parser.add_argument('-c', '--confirm', action='store_true', help='Ask for confirmation for ahjo actions.')
+    args = parser.parse_args()
 
     info_msg = "Ahjo multi-project build"
     line = "-" * len(info_msg)
@@ -21,7 +23,8 @@ def main():
     print(line)
 
     run_multi_project_build(
-        parser.parse_args().config_filename
+        args.config_filename,
+        not args.confirm
     )
 
 if __name__ == '__main__':
