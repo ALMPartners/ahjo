@@ -152,7 +152,7 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -
     return True
 
 
-def execute_action(action_name: str, config_filename: str, master_engine: Engine = None, *args, **kwargs):
+def execute_action(action_name: str, config_filename: str, master_engine: Engine = None, skip_confirmation: bool = False, *args, **kwargs):
     """Prepare and execute given action.
 
     Does the logging and error handling for preparation.
@@ -163,6 +163,10 @@ def execute_action(action_name: str, config_filename: str, master_engine: Engine
         The name of the action to execute
     config_filename: str
         The name of the config file for context creation.
+    master_engine: sqlalchemy.engine.Engine
+        SQL Alchemy engine.
+    skip_confirmation: bool
+        If True, user confirmation is disabled.
     """
     logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
@@ -172,7 +176,7 @@ def execute_action(action_name: str, config_filename: str, master_engine: Engine
             return
         action = registered_actions.get(action_name)
         # user confirmation
-        if not action.pre_exec_check(context):
+        if not skip_confirmation and not action.pre_exec_check(context):
             return
 
     return action.function(context, *args, **kwargs)
