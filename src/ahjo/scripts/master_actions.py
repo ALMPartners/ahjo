@@ -14,7 +14,7 @@ from logging import getLogger
 import ahjo.operations as op
 import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
-from ahjo.operations.tsql.set_statements import xact_abort_and_nocount_decorator
+from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from sqlalchemy.sql import text
 
 logger = getLogger('ahjo')
@@ -132,7 +132,7 @@ def data(context):
     """Insert data."""
     engine = context.get_engine()
     deploy_args = [engine, "./database/data/", "Inserting data"]
-    xact_abort_and_nocount_decorator(op.deploy_sqlfiles)(*deploy_args) if engine.name == "mssql" else op.deploy_sqlfiles(*deploy_args)
+    deploy_mssql_sqlfiles(*deploy_args) if engine.name == "mssql" else op.deploy_sqlfiles(*deploy_args)
     op.update_git_version(
         engine,
         context.configuration.get('git_table_schema', 'dbo'),
