@@ -1,10 +1,11 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019, 2020, 2021 ALM Partners Oy
+# Copyright 2019 - 2022 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 """Utily for extracting connection info from configuration json.
 """
+import importlib
 from typing import Union
 from ahjo.credential_handler import get_credentials
 
@@ -33,16 +34,39 @@ def create_conn_info(conf: dict) -> dict:
     azure_auth = conf.get('azure_authentication')
     username_file = conf.get("username_file")
     password_file = conf.get("password_file")
+    token = None
+    username = None
+    password = None
+    
     if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
         username, password = get_credentials(
             usrn_file_path=username_file,
             pw_file_path=password_file,
             pw_prompt=None    # do not ask for password
         )
+    elif azure_auth == "DefaultAzureCredential":
+
+        azure = importlib.import_module("azure")
+        struct = importlib.import_module("struct")
+        azure_identity_settings = conf.get("azure_identity_settings")
+
+        if isinstance(azure_identity_settings, dict) and "managed_identity_client_id" in azure_identity_settings:
+            token_url = azure_identity_settings.get("token_url") if "token_url" in azure_identity_settings else "https://database.windows.net/.default"
+            raw_token_len = len(raw_token)
+            azure_credentials = azure.identity.DefaultAzureCredential(
+                managed_identity_client_id = azure_identity_settings.get("managed_identity_client_id")
+            )
+            raw_token = azure_credentials.get_token(
+                token_url # The token URL for any Azure SQL database
+            ).token.encode("utf-16-le")
+            token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
+        else:
+            raise Exception("Managed identity client id not found. Check variable 'managed_identity_client_id'.")
+
     else:
         username, password = get_credentials(
-            usrn_file_path=username_file,
-            pw_file_path=password_file
+            usrn_file_path = username_file,
+            pw_file_path = password_file
         )
     return {
         'host': host,
@@ -53,7 +77,8 @@ def create_conn_info(conf: dict) -> dict:
         'dialect': dialect,
         'username': username,
         'password': password,
-        'azure_auth': azure_auth
+        'azure_auth': azure_auth,
+        'token': token
     }
 
 

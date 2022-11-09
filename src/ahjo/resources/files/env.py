@@ -9,7 +9,7 @@ from alembic import context
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import declarative_base
 
-from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url
+from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
 from ahjo.interface_methods import load_json_conf
 
 # Import from project root
@@ -88,7 +88,10 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = create_engine(create_sqlalchemy_url(conn_info))
+    connectable = create_sqlalchemy_engine(
+        create_sqlalchemy_url(conn_info), 
+        conn_info.get("token")
+    )
 
     with connectable.connect() as connection:
         context.configure(

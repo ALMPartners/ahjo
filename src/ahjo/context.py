@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019, 2020, 2021 ALM Partners Oy
+# Copyright 2019 - 2022 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 from logging import getLogger
@@ -36,15 +36,21 @@ class Context:
     def get_engine(self) -> Engine:
         """Create engine when needed first time."""
         if self.engine is None:
-            url = create_sqlalchemy_url(self.get_conn_info())
-            self.engine = create_sqlalchemy_engine(url)
+            conn_info = self.get_conn_info()
+            self.engine = create_sqlalchemy_engine(
+                create_sqlalchemy_url(conn_info), 
+                conn_info.get("token")
+            )
         return self.engine
 
     def get_master_engine(self) -> Engine:
         """Return engine to 'master' database."""
         if self.master_engine is None:
-            url = create_sqlalchemy_url(self.get_conn_info(), use_master_db=True)
-            return create_sqlalchemy_engine(url)
+            conn_info = self.get_conn_info()
+            self.master_engine = create_sqlalchemy_engine(
+                create_sqlalchemy_url(conn_info, use_master_db=True), 
+                conn_info.get("token")
+            )
         return self.master_engine
 
 

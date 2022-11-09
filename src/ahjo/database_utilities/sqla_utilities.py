@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019, 2020, 2021 ALM Partners Oy
+# Copyright 2019 - 2022 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 """Utility functions for sqlalchemy
@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
+from sqlalchemy import event
 
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
 
@@ -34,48 +35,71 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     sqlalchemy.engine.url.URL
         Connection url for sqlalchemy/alembic.
     """
+    azure_auth = conn_info.get('azure_auth')
+    driver = conn_info.get('driver')
+    server = conn_info.get('server')
+    username = conn_info.get('username')
+    password = conn_info.get('password')
+    dialect = conn_info.get('dialect')
+    host = conn_info.get('host')
+    port = conn_info.get('port')
+
     if use_master_db is True:
-        database = MASTER_DB.get(conn_info.get('dialect'))
+        database = MASTER_DB.get(dialect)
     else:
         database = conn_info.get('database')
     query = {}
     # Add optional driver to query-dictionary
-    if conn_info.get('driver') is not None:
-        query['driver'] = conn_info.get('driver')
+    if driver is not None:
+        query['driver'] = driver
+    
     # sqlalchemy does not have full url support for different Azure authentications
     # ODBC connection string must be added to query
-    azure_auth = conn_info.get('azure_auth')
     if azure_auth is not None:
+        azure_auth_lower = azure_auth.lower()
         odbc = ''
-        if azure_auth.lower() == 'activedirectorypassword':
+        if azure_auth_lower == 'activedirectorypassword':
             authentication = 'ActiveDirectoryPassword'
-            odbc = f"Pwd{{{conn_info.get('password')}}};"
-        elif azure_auth.lower() == 'activedirectoryintegrated':
+            odbc = f"Pwd{{{password}}};"
+        elif azure_auth_lower == 'activedirectoryintegrated':
             authentication = 'ActiveDirectoryIntegrated'
-        elif azure_auth.lower() == 'activedirectoryinteractive':
+        elif azure_auth_lower == 'activedirectoryinteractive':
             authentication = 'ActiveDirectoryInteractive'
+        elif azure_auth_lower == 'DefaultAzureCredential':
+            pass
         else:
             raise Exception(
                 "Unknown Azure authentication type! Check variable 'azure_authentication'.")
-        query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt=yes;TrustServerCertificate=no;Authentication={auth}".format(
-            driver=conn_info.get('driver'),
-            server=conn_info.get('server'),
-            database=database,
-            uid=conn_info.get('username'),
-            auth=authentication
-        )
+        if azure_auth_lower != 'DefaultAzureCredential':
+            query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt=yes;TrustServerCertificate=no;Authentication={auth}".format(
+                driver = driver,
+                server = server,
+                database = database,
+                uid = username,
+                auth = authentication
+            )
+        else:
+            query['odbc_connect'] = "Driver={{{driver}}};Server={server};Database={database};Encrypt=yes;TrustServerCertificate=no;"
+            return URL.create(
+                drivername = dialect,
+                host = host,
+                port = port,
+                database = database,
+                query = query
+            )
     return URL.create(
-        drivername=conn_info.get('dialect'),
-        username=conn_info.get('username'),
-        password=conn_info.get('password'),
-        host=conn_info.get('host'),
-        port=conn_info.get('port'),
-        database=database,
+        drivername = dialect,
+        username = username,
+        password = password,
+        host = host,
+        port = port,
+        database = database,
         query=query
     )
+    
 
 
-def create_sqlalchemy_engine(sqlalchemy_url: URL, **kwargs) -> Engine:
+def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs) -> Engine:
     """Create a new SQL Alchemy engine.
 
     Arguments
@@ -91,6 +115,12 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, **kwargs) -> Engine:
         SQL Alchemy engine.
     """
     engine = create_engine(sqlalchemy_url, **kwargs)
+    if token is not None:
+        @event.listens_for(engine, "do_connect")
+        def provide_token(dialect, conn_rec, cargs, cparams):
+            SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
+            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "") # remove the "Trusted_Connection" parameter that SQLAlchemy adds
+            cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token} # apply it to keyword arguments
     return engine
 
 
