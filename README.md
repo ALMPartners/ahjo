@@ -23,6 +23,9 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 ### mssql
 * [pyodbc](https://pypi.org/project/pyodbc/)
 
+### azure
+* [azure-identity](https://pypi.org/project/azure-identity/)
+
 # Install Guide
 
 ## Install Guide 1 - PyPI
