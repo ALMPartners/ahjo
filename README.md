@@ -56,6 +56,7 @@ pip install [-e] .[mssql]
 
 ## Available platform tags
 - `mssql` - Microsoft SQL Server
+- `azure` - Microsoft Azure SQL Database
 
 # Project Initialization
 Create a new project by running the following command:
