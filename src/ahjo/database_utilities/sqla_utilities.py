@@ -65,12 +65,12 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
             authentication = 'ActiveDirectoryIntegrated'
         elif azure_auth_lower == 'activedirectoryinteractive':
             authentication = 'ActiveDirectoryInteractive'
-        elif azure_auth_lower == 'defaultazurecredential':
-            authentication = 'DefaultAzureCredential'
+        elif azure_auth_lower == 'azureclicredential':
+            authentication = 'AzureCliCredential'
         else:
             raise Exception(
                 "Unknown Azure authentication type! Check variable 'azure_authentication'.")
-        if azure_auth_lower != 'defaultazurecredential':
+        if azure_auth_lower != 'azureclicredential':
             query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt=yes;TrustServerCertificate=no;Authentication={auth}".format(
                 driver = driver,
                 server = server,

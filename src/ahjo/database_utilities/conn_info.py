@@ -45,25 +45,17 @@ def create_conn_info(conf: dict) -> dict:
             pw_file_path=password_file,
             pw_prompt=None    # do not ask for password
         )
-    elif azure_auth_lower == "defaultazurecredential":
-
+    elif azure_auth_lower == "azureclicredential":
         azure = importlib.import_module('.identity', 'azure')
         struct = importlib.import_module("struct")
         azure_identity_settings = conf.get("azure_identity_settings")
-
-        if isinstance(azure_identity_settings, dict) and "managed_identity_client_id" in azure_identity_settings:
-            token_url = azure_identity_settings.get("token_url") if "token_url" in azure_identity_settings else "https://database.windows.net/.default"
-            azure_credentials = azure.DefaultAzureCredential(
-                managed_identity_client_id = azure_identity_settings.get("managed_identity_client_id")
-            )
-            raw_token = azure_credentials.get_token(
-                token_url # The token URL for any Azure SQL database
-            ).token.encode("utf-16-le")
-            raw_token_len = len(raw_token)
-            token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
-        else:
-            raise Exception("Managed identity client id not found. Check variable 'managed_identity_client_id'.")
-
+        token_url = azure_identity_settings.get("token_url") if isinstance(azure_identity_settings, dict) and "token_url" in azure_identity_settings else "https://database.windows.net/.default"
+        azure_credentials = azure.AzureCliCredential()
+        raw_token = azure_credentials.get_token(
+            token_url # The token URL for any Azure SQL database
+        ).token.encode("utf-16-le")
+        raw_token_len = len(raw_token)
+        token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
     else:
         username, password = get_credentials(
             usrn_file_path = username_file,
