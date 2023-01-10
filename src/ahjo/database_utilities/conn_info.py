@@ -45,7 +45,7 @@ def create_conn_info(conf: dict) -> dict:
             pw_file_path=password_file,
             pw_prompt=None    # do not ask for password
         )
-    elif azure_auth_lower == "azureclicredential":
+    elif azure_auth_lower == "azureidentity":
         azure = importlib.import_module('.identity', 'azure')
         struct = importlib.import_module("struct")
         azure_identity_settings = conf.get("azure_identity_settings")
