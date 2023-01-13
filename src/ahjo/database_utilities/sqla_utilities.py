@@ -56,8 +56,12 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     # sqlalchemy does not have full url support for different Azure authentications
     # ODBC connection string must be added to query
     if azure_auth is not None:
-        azure_auth_lower = azure_auth.lower()
+
         odbc = ''
+        odbc_trust_server_certificate = conn_info.get('odbc_trust_server_certificate', 'no')
+        odbc_encrypt = conn_info.get('odbc_encrypt', 'yes')
+        azure_auth_lower = azure_auth.lower()
+        
         if azure_auth_lower == 'activedirectorypassword':
             authentication = 'ActiveDirectoryPassword'
             odbc = f"Pwd{{{password}}};"
@@ -70,19 +74,24 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
         else:
             raise Exception(
                 "Unknown Azure authentication type! Check variable 'azure_authentication'.")
+
         if azure_auth_lower != 'azureidentity':
-            query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt=yes;TrustServerCertificate=no;Authentication={auth}".format(
+            query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt={odbc_encrypt};TrustServerCertificate={odbc_trust_server_certificate};Authentication={auth}".format(
                 driver = driver,
                 server = server,
                 database = database,
                 uid = username,
+                odbc_encrypt = odbc_encrypt,
+                odbc_trust_server_certificate = odbc_trust_server_certificate,
                 auth = authentication
             )
         else:
-            query['odbc_connect'] = "Driver={{{driver}}};Server={server};Database={database};Encrypt=yes;TrustServerCertificate=no;".format(
+            query['odbc_connect'] = "Driver={{{driver}}};Server={server};Database={database};Encrypt={odbc_encrypt};TrustServerCertificate={odbc_trust_server_certificate};".format(
                 driver = driver,
                 server = server,
-                database = database         
+                database = database,
+                odbc_encrypt = odbc_encrypt,
+                odbc_trust_server_certificate = odbc_trust_server_certificate
             )
             return URL.create(
                 drivername = dialect,
@@ -91,6 +100,7 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
                 database = database,
                 query = query
             )
+
     return URL.create(
         drivername = dialect,
         username = username,

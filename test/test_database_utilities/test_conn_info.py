@@ -33,6 +33,9 @@ def test_create_conn_info_should_return_dict_with_keys(read_config):
     assert 'username' in conn_info
     assert 'password' in conn_info
     assert 'azure_auth' in conn_info
+    assert 'token' in conn_info
+    assert 'odbc_trust_server_certificate' in conn_info
+    assert 'odbc_encrypt' in conn_info
 
 
 def test_conn_info_should_partially_match_config(read_config):

@@ -34,6 +34,8 @@ def create_conn_info(conf: dict) -> dict:
     azure_auth = conf.get('azure_authentication')
     username_file = conf.get("username_file")
     password_file = conf.get("password_file")
+    odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate")
+    odbc_encrypt = conf.get("odbc_encrypt")
     token = None
     username = None
     password = None
@@ -71,7 +73,9 @@ def create_conn_info(conf: dict) -> dict:
         'username': username,
         'password': password,
         'azure_auth': azure_auth,
-        'token': token
+        'token': token,
+        'odbc_trust_server_certificate': odbc_trust_server_certificate,
+        'odbc_encrypt': odbc_encrypt
     }
 
 
