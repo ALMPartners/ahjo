@@ -23,7 +23,7 @@ def create_conn_info(conf: dict) -> dict:
     -------
     dict
         Dictionary with the following keys: host, port, server, database, driver,
-        dialect, username, password and azure_auth.
+        dialect, username, password, azure_auth, token, odbc_trust_server_certificate and odbc_encrypt.
     """
     host = conf.get('target_server_hostname')
     port = conf.get('sql_port')
@@ -34,8 +34,8 @@ def create_conn_info(conf: dict) -> dict:
     azure_auth = conf.get('azure_authentication')
     username_file = conf.get("username_file")
     password_file = conf.get("password_file")
-    odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate")
-    odbc_encrypt = conf.get("odbc_encrypt")
+    odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate", "no")
+    odbc_encrypt = conf.get("odbc_encrypt", "yes")
     token = None
     username = None
     password = None
