@@ -25,9 +25,12 @@ jobs:
           
       - name: Install Ahjo
         run: pip install .
+
+      - name: Create requirements.txt
+        run: pip freeze > requirements.txt
         
       - name: Install Safety
         run: pip install safety
 
       - name: Run vulnerability scan
-        run: safety check --key ${{secrets.PYUP_API_KEY}}
+        run: safety check -r requirements.txt --key ${{secrets.PYUP_API_KEY}}
