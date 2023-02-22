@@ -39,7 +39,7 @@ class Context:
             conn_info = self.get_conn_info()
             self.engine = create_sqlalchemy_engine(
                 create_sqlalchemy_url(conn_info), 
-                conn_info.get("token")
+                token = conn_info.get("token")
             )
         return self.engine
 
@@ -48,8 +48,11 @@ class Context:
         if self.master_engine is None:
             conn_info = self.get_conn_info()
             self.master_engine = create_sqlalchemy_engine(
-                create_sqlalchemy_url(conn_info, use_master_db=True), 
-                conn_info.get("token")
+                create_sqlalchemy_url(
+                    conn_info, 
+                    use_master_db=True
+                ), 
+                token = conn_info.get("token")
             )
         return self.master_engine
 

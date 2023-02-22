@@ -128,7 +128,12 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     sqlalchemy.engine.Engine
         SQL Alchemy engine.
     """
-    engine = create_engine(sqlalchemy_url, **kwargs)
+    engine = create_engine(
+        sqlalchemy_url, 
+        use_insertmanyvalues=False, 
+        use_setinputsizes=False, 
+        **kwargs
+    )
     if token is not None:
         @event.listens_for(engine, "do_connect")
         def provide_token(dialect, conn_rec, cargs, cparams):

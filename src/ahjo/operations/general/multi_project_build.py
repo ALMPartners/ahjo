@@ -49,7 +49,9 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
         create_sqlalchemy_url(
             create_conn_info(config_conn_info),
             use_master_db=True
-        )
+        ),
+        use_insertmanyvalues=False, 
+        use_setinputsizes=False
     )
 
     for ahjo_project in ahjo_projects:
