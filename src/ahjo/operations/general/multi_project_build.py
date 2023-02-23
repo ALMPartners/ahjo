@@ -7,7 +7,7 @@ import ahjo.scripts.master_actions
 import os
 import importlib
 import sys
-from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url
+from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
 from ahjo.interface_methods import load_json_conf, are_you_sure
 from ahjo.action import execute_action, registered_actions
 from ahjo.operation_manager import format_message
@@ -45,13 +45,13 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
     if not are_you_sure(are_you_sure_msg, False): return False
 
     # Create sqlalchemy master engine
-    master_engine = create_engine(
+    conn_info = create_conn_info(config_conn_info)
+    master_engine = create_sqlalchemy_engine(
         create_sqlalchemy_url(
-            create_conn_info(config_conn_info),
+            conn_info, 
             use_master_db=True
-        ),
-        use_insertmanyvalues=False, 
-        use_setinputsizes=False
+        ), 
+        token = conn_info.get("token")
     )
 
     for ahjo_project in ahjo_projects:

@@ -90,7 +90,7 @@ def run_migrations_online():
     """
     connectable = create_sqlalchemy_engine(
         create_sqlalchemy_url(conn_info), 
-        conn_info.get("token")
+        token = conn_info.get("token")
     )
 
     with connectable.connect() as connection:

@@ -120,6 +120,8 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     ---------
     sqlalchemy_url
         Connection url for sqlalchemy/alembic.
+    token
+        Dynamic authentication token (optional)
     kwargs
         Named arguments passed to create_engine().
 
@@ -128,12 +130,15 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     sqlalchemy.engine.Engine
         SQL Alchemy engine.
     """
-    engine = create_engine(
-        sqlalchemy_url, 
-        use_insertmanyvalues=False, 
-        use_setinputsizes=False, 
-        **kwargs
-    )
+    if sqlalchemy_url.get_dialect().name == "mssql" and sqlalchemy_url.get_driver_name() == "pyodbc":
+        engine = create_engine(
+            sqlalchemy_url, 
+            use_insertmanyvalues=False, 
+            use_setinputsizes=False, 
+            **kwargs
+        )
+    else:
+        engine = create_engine(sqlalchemy_url, **kwargs)        
     if token is not None:
         @event.listens_for(engine, "do_connect")
         def provide_token(dialect, conn_rec, cargs, cparams):
