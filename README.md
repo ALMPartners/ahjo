@@ -250,7 +250,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | alembic_version_table_schema | No | Schema of Alembic version table. | str | "dbo" |
 | allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
 | azure_authentication | No | Authentication type to Azure AD. Possible values are "ActiveDirectoryPassword", "ActiveDirectoryInteractive", "ActiveDirectoryIntegrated" and "AzureIdentity". | str | |
-| azure_identity_settings | No | A dictionary containing parameters for azure-identity library (required only if azure_authentication is "AzureIdentity"). Dictionary holds a key: "token_url" (str). Note: currently ahjo supports only AzureCliCredential authentication method. | dict | |
+| azure_identity_settings | No | A dictionary containing parameters for azure-identity library (used only if azure_authentication is "AzureIdentity"). Dictionary holds a key: "token_url" (str). Note: currently ahjo supports only AzureCliCredential authentication method. | dict | |
 | database_collation | No | Collation of database. | str | "Latin1_General_CS_AS" |
 | database_compatibility_level | No | Compatibility level of database. | int | Depends on server. SQL Server 2017 default is 140. |
 | database_data_path | No | Path of database data file. | str | |
