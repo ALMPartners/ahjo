@@ -15,7 +15,7 @@ from sqlalchemy.engine import Engine, ExceptionContext
 logger = getLogger('ahjo')
 
 
-def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: dict, chunk_size: Optional[int] = 1000):
+def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: list, chunk_size: Optional[int] = 1000):
     """Insert multiple rows of data to target table.
     If error occurs, print and log only the original driver
     error (no insert statements).
@@ -26,8 +26,8 @@ def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: d
         SQL Alchemy engine.
     reflected_table : sqlalchemy.schema.Table
         Table, where rows are inserted.
-    records : dict
-        Dictionary of columns and values to insert.
+    records : list
+        List of dictionaries containing columns and values to insert.
     chunk_size : int
         Defines in how big chunks records are passed to insert.
     """

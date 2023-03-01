@@ -2,7 +2,7 @@ from os import listdir, path
 from re import DOTALL, sub
 
 import pytest
-from sqlalchemy import create_engine
+from ahjo.database_utilities import create_sqlalchemy_engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 
@@ -38,7 +38,7 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
         database='master',
         query={'driver': config['sql_driver']}
     )
-    return create_engine(connection_url)
+    return create_sqlalchemy_engine(connection_url)
 
 
 @pytest.fixture(scope='session')
@@ -55,7 +55,7 @@ def mssql_engine(request, ahjo_config, mssql_sample):
         database=config['target_database_name'],
         query={'driver': config['sql_driver']}
     )
-    return create_engine(connection_url)
+    return create_sqlalchemy_engine(connection_url)
 
 
 @pytest.fixture(scope='session')
