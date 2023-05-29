@@ -4,12 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Module for build steps and other callable actions, that can be defined in a modular way."""
+
+import os
+import sys
+
 from logging import getLogger
 from typing import Any, Callable, List, Union
 
 from ahjo.context import Context
 from ahjo.interface_methods import are_you_sure
-from ahjo.operation_manager import OperationManager
+from ahjo.operation_manager import OperationManager, format_message
 from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
@@ -121,7 +125,7 @@ def create_multiaction(action_name: str, subactions: List[str], description: str
     return func
 
 
-def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -> bool:
+def check_action_validity(action_name: str, allowed_actions: Union[str, list], skipped_actions: list = []) -> bool:
     """Check if given action is permitted and registered.
 
     Arguments
@@ -130,6 +134,8 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -
         The name of the action to execute
     allowed_actions
         The actions allowed in the configuration file.
+    skipped_actions
+        The actions that are skipped.
     Returns
     -------
     bool
@@ -141,6 +147,10 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list]) -
     if isinstance(allowed_actions, list) and action_name not in allowed_actions:
         logger.error("Action " + action_name + " is not permitted, allowed actions: " + ', '.join(allowed_actions))
         return False  
+    if isinstance(skipped_actions, list):
+        if action_name in skipped_actions:
+            logger.info("Action " + action_name + " was skipped.")
+            return False
     if len(registered_actions) == 0:
         logger.error("No actions defined")
         return False
@@ -172,7 +182,12 @@ def execute_action(action_name: str, config_filename: str, master_engine: Engine
     with OperationManager('Starting to execute "' + action_name + '"'):
         context = Context(config_filename, master_engine)
         # validity check
-        if not check_action_validity(action_name, context.configuration.get('allowed_actions', [])):
+        action_valid = check_action_validity(
+            action_name, 
+            context.configuration.get('allowed_actions', []), 
+            skipped_actions = context.configuration.get('skipped_actions', [])
+        )
+        if not action_valid: 
             return
         action = registered_actions.get(action_name)
         # user confirmation
@@ -189,3 +204,17 @@ def list_actions():
     for key, registeration in sorted(registered_actions.items()):
         logger.info(
             f"'{key}': {registeration.function.__doc__ or 'No description available.'}")
+
+
+def import_actions():
+    if os.path.exists('ahjo_actions.py') or os.path.exists('./ahjo_actions'):
+        logger.debug(format_message('ahjo_actions found'))
+        try:
+            sys.path.append(os.getcwd())
+            import ahjo_actions
+            logger.info(format_message('Succesfully loaded ahjo_actions'))
+        except:
+            logger.exception(format_message('Error while loading ahjo_actions'))
+            raise
+    else:
+        logger.info(format_message('ahjo_actions not found'))

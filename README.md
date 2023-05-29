@@ -144,6 +144,7 @@ To add your own actions (f.e. for more complex testing), modify ahjo_actions.py.
 ```
 ahjo <action> <config_filename>
 ```
+`<config_filename>` is not mandatory if the config path is defined in environment variable `AHJO_CONFIG_PATH`. 
 Confirmation is asked for actions that affect the database. Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The later option is recommended for production environments. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file.
 
 Pre-defined actions include:
@@ -249,6 +250,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | alembic_version_table | No | Name of Alembic version table. Table holds the current revision number. | str | "alembic_version" |
 | alembic_version_table_schema | No | Schema of Alembic version table. | str | "dbo" |
 | allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
+| skipped_actions | No | List of actions that are skipped. | list of str | [] |
 | azure_authentication | No | Authentication type to Azure AD. Possible values are "ActiveDirectoryPassword", "ActiveDirectoryInteractive", "ActiveDirectoryIntegrated" and "AzureIdentity". | str | |
 | azure_identity_settings | No | A dictionary containing parameters for azure-identity library (used only if azure_authentication is "AzureIdentity"). Dictionary holds a key: "token_url" (str). Note: currently ahjo supports only AzureCliCredential authentication method. | dict | |
 | database_collation | No | Collation of database. | str | "Latin1_General_CS_AS" |
@@ -273,6 +275,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | db_permission_invoke_method | No | Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy". | str | |
 | odbc_trust_server_certificate | No | Value of TrustServerCertificate in ODBC connection string. | str | "no" |
 | odbc_encrypt | No | Value of Encrypt in ODBC connection string. | str | "yes" |
+| upgrade_actions_file | No | Configuration file for upgrade actions | str | "./upgrade_actions.jsonc" |
 
 
 ## Using Alembic with Ahjo
@@ -289,7 +292,7 @@ The [env.py](./ahjo/resources/files/env.py) is created in initialize-project com
 
 
 # Running actions from multiple projects
-To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used (python 3.7+ only):
+To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used:
 
 ```
 ahjo-multi-project-build path/to/config_file.jsonc
@@ -336,6 +339,46 @@ The following settings are defined under the name of the ahjo project(s):
 
 `config` - File path to the project-specific config file  
 `actions` - List of project actions to be executed
+
+
+# Ahjo project upgrade
+Database updates can be run with `ahjo-upgrade` command. The command detects automatically the latest installed git version and runs the required database version updates (in order).
+The upgrade actions are defined in a JSONC file and its location is defined in `upgrade_actions_file` setting in project config file.
+The ahjo actions required for version upgrades are defined with key-value pairs, where key is the git version tag and value is a list of actions.
+The list of actions can contain strings of action names or lists of action names and action parameters. 
+If the action is defined with parameters, the action name is the first item in the list and the parameters are defined as a dictionary in the second item in the list. 
+The dictionary contains the parameters of the action as key-value pairs, where key is the parameter name and value is the parameter value.
+
+Below is an example of upgrade actions file:
+
+```
+{
+	"v3.0.0": [
+		"deploy",
+        "data"
+	],
+    "3.1.0": [ 
+		"deploy",
+		[
+			"deploy-files",
+			{
+				"files": [
+					"./database/procedures/dbo.procedure_1.sql", 
+					"./database/procedures/dbo.procedure_2.sql"
+				]
+			}
+		]
+	],
+	"v3.1.1": [
+        "deploy"
+	]
+}
+```
+
+To upgrade specific version, use `-v` or `--version` flag:
+```
+ahjo-upgrade -v 3.1.0
+```
 
 
 # Logging

@@ -87,6 +87,22 @@ def _get_git_commit_info() -> Tuple[str, str]:
     return branch, commit
 
 
+def _get_previous_tag(current_tag) -> Tuple[str]:
+    """Retrieve the tag before current_tag with 'git describe' command.
+    Can fail if tags are not found.
+    """
+    return check_output(["git", "describe", "--abbrev=0", current_tag + "^"]).decode("utf-8").strip()
+
+
+def _get_all_tags() -> list:
+    """Retrieve the list of all tags with 
+    'git tag' command.
+
+    Can fail if tags are not found.
+    """
+    return check_output(["git", "tag", "--sort=-taggerdate"]).decode("utf-8").strip().split("\n")
+
+
 def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
     """Update or create a Git version table."""
     metadata = MetaData()
@@ -125,19 +141,25 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
         connection.execute(update_query)
 
 
+def _get_git_version(engine: Engine, git_table_schema: str, git_table: str):
+    """Return the first row of the Git version table."""
+    result = None
+    try:
+        metadata = MetaData()
+        git_version_table = _sqla_git_table(metadata, git_table_schema, git_table)
+        result = execute_query(
+            engine=engine, 
+            query=git_version_table.select()
+        )[0]
+    except Exception as error:
+        logger.error('Failed to read GIT version table. See log for detailed error message.')
+        logger.debug(error)
+    return result
+
+
 def print_git_version(engine: Engine, git_table_schema: str, git_table: str):
     with OperationManager('Checking Git version from database'):
-        try:
-            metadata = MetaData()
-            git_version_table = _sqla_git_table(
-                metadata, git_table_schema, git_table)
-            git_version_query = git_version_table.select()
-            result = execute_query(engine=engine, query=git_version_query)[0]
-            repository, branch, version = result
-            logger.info(f"Repository: {repository}")
-            logger.info(f"Branch: {branch}")
-            logger.info(f"Version: {version}")
-        except Exception as error:
-            logger.error(
-                'Failed to read GIT version table. See log for detailed error message.')
-            logger.debug(error)
+        repository, branch, version = _get_git_version(engine, git_table_schema, git_table)
+        logger.info(f"Repository: {repository}")
+        logger.info(f"Branch: {branch}")
+        logger.info(f"Version: {version}")

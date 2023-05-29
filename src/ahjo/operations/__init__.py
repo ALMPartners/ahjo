@@ -17,7 +17,8 @@ from ahjo.operations.general import (
     populate_project,
     bulk_insert_into_database,
     drop_sqlfile_objects,
-    deploy_sqlfiles
+    deploy_sqlfiles,
+    upgrade
 )
 
 from ahjo.operations.tsql import (

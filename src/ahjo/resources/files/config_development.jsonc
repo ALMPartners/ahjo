@@ -42,5 +42,9 @@
         // ODBC connection string settings
         //,"odbc_trust_server_certificate": "no"
         //,"odbc_encrypt": "yes"
+        // List of actions that are skipped
+        //,"skipped_actions": []
+        // Configuration file for upgrade actions
+        //,"upgrade_actions_file": "./upgrade_actions.jsonc"
     }
 }

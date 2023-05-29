@@ -188,11 +188,11 @@ def drop_files(context, **kwargs):
         return
         
     object_type = kwargs["object_type"] if "object_type" in kwargs else None
-    if not(isinstance(object_type, list) and len(object_type) > 0):
+    if not(isinstance(object_type, str) and len(object_type) > 0):
         logger.warning('Check variable: "object_type".')
         return
 
-    op.drop_sqlfile_objects(context.get_engine(), object_type[0], files, "Dropping files")
+    op.drop_sqlfile_objects(context.get_engine(), object_type, files, "Dropping files")
 
 @action('drop-obsolete', True)
 def drop_obsolete(context):
