@@ -357,7 +357,7 @@ Below is an example of upgrade actions file:
 		"deploy",
         "data"
 	],
-    "3.1.0": [ 
+    "v3.1.0": [ 
 		"deploy",
 		[
 			"deploy-files",
@@ -377,7 +377,7 @@ Below is an example of upgrade actions file:
 
 To upgrade specific version, use `-v` or `--version` flag:
 ```
-ahjo-upgrade -v 3.1.0
+ahjo-upgrade -v v3.1.0
 ```
 
 
