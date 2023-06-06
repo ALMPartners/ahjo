@@ -9,7 +9,7 @@ pipelines:
           script:
             - apt-get update && apt-get -y install unixodbc-dev
             - pip install tox
-            - tox -e py310
+            - tox -e py310 -- --pipeline
       - step:
           caches:
             - pip

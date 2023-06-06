@@ -41,6 +41,12 @@ def pytest_addoption(parser):
         default='',
         help='Password for SQL Server. Do not use for Win authentication.'
         )
+    parser.addoption(
+        "--pipeline",
+        action="store_true",
+        default=False,
+        help="Skip tests that cannot be run on CI pipeline"
+    )
 
 
 pytest_plugins = [
@@ -57,6 +63,7 @@ def test_db_name():
 def pytest_configure(config):
     config.addinivalue_line("markers", "mssql: mark tests that require SQL server to run")
     config.addinivalue_line("markers", "git: mark tests that require Git to run")
+    config.addinivalue_line("markers", "nopipeline: tests that cannot be run on CI pipeline")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -81,6 +88,7 @@ def pytest_collection_modifyitems(config, items):
     skip_mssql = pytest.mark.skip(reason="requires SQL Server")
     git_installed = check_if_git_is_installed()
     skip_git = pytest.mark.skip(reason="requires GIT")
+    skip_pipeline = pytest.mark.skip(reason="Skipped due to --pipeline")
     for item in items:
         if "mssql" in item.keywords:
             if execute_mssql_tests:
@@ -95,6 +103,8 @@ def pytest_collection_modifyitems(config, items):
                 item.fixturenames = fixtures
             else:
                 item.add_marker(skip_git)
+        if "nopipeline" in item.keywords and config.getoption("--pipeline"):
+            item.add_marker(skip_pipeline)
 
 
 def ensure_mssql_ready_for_tests(config):
