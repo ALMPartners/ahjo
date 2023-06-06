@@ -5,10 +5,9 @@
 
 import copy
 from logging import getLogger
-from subprocess import run
 from ahjo.interface_methods import load_json_conf, are_you_sure
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
-from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_git_commit_info, _get_previous_tag
+from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_git_commit_info, _get_previous_tag, _checkout_tag
 from ahjo.action import execute_action
 
 
@@ -26,9 +25,6 @@ def upgrade(config_filename: str, version: str = None):
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
 
-        if upgrade_actions is None:
-            raise Exception("Upgrade actions not defined.")
-
         # Create sqlalchemy engine
         engine = create_sqlalchemy_engine(
             create_sqlalchemy_url(conn_info), 
@@ -43,15 +39,7 @@ def upgrade(config_filename: str, version: str = None):
 
         # Validate user input
         if version is not None:
-            if version not in upgrade_actions:
-                raise Exception(f"Version {version} actions are not defined in upgrade actions config file.")
-            upgradable_versions = list(version_actions.keys())
-            if len(upgradable_versions) == 0:
-                raise Exception(f"Database is already up to date. Current database version is {current_db_version}.")
-            valid_upgradable_version = upgradable_versions[0]
-            if version != valid_upgradable_version:
-                raise Exception(f"Version {version} is not the next upgrade. Current database version is {current_db_version}. Use version {valid_upgradable_version} instead.")
-            version_actions = {version: version_actions[version]}
+            version_actions = validate_version(version, version_actions, upgrade_actions, current_db_version)
 
         # Format are_you_sure message
         are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
@@ -68,10 +56,7 @@ def upgrade(config_filename: str, version: str = None):
         for git_version in version_actions:
 
             # Checkout the next upgradable git version
-            run(["git", "checkout", "tags/" + git_version])
-            _, checkout_version =_get_git_commit_info()
-            if checkout_version != git_version:
-                raise Exception(f"Failed to checkout git version: {git_version}")
+            _checkout_tag(git_version)
 
             # Deploy version upgrades
             actions = version_actions[git_version]
@@ -107,35 +92,73 @@ def upgrade(config_filename: str, version: str = None):
         logger.error(error)
 
 
-def get_upgradable_version_actions(upgrade_actions: dict, current_db_version: str):
+def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
     """Return a dictionary of upgradable versions and their actions."""
+
+    if upgrade_actions is None:
+        raise ValueError("Upgrade actions not defined.")
 
     version_actions = copy.deepcopy(upgrade_actions)
     git_tags = _get_all_tags()
     oldest_tag = git_tags[-1]
+    tag_set = set(git_tags)
+
+    if current_version not in tag_set:
+        raise ValueError(f"Current version {current_version} does not exist in the repository.")
 
     # Filter out versions that are older than the current database version
     for version in upgrade_actions:
         if version != oldest_tag:
             previous_version = _get_previous_tag(version)
-            if previous_version == current_db_version:
+            if previous_version == current_version:
                 break
             else:
                 version_actions.pop(version)
         else: 
             break
 
-    # Check that the versions in upgrade_actions exist in the repository
-    # and they are listed in the correct order
-    tag_set = set(git_tags)
+    # Validate versions and actions.
     previous_version = None
     for version in version_actions:
+
+        actions = version_actions[version]
+
+        if not isinstance(actions, list):
+            raise ValueError(f"Upgrade actions for version {version} are not defined as list.")
+        
+        if len(actions) == 0:
+            raise ValueError(f"Upgrade actions are not defined for version {version}.")
+        
+        for action in actions:
+            if not isinstance(action, str) and not isinstance(action, list):
+                raise ValueError(f"Upgrade action is not defined as string or list.")
+            else:
+                if isinstance(action, list) and len(action) > 0:
+                    if not isinstance(action[0], str):
+                        raise ValueError(f"Upgrade action name is not defined as string.")
+                    if len(action) >= 1 and not isinstance(action[1], dict):
+                        raise ValueError(f"Upgrade action parameters are not defined as dictionary.")
+
         if version not in tag_set:
-            raise Exception(f"Git tag {version} does not exist in the repository.")
+            raise ValueError(f"Git tag {version} does not exist in the repository.")
+        
         if previous_version is not None:
             git_previous_tag = _get_previous_tag(version)
             if previous_version != git_previous_tag:
-                raise Exception(f"Git versions in upgrade_actions are not listed in the correct order: {previous_version} -> {version}")
+                raise ValueError(f"Git versions in upgrade_actions are not listed in the correct order: {previous_version} -> {version}")
         previous_version = version
+
+    if len(list(version_actions.keys())) == 0:
+        raise ValueError(f"Database is already up to date. Current database version is {current_version}.")
         
     return version_actions
+
+
+def validate_version(version: str, version_actions: dict, upgrade_actions: dict, current_db_version: str):
+    """Validate that the version is upgradable."""
+    if version not in upgrade_actions:
+        raise ValueError(f"Version {version} actions are not defined in upgrade actions config file.")
+    valid_upgradable_version = list(version_actions.keys())[0]
+    if version != valid_upgradable_version:
+        raise ValueError(f"Version {version} is not the next upgrade. Current database version is {current_db_version}. Use version {valid_upgradable_version} instead.")
+    return {version: version_actions[version]}

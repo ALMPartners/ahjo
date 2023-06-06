@@ -7,7 +7,7 @@
 import os
 from logging import getLogger
 from shlex import split
-from subprocess import check_output
+from subprocess import check_output, run
 from typing import Tuple
 
 from ahjo.database_utilities import execute_query
@@ -87,11 +87,11 @@ def _get_git_commit_info() -> Tuple[str, str]:
     return branch, commit
 
 
-def _get_previous_tag(current_tag) -> Tuple[str]:
-    """Retrieve the tag before current_tag with 'git describe' command.
+def _get_previous_tag(tag: str) -> str:
+    """Retrieve the previous tag with 'git describe' command.
     Can fail if tags are not found.
     """
-    return check_output(["git", "describe", "--abbrev=0", current_tag + "^"]).decode("utf-8").strip()
+    return check_output(["git", "describe", "--tags", "--abbrev=0", tag + "^"]).decode("utf-8").strip()
 
 
 def _get_all_tags() -> list:
@@ -102,6 +102,15 @@ def _get_all_tags() -> list:
     """
     return check_output(["git", "tag", "--sort=-taggerdate"]).decode("utf-8").strip().split("\n")
 
+
+def _checkout_tag(tag: str):
+    """Checkout a tag with 'git checkout' command.
+    Can fail if tag is not found.
+    """
+    run(["git", "checkout", "tags/" + tag])
+    _, checkout_version =_get_git_commit_info()
+    if checkout_version != tag:
+        raise Exception(f"Failed to checkout git version: {tag}")
 
 def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
     """Update or create a Git version table."""

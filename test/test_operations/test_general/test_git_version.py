@@ -169,3 +169,11 @@ class TestWithSQLServer():
         assert f"Repository: {self.sample_repository}" in log_output
         assert f"Branch: {git_branch}" in log_output
         assert f"Version: {git_commit}" in log_output
+
+    @pytest.mark.git
+    def test_previous_git_tag_should_be_correct(self):
+        assert git._get_previous_tag("v3.1.5") == "v3.1.4"
+
+    @pytest.mark.git
+    def test_tag_should_be_found_in_list_of_all_tags(self):
+        assert "v3.1.5" in git._get_all_tags()
