@@ -291,6 +291,16 @@ alembic -x main_config=config_development.jsonc downgrade -1
 The [env.py](./ahjo/resources/files/env.py) is created in initialize-project command.
 
 
+## Authentication with azure-identity
+Instructions for enabling azure identity authentication in ahjo:
+
+1. Install [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) & [azure-identity](https://pypi.org/project/azure-identity/) 
+2. Set the config variable `azure_authentication` to `AzureIdentity`
+
+Sign in interactively through your browser with the `az login` command.
+If the login is successful, ahjo will use Azure credentials for creating an engine that connects to an Azure SQL database.
+
+
 # Running actions from multiple projects
 To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used:
 
