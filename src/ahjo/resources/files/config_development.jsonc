@@ -46,7 +46,6 @@
         //,"skipped_actions": []
         // Configuration file for upgrade actions
         //,"upgrade_actions_file": "./upgrade_actions.jsonc"
-        //,"sql_collation_name": "Latin1_General_CS_AS"
         //,"catalog_collation_type_desc": "DATABASE_DEFAULT"
     }
 }

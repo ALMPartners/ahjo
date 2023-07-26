@@ -253,7 +253,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | skipped_actions | No | List of actions that are skipped. | list of str | [] |
 | azure_authentication | No | Authentication type to Azure AD. Possible values are "ActiveDirectoryPassword", "ActiveDirectoryInteractive", "ActiveDirectoryIntegrated" and "AzureIdentity". | str | |
 | azure_identity_settings | No | A dictionary containing parameters for azure-identity library (used only if azure_authentication is "AzureIdentity"). Dictionary holds a key: "token_url" (str). Note: currently ahjo supports only AzureCliCredential authentication method. | dict | |
-| database_collation | No | Collation of database. | str | "Latin1_General_CS_AS" |
+| database_collation | No | Collation of database. If the defined collation is different from the database collation, a warning is logged. | str | "Latin1_General_CS_AS" |
 | database_compatibility_level | No | Compatibility level of database. | int | Depends on server. SQL Server 2017 default is 140. |
 | database_data_path | No | Path of database data file. | str | |
 | database_file_growth | No | The size (MB) of how much database data file will grow when it runs out of space. | int | 500 |
@@ -276,7 +276,6 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | odbc_trust_server_certificate | No | Value of TrustServerCertificate in ODBC connection string. | str | "no" |
 | odbc_encrypt | No | Value of Encrypt in ODBC connection string. | str | "yes" |
 | upgrade_actions_file | No | Configuration file for upgrade actions | str | "./upgrade_actions.jsonc" |
-| sql_collation_name | No | Collation of database. If the defined collation is different from the database collation, a warning is logged. | str | "Latin1_General_CS_AS" |
 | catalog_collation_type_desc | No | Catalog collation setting of database. If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database | str | "DATABASE_DEFAULT" |
 
 

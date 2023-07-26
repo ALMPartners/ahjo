@@ -201,7 +201,7 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
                 context.get_engine(), 
                 context.configuration["target_database_name"],
                 sql_dialect = context.configuration.get("sql_dialect", "mssql+pyodbc"),
-                config_collation_name = context.configuration.get("sql_collation_name", "Latin1_General_CS_AS"),
+                config_collation_name = context.configuration.get("database_collation", "Latin1_General_CS_AS"),
                 config_catalog_collation_type_desc = context.configuration.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
             )
             logger.info('------')

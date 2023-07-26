@@ -47,7 +47,7 @@ def upgrade(config_filename: str, version: str = None):
             engine, 
             config.get("target_database_name"),
             sql_dialect = config.get("sql_dialect", "mssql+pyodbc"),
-            config_collation_name = config.get("sql_collation_name", "Latin1_General_CS_AS"),
+            config_collation_name = config.get("database_collation", "Latin1_General_CS_AS"),
             config_catalog_collation_type_desc = config.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
         )
         logger.info('------')
