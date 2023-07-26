@@ -276,6 +276,8 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | odbc_trust_server_certificate | No | Value of TrustServerCertificate in ODBC connection string. | str | "no" |
 | odbc_encrypt | No | Value of Encrypt in ODBC connection string. | str | "yes" |
 | upgrade_actions_file | No | Configuration file for upgrade actions | str | "./upgrade_actions.jsonc" |
+| sql_collation_name | No | Collation of database. If the defined collation is different from the database collation, a warning is logged. | str | "Latin1_General_CS_AS" |
+| catalog_collation_type_desc | No | Catalog collation setting of database. If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database | str | "DATABASE_DEFAULT" |
 
 
 ## Using Alembic with Ahjo

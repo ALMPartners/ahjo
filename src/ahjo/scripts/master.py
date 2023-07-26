@@ -12,10 +12,15 @@ from logging.config import fileConfig
 from ahjo.action import execute_action, list_actions, import_actions
 from ahjo.scripts.utils import get_config_path
 
-# load logging config
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo')
-logger.info('------')
+
+info_msg = "    Ahjo - Database deployment framework    "
+line = "-" * len(info_msg)
+print(line)
+print(info_msg)
+print(line)
+
 import_actions()
 
 
@@ -41,7 +46,7 @@ def main():
             logger.error("Error: Configuration filename is required.")
             return
 
-        kwargs = {}
+        kwargs = {"load_collation": True}
         if len(args.files) > 0 : kwargs['files'] = args.files
         if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
         execute_action(

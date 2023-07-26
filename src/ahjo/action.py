@@ -14,6 +14,7 @@ from typing import Any, Callable, List, Union
 from ahjo.context import Context
 from ahjo.interface_methods import are_you_sure
 from ahjo.operation_manager import OperationManager, format_message
+from ahjo.scripts.utils import display_collation_info
 from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
@@ -162,7 +163,8 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list], s
     return True
 
 
-def execute_action(action_name: str, config_filename: str, master_engine: Engine = None, skip_confirmation: bool = False, *args, **kwargs):
+def execute_action(action_name: str, config_filename: str, engine: Engine = None, 
+        skip_confirmation: bool = False, load_collation: bool = False, *args, **kwargs):
     """Prepare and execute given action.
 
     Does the logging and error handling for preparation.
@@ -173,14 +175,16 @@ def execute_action(action_name: str, config_filename: str, master_engine: Engine
         The name of the action to execute
     config_filename: str
         The name of the config file for context creation.
-    master_engine: sqlalchemy.engine.Engine
+    engine: sqlalchemy.engine.Engine
         SQL Alchemy engine.
     skip_confirmation: bool
         If True, user confirmation is disabled.
+    load_collation: bool
+        If True, collation information is loaded from the database.
     """
     logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
-        context = Context(config_filename, master_engine)
+        context = Context(config_filename, engine)
         # validity check
         action_valid = check_action_validity(
             action_name, 
@@ -190,6 +194,18 @@ def execute_action(action_name: str, config_filename: str, master_engine: Engine
         if not action_valid: 
             return
         action = registered_actions.get(action_name)
+
+        # display database collation
+        if load_collation:
+            display_collation_info(
+                context.get_engine(), 
+                context.configuration["target_database_name"],
+                sql_dialect = context.configuration.get("sql_dialect", "mssql+pyodbc"),
+                config_collation_name = context.configuration.get("sql_collation_name", "Latin1_General_CS_AS"),
+                config_catalog_collation_type_desc = context.configuration.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
+            )
+            logger.info('------')
+        
         # user confirmation
         if not skip_confirmation and not action.pre_exec_check(context):
             return

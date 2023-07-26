@@ -7,7 +7,8 @@ import copy
 from logging import getLogger
 from ahjo.interface_methods import load_json_conf, are_you_sure
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
-from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_git_commit_info, _get_previous_tag, _checkout_tag
+from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
+from ahjo.scripts.utils import display_collation_info
 from ahjo.action import execute_action
 
 
@@ -40,6 +41,16 @@ def upgrade(config_filename: str, version: str = None):
         # Validate user input
         if version is not None:
             version_actions = validate_version(version, version_actions, upgrade_actions, current_db_version)
+
+        # Display database collation
+        display_collation_info(
+            engine, 
+            config.get("target_database_name"),
+            sql_dialect = config.get("sql_dialect", "mssql+pyodbc"),
+            config_collation_name = config.get("sql_collation_name", "Latin1_General_CS_AS"),
+            config_catalog_collation_type_desc = config.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
+        )
+        logger.info('------')
 
         # Format are_you_sure message
         are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
