@@ -10,7 +10,7 @@ import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.action import execute_action, list_actions, import_actions
-from ahjo.scripts.utils import get_config_path
+from ahjo.scripts.utils import get_config_path, config_is_valid
 
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo')
@@ -31,6 +31,7 @@ def main():
     parser.add_argument("config_filename", help="Configuration filename", type=str, nargs='?')
     parser.add_argument('--files', nargs='*', default=[], help='Files')
     parser.add_argument('--object_type', nargs=1, default=[], help='Object type', choices=['view', 'procedure', 'function', 'assembly'])
+    parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
     args = parser.parse_args()
     logger.debug(f'Action:  {args.action}')
     logger.debug(f'Config file:  {args.config_filename}')
@@ -41,16 +42,17 @@ def main():
         list_actions()
     else:
 
-        config_filename = get_config_path(args.config_filename)
-        if config_filename is None:
-            logger.error("Error: Configuration filename is required.")
+        config_path = get_config_path(args.config_filename)
+        non_interactive = args.non_interactive
+        if not config_is_valid(config_path, non_interactive = non_interactive):
             return
 
         kwargs = {"load_collation": True}
         if len(args.files) > 0 : kwargs['files'] = args.files
         if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
+        if non_interactive : kwargs['skip_confirmation'] = True
         execute_action(
-            *[args.action, config_filename],
+            *[args.action, config_path],
             **kwargs
         )
 

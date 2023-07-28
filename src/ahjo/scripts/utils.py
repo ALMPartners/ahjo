@@ -12,8 +12,10 @@ from logging import getLogger
 from ahjo.operations.tsql.collation import get_collation_info
 from ahjo.operation_manager import format_message
 from sqlalchemy.engine import Engine
+from ahjo.interface_methods import load_json_conf
 
 logger = getLogger('ahjo')
+
 
 def get_config_path(config_filename: str) -> str:
     '''Get configuration filename from environment variable if not given as argument.'''
@@ -47,3 +49,28 @@ def display_collation_info(engine: Engine, db_name: str, sql_dialect: str = "mss
             else:
                 if catalog_collation_type_desc is not None: 
                     logger.info("Database catalog collation setting: " + catalog_collation_type_desc)
+
+
+def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
+    '''Validate configuration file.'''
+
+    # Check if configuration file exists.
+    if config_path is None:
+        logger.error("Error: Configuration filename is required.")
+        return False
+    
+    configuration = load_json_conf(config_path)
+
+    # Allow only non-interactive authentication methods in non-interactive mode.
+    if non_interactive:
+        if configuration.get("username_file") is None:
+            logger.error("Error: Username file is required in non-interactive mode.")
+            return False
+        if configuration.get("password_file") is None:
+            logger.error("Error: Password file is required in non-interactive mode.")
+            return False
+        if configuration.get("azure_authentication") == "ActiveDirectoryInteractive" :
+            logger.error("Error: Azure authentication method ActiveDirectoryInteractive is not supported in non-interactive mode.")
+            return False
+
+    return True

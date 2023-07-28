@@ -145,7 +145,8 @@ To add your own actions (f.e. for more complex testing), modify ahjo_actions.py.
 ahjo <action> <config_filename>
 ```
 `<config_filename>` is not mandatory if the config path is defined in environment variable `AHJO_CONFIG_PATH`. 
-Confirmation is asked for actions that affect the database. Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The later option is recommended for production environments. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file.
+By default, confirmation is asked for actions that affect the database. Confirmation can be skipped with `-ni` or `--non-interactive` argument.
+Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The later option is recommended for production environments. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file.
 
 Pre-defined actions include:
 
@@ -415,7 +416,7 @@ create_multiaction("complete-build", ["init", "structure", "deploy", "data", "te
 ```
 
 # License
-Copyright 2019, 2020, 2021 ALM Partners Oy
+Copyright 2019 - 2023 ALM Partners Oy
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
