@@ -63,9 +63,11 @@ def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
 
     # Allow only non-interactive authentication methods in non-interactive mode.
     if non_interactive:
-        if configuration.get("azure_authentication") == "ActiveDirectoryInteractive" :
-            logger.error("Error: Azure authentication method ActiveDirectoryInteractive is not supported in non-interactive mode.")
-            return False
+        azure_auth = configuration.get("azure_authentication")
+        if azure_auth is not None:
+            if azure_auth == "ActiveDirectoryInteractive" :
+                logger.error("Error: Azure authentication method ActiveDirectoryInteractive is not supported in non-interactive mode.")
+                return False
         else:
             if configuration.get("username_file") is None:
                 logger.error("Error: Username file is required in non-interactive mode.")
