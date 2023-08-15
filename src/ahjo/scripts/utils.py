@@ -31,7 +31,13 @@ def display_collation_info(engine: Engine, db_name: str, sql_dialect: str = "mss
     if sql_dialect == "mssql+pyodbc":
 
         logger.info(format_message("Loading database connection settings"))
-        collation, catalog_collation_type_desc, server_edition = get_collation_info(engine, db_name)
+
+        try:
+            collation, catalog_collation_type_desc, server_edition = get_collation_info(engine, db_name)
+        except Exception as e:
+            logger.info("Error: Could not get collation information from the database. Check that the database exists and the user has permissions to access it.")
+            return
+        
         logger.info("Server edition: " + server_edition)
 
         if config_collation_name != collation:

@@ -61,16 +61,16 @@ def create_db_login(context):
     login_name = context.configuration.get('target_database_name') + '_LOGIN'
     default_password = 'SALASANA'
     default_db = context.configuration.get('target_database_name')
-    op.create_db_login(context.get_engine(),
+    op.create_db_login(context.get_connectable(),
                        login_name, default_password, default_db)
 
 
 @action(affects_database=True, dependencies=['init'])
 def structure(context):
     """(MSSQL) Create database structure (schemas, tables, constraints). Not available if these are created with alembic."""
-    success1 = op.deploy_sqlfiles(context.get_engine(), './database/schema/', 'Creating schemas')
-    success2 = op.deploy_sqlfiles(context.get_engine(), './database/tables/', 'Creating tables')
-    success3 = op.deploy_sqlfiles(context.get_engine(), './database/constraints/', 'Creating constraints')
+    success1 = op.deploy_sqlfiles(context.get_connectable(), './database/schema/', 'Creating schemas')
+    success2 = op.deploy_sqlfiles(context.get_connectable(), './database/tables/', 'Creating tables')
+    success3 = op.deploy_sqlfiles(context.get_connectable(), './database/constraints/', 'Creating constraints')
     if success1 is False and success2 is False and success3 is False:
         logger.error(
             'Failed to create database structure using primary method, attempting alternate method.')
@@ -84,19 +84,22 @@ def structure(context):
 @action(affects_database=True, dependencies=['init'])
 def deploy(context):
     """(MSSQL) Run 'alembic upgrade head'. Deploy functions, views and prodecures. Update extended properties and Git version."""
-    op.upgrade_db_to_latest_alembic_version(context.config_filename)
-    op.deploy_sqlfiles(context.get_engine(), "./database/functions/", "Deploying functions")
-    op.deploy_sqlfiles(context.get_engine(), "./database/views/", "Deploying views")
-    op.deploy_sqlfiles(context.get_engine(), "./database/procedures/", "Deploying procedures")
+    op.upgrade_db_to_latest_alembic_version(
+        context.config_filename,
+        connection = context.get_connection() if context.enable_transaction else None
+    )
+    op.deploy_sqlfiles(context.get_connectable(), "./database/functions/", "Deploying functions")
+    op.deploy_sqlfiles(context.get_connectable(), "./database/views/", "Deploying views")
+    op.deploy_sqlfiles(context.get_connectable(), "./database/procedures/", "Deploying procedures")
     op.update_git_version(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
         repository = context.configuration.get('url_of_remote_git_repository'),
         git_version_info_path = context.configuration.get('git_version_info_path')
     )
     op.update_db_object_properties(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
     )
 
@@ -106,9 +109,9 @@ def deploy_files(context, **kwargs):
     deploy_files = kwargs["files"] if "files" in kwargs else None
     if isinstance(deploy_files, list) and len(deploy_files) > 0:
         op.upgrade_db_to_latest_alembic_version(context.config_filename)
-        op.deploy_sqlfiles(context.get_engine(), deploy_files, "Deploying sql files")
+        op.deploy_sqlfiles(context.get_connectable(), deploy_files, "Deploying sql files")
         op.update_git_version(
-            context.get_engine(),
+            context.get_connectable(),
             context.configuration.get('git_table_schema', 'dbo'),
             context.configuration.get('git_table', 'git_version'),
             repository = context.configuration.get('url_of_remote_git_repository'),
@@ -131,10 +134,11 @@ def assembly(context):
 def data(context):
     """Insert data."""
     engine = context.get_engine()
-    deploy_args = [engine, "./database/data/", "Inserting data"]
+    connectable = context.get_connectable()
+    deploy_args = [connectable, "./database/data/", "Inserting data"]
     deploy_mssql_sqlfiles(*deploy_args) if engine.name == "mssql" else op.deploy_sqlfiles(*deploy_args)
     op.update_git_version(
-        engine,
+        connectable,
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
         repository = context.configuration.get('url_of_remote_git_repository'),
@@ -157,14 +161,18 @@ def update_git_version(context):
 @action(affects_database=True, dependencies=['data'])
 def testdata(context):
     """Insert testdata."""
-    op.deploy_sqlfiles(context.get_engine(), './database/data/testdata/', "Inserting test data")
+    op.deploy_sqlfiles(context.get_connectable(), './database/data/testdata/', "Inserting test data")
 
 
 @action(affects_database=True, dependencies=['init'])
 def create_db_permissions(context):
     """(MSSQL) Set permissions for users."""
+    if context.configuration.get("db_permission_invoke_method") == "sqlalchemy":
+        connection = context.get_connection() if context.enable_transaction else context.get_engine()
+    else:
+        connection = context.get_conn_info()
     kwargs = dict(
-        connection = context.get_engine() if context.configuration.get("db_permission_invoke_method") == "sqlalchemy" else context.get_conn_info(),
+        connection = connection,
         db_permissions = context.configuration.get("db_permissions")
     )
     op.create_db_permissions(**{k: v for k, v in kwargs.items() if v is not None})
@@ -216,7 +224,7 @@ def downgrade(context):
 @action()
 def test(context):
     """Run tests."""
-    op.deploy_sqlfiles(context.get_engine(), './database/tests/', "Running tests", display_output=True)
+    op.deploy_sqlfiles(context.get_connectable(), './database/tests/', "Running tests", display_output=True)
 
 
 @action(dependencies=["deploy"])
@@ -246,7 +254,7 @@ def update_file_obj_prop(context):
 def update_db_obj_prop(context):
     """(MSSQL) Update extended properties from files to database."""
     op.update_db_object_properties(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
         )
 

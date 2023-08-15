@@ -88,21 +88,33 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = create_sqlalchemy_engine(
-        create_sqlalchemy_url(conn_info), 
-        token = conn_info.get("token")
-    )
+    connection = config.attributes.get('connection', None)
 
-    with connectable.connect() as connection:
+    if connection is None: # Create engine
+
+        connectable = create_sqlalchemy_engine(
+            create_sqlalchemy_url(conn_info), 
+            token = conn_info.get("token")
+        )
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata,
+                version_table_schema=version_table_schema,
+                version_table=version_table
+            )
+            with context.begin_transaction():
+                context.run_migrations()
+
+    else: # Use existing connection
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-			version_table_schema=version_table_schema,
-			version_table=version_table
+            version_table_schema=version_table_schema,
+            version_table=version_table
         )
-
-        with context.begin_transaction():
-            context.run_migrations()
+        context.run_migrations()
 
 
 if context.is_offline_mode():

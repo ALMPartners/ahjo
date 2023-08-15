@@ -19,11 +19,12 @@ for listed object types:
 import json
 from logging import getLogger
 from os import makedirs, path
+from typing import Union
 
 from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query, get_schema_names
 from ahjo.operation_manager import OperationManager
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, Connection
 
 logger = getLogger('ahjo')
 
@@ -65,13 +66,12 @@ DB_OBJECTS = {
 }
 
 
-def update_db_object_properties(engine: Engine, schema_list: list):
+def update_db_object_properties(connectable: Union[Engine, Connection], schema_list: list):
     """Update extended properties from file to database.
 
     Arguments
     ---------
-    engine : sqlalchemy.engine.Engine
-        SQL Alchemy engine.
+    engine : Engine or Connection
     schema_list : list of str
         List of schemas to be documented.
             - If None, all schemas are updated.
@@ -80,7 +80,7 @@ def update_db_object_properties(engine: Engine, schema_list: list):
     """
     with OperationManager('Updating extended properties'):
         if schema_list is None:
-            schema_list = [s for s in get_schema_names(engine)
+            schema_list = [s for s in get_schema_names(connectable)
                            if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
             logger.warning(
@@ -90,7 +90,7 @@ def update_db_object_properties(engine: Engine, schema_list: list):
             f'Updating extended properties for schemas {", ".join(schema_list)}')
         for object_type in DB_OBJECTS:
             existing_metadata = query_metadata(
-                engine, DB_OBJECTS[object_type], schema_list)
+                connectable, DB_OBJECTS[object_type], schema_list)
             source_file = DB_OBJECTS[object_type]['file']
             if not path.exists(source_file):
                 logger.warning(
@@ -108,7 +108,7 @@ def update_db_object_properties(engine: Engine, schema_list: list):
                     object_metadata = existing_metadata.get(object_name)
                     for property_name, property_value in extended_properties.items():
                         exec_update_extended_properties(
-                            engine,
+                            connectable,
                             object_name,
                             object_metadata,
                             property_name,
@@ -116,7 +116,7 @@ def update_db_object_properties(engine: Engine, schema_list: list):
                         )
 
 
-def exec_update_extended_properties(engine: Engine, object_name: str, object_metadata: dict, extended_property_name: str, extended_property_value: str):
+def exec_update_extended_properties(connectable: Union[Engine, Connection], object_name: str, object_metadata: dict, extended_property_name: str, extended_property_value: str):
     """Update object's extended properties by calling either
     procedure sp_addextendedproperty or sp_updateextendedproperty.
     If object_metadata is None, object does not exist in database.
@@ -146,7 +146,7 @@ def exec_update_extended_properties(engine: Engine, object_name: str, object_met
                 procedure_call += ', @level2type=:level2type, @level2name=:level2name'
                 params["level2type"] = 'column'
                 params["level2name"] = object_metadata.get('column_name')
-        execute_query(engine, procedure_call, params)
+        execute_query(connectable, procedure_call, params)
     except Exception as err:
         logger.warning(
             f"Failed to update {object_name} extended property '{extended_property_name}'.")
@@ -195,13 +195,13 @@ def update_file_object_properties(engine: Engine, schema_list: list):
         logger.debug('Extended properties fetched')
 
 
-def query_metadata(engine: Engine, metadata: dict, schema_list: list, properties_only: bool = False) -> dict:
+def query_metadata(connectable: Union[Engine, Connection], metadata: dict, schema_list: list, properties_only: bool = False) -> dict:
     query_path = path.join(AHJO_PATH, metadata['query'])
-    query_result = prepare_and_exec_query(engine, query_path=query_path, param_list=schema_list)
+    query_result = prepare_and_exec_query(connectable, query_path=query_path, param_list=schema_list)
     return result_set_to_dict(query_result, metadata['key_columns'], properties_only)
 
 
-def prepare_and_exec_query(engine: Engine, query_path: str, param_list: list) -> list:
+def prepare_and_exec_query(connectable: Union[Engine, Connection], query_path: str, param_list: list) -> list:
     """Open query from query_path and set correct amount of
     parameter placeholders to question mark. Finally, execute query."""
     with open(query_path, 'r', encoding='utf-8') as file:
@@ -214,7 +214,7 @@ def prepare_and_exec_query(engine: Engine, query_path: str, param_list: list) ->
     param_placeholder = param_placeholder[:-1]
     query = query.replace('?', param_placeholder)
     result = execute_query(
-        engine, 
+        connectable, 
         query=query, 
         variables=variables,
         include_headers=True

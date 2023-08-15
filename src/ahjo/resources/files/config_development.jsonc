@@ -47,5 +47,7 @@
         // Configuration file for upgrade actions
         //,"upgrade_actions_file": "./upgrade_actions.jsonc"
         //,"catalog_collation_type_desc": "DATABASE_DEFAULT"
+        //,"sqla_connectivity_type": "engine"
+        //,"transaction_action": "yes"
     }
 }

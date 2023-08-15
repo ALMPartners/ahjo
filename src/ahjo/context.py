@@ -7,7 +7,7 @@ from logging import getLogger
 from os import path
 from typing import Union
 
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, Connection
 
 from ahjo.database_utilities import (create_conn_info,
                                      create_sqlalchemy_engine,
@@ -25,13 +25,28 @@ class Context:
     def __init__(self, config_filename: str, master_engine: Engine = None):
         self.engine = None
         self.master_engine = master_engine
+        self.connection = None
+        self.transaction = None
+        self.enable_transaction = None
+        self.connectivity_type = None
         self.config_filename = config_filename
         self.configuration = load_json_conf(config_filename)
         if self.configuration is None:
             raise Exception("No configuration found")
+        
 
     def get_conn_info(self) -> dict:
         return create_conn_info(self.configuration)
+    
+
+    def get_connectable(self) -> Union[Engine, Connection]:
+        """Return Engine or Connection depending on connectivity type."""
+        if self.connectivity_type is None:
+            self.connectivity_type = self.configuration.get("sqla_connectivity_type", "engine").lower()
+        if self.connectivity_type == "connection":
+            return self.get_connection()
+        return self.get_engine()
+
 
     def get_engine(self) -> Engine:
         """Create engine when needed first time."""
@@ -42,6 +57,7 @@ class Context:
                 token = conn_info.get("token")
             )
         return self.engine
+    
 
     def get_master_engine(self) -> Engine:
         """Return engine to 'master' database."""
@@ -55,6 +71,28 @@ class Context:
                 token = conn_info.get("token")
             )
         return self.master_engine
+    
+    
+    def get_connection(self) -> Connection:
+        """Create connection when needed first time."""
+        if self.connection is None:
+            self.connection = self.get_engine().connect()
+        if self.enable_transaction is None:
+            self.enable_transaction = self.configuration.get("transaction_action", True)
+        if self.enable_transaction:
+            if self.transaction is None:
+                self.transaction = self.connection.begin()
+        return self.connection
+
+
+    def commit_and_close_transaction(self):
+        if self.enable_transaction:
+            if self.transaction is not None:
+                self.transaction.commit()
+                self.transaction.close()
+                self.transaction = None
+            else:
+                logger.warning('Transaction is not open.')
 
 
 def filter_nested_dict(node, search_term: str) -> Union[dict, None]:

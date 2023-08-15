@@ -16,9 +16,8 @@ def get_collation_info(engine: Engine, db_name: str) -> tuple:
     catalog_collation_type_desc = None
     server_edition = None
 
-    with engine.connect() as connection:
-        connection.execution_options(isolation_level="AUTOCOMMIT")
-        with connection.begin():
+    try:
+        with engine.connect() as connection:
             server_edition = connection.execute(
                 text("SELECT CAST(SERVERPROPERTY ('Edition') AS NVARCHAR(128))")
             ).fetchone()[0]
@@ -34,6 +33,8 @@ def get_collation_info(engine: Engine, db_name: str) -> tuple:
                     text("SELECT collation_name FROM sys.databases WHERE name = :db_name"),
                     {"db_name": db_name}
                 ).fetchone()[0]
+        engine.dispose()
+    except Exception as err:
+        raise err
 
-    engine.dispose()
     return collation, catalog_collation_type_desc, server_edition

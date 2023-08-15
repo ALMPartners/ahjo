@@ -209,8 +209,11 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
         # user confirmation
         if not skip_confirmation and not action.pre_exec_check(context):
             return
+    
+    action_output = action.function(context, *args, **kwargs)
+    context.commit_and_close_transaction()
 
-    return action.function(context, *args, **kwargs)
+    return action_output
 
 
 def list_actions():

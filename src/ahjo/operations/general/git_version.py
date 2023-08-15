@@ -8,13 +8,13 @@ import os
 from logging import getLogger
 from shlex import split
 from subprocess import check_output, run
-from typing import Tuple
+from typing import Tuple, Union
 
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from ahjo.interface_methods import load_json_conf
 from sqlalchemy import Column, MetaData, String, Table
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.exc import NoSuchTableError
 from pathlib import PurePath, Path
 
@@ -32,7 +32,7 @@ def _sqla_git_table(metadata: MetaData, git_table_schema: str, git_table: str) -
     )
 
 
-def update_git_version(engine: Engine, git_table_schema: str, git_table: str, repository: str = None, git_version_info_path: str = None):
+def update_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str, repository: str = None, git_version_info_path: str = None):
     """Store the Git remote, branch and commit information to database.
     Alembic version does not catch changes to views and procedures, but git version catches.
     """
@@ -60,7 +60,7 @@ def update_git_version(engine: Engine, git_table_schema: str, git_table: str, re
             return
         try:
             logger.info("GIT version table: " + git_table_schema + "." + git_table)
-            _update_git_db_record(engine, git_table_schema,
+            _update_git_db_record(connectable, git_table_schema,
                                   git_table, repository, branch, commit)
         except Exception as error:
             logger.error('Failed to update Git version table. See log for detailed error message.')
@@ -112,17 +112,17 @@ def _checkout_tag(tag: str):
     if checkout_version != tag:
         raise Exception(f"Failed to checkout git version: {tag}")
 
-def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
+def _update_git_db_record(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
     """Update or create a Git version table."""
     metadata = MetaData()
     try:
-        git_version_table = Table(git_table, metadata, autoload_with=engine, schema=git_table_schema)
+        git_version_table = Table(git_table, metadata, autoload_with=connectable, schema=git_table_schema)
     except NoSuchTableError as error:
         logger.info(
             f'Table {git_table_schema + "." + git_table} not found. Creating the table.')
         git_version_table = _sqla_git_table(metadata, git_table_schema, git_table)
         try:
-            metadata.create_all(engine)
+            metadata.create_all(connectable)
         except Exception as error:
             raise Exception(
                 'Git version table creation failed. See log for detailed error message.') from error
@@ -130,24 +130,30 @@ def _update_git_db_record(engine: Engine, git_table_schema: str, git_table: str,
     if 'Commit_hash' in git_version_table_columns:
         logger.info(f'Re-creating table {git_table_schema + "." + git_table}.')
         try:
-            metadata.drop_all(engine)
+            metadata.drop_all(connectable)
             new_metadata = MetaData()
             git_version_table = _sqla_git_table(new_metadata, git_table_schema, git_table)
-            new_metadata.create_all(engine)
+            new_metadata.create_all(connectable)
         except Exception as error:
             raise Exception(
                 'Failed to re-create Git version table. See log for detailed error message.') from error
     logger.info(f"Repository: {repository}")
     logger.info(f"Branch: {branch}")
     logger.info(f"Version: {commit}")
-    with engine.begin() as connection:
-        connection.execute(git_version_table.delete())
-        update_query = git_version_table.insert().values(
-            Repository=repository,
-            Branch=branch,
-            Commit=commit
-        )
-        connection.execute(update_query)
+
+    if type(connectable) == Engine:
+        connection = connectable.connect()
+        connection.execution_options(isolation_level="AUTOCOMMIT")
+    else:
+        connection = connectable
+
+    connection.execute(git_version_table.delete())
+    update_query = git_version_table.insert().values(
+        Repository=repository,
+        Branch=branch,
+        Commit=commit
+    )
+    connection.execute(update_query)
 
 
 def _get_git_version(engine: Engine, git_table_schema: str, git_table: str):
@@ -156,10 +162,7 @@ def _get_git_version(engine: Engine, git_table_schema: str, git_table: str):
     try:
         metadata = MetaData()
         git_version_table = _sqla_git_table(metadata, git_table_schema, git_table)
-        result = execute_query(
-            engine=engine, 
-            query=git_version_table.select()
-        )[0]
+        result = execute_query(engine, query=git_version_table.select())[0]
     except Exception as error:
         logger.error('Failed to read GIT version table. See log for detailed error message.')
         logger.debug(error)

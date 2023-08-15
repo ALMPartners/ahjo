@@ -10,12 +10,13 @@ from time import time
 from typing import Generator, Optional
 
 from sqlalchemy import Table, event
-from sqlalchemy.engine import Engine, ExceptionContext
+from sqlalchemy.engine import Engine, ExceptionContext, Connection
 
 logger = getLogger('ahjo')
 
 
-def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: list, chunk_size: Optional[int] = 1000):
+def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: list, 
+        chunk_size: Optional[int] = 1000, connection: Optional[Connection] = None):
     """Insert multiple rows of data to target table.
     If error occurs, print and log only the original driver
     error (no insert statements).
@@ -33,10 +34,13 @@ def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: l
     """
     table_name_with_schema = (
         reflected_table.schema + '.' if reflected_table.schema else "") + reflected_table.name
-    with engine.begin() as connection:
-        with BulkInsertContext(engine, table_name_with_schema):
-            for r in chunks(records, chunk_size):
-                connection.execute(reflected_table.insert(), r)
+    connection_obj = engine.connect() if connection is None else connection
+    with BulkInsertContext(engine, table_name_with_schema):
+        for r in chunks(records, chunk_size):
+            connection_obj.execute(reflected_table.insert(), r)
+    if connection is None:
+        connection_obj.commit()
+        connection_obj.close()
 
 
 class BulkInsertContext:
