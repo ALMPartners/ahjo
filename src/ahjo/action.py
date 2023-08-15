@@ -211,7 +211,9 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
             return
     
     action_output = action.function(context, *args, **kwargs)
-    context.commit_and_close_transaction()
+    
+    if context.enable_transaction: 
+        context.commit_and_close_transaction()
 
     return action_output
 

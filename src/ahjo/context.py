@@ -78,7 +78,10 @@ class Context:
         if self.connection is None:
             self.connection = self.get_engine().connect()
         if self.enable_transaction is None:
-            self.enable_transaction = self.configuration.get("transaction_action", True)
+            if self.configuration.get("transaction_action", "yes").lower() == "yes":
+                self.enable_transaction = True
+            else:
+                self.enable_transaction = False
         if self.enable_transaction:
             if self.transaction is None:
                 self.transaction = self.connection.begin()
@@ -86,11 +89,15 @@ class Context:
 
 
     def commit_and_close_transaction(self):
-        if self.enable_transaction:
+        if self.connectivity_type == "connection":
             if self.transaction is not None:
                 self.transaction.commit()
                 self.transaction.close()
                 self.transaction = None
+            elif self.connection is not None:
+                self.connection.commit()
+                self.connection.close()
+                self.connection = None
             else:
                 logger.warning('Transaction is not open.')
 
