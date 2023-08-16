@@ -42,7 +42,7 @@ class Context:
     def get_connectable(self) -> Union[Engine, Connection]:
         """Return Engine or Connection depending on connectivity type."""
         if self.connectivity_type is None:
-            self.connectivity_type = self.configuration.get("sqla_connectivity_type", "engine").lower()
+            self.connectivity_type = self.configuration.get("sqla_default_connectable_type", "engine").lower()
         if self.connectivity_type == "connection":
             return self.get_connection()
         return self.get_engine()
