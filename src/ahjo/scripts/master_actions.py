@@ -150,7 +150,7 @@ def data(context):
 def update_git_version(context):
     """Store the Git remote, branch and commit information to database."""
     op.update_git_version(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version'),
         repository = context.configuration.get('url_of_remote_git_repository'),
@@ -181,11 +181,11 @@ def create_db_permissions(context):
 @action(affects_database=True, dependencies=["init"])
 def drop(context):
     """(MSSQL) Drop views, procedures, functions and clr-procedures."""
-    op.drop_sqlfile_objects(context.get_engine(), 'VIEW', "./database/views/", "Dropping views")
-    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/procedures/", "Dropping procedures")
-    op.drop_sqlfile_objects(context.get_engine(), 'FUNCTION', "./database/functions/", "Dropping functions")
-    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
-    op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
+    op.drop_sqlfile_objects(context.get_connectable(), 'VIEW', "./database/views/", "Dropping views")
+    op.drop_sqlfile_objects(context.get_connectable(), 'PROCEDURE', "./database/procedures/", "Dropping procedures")
+    op.drop_sqlfile_objects(context.get_connectable(), 'FUNCTION', "./database/functions/", "Dropping functions")
+    op.drop_sqlfile_objects(context.get_connectable(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
+    op.drop_sqlfile_objects(context.get_connectable(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
 
 @action(affects_database=True, dependencies=["init"])
 def drop_files(context, **kwargs):
@@ -200,7 +200,7 @@ def drop_files(context, **kwargs):
         logger.warning('Check variable: "object_type".')
         return
 
-    op.drop_sqlfile_objects(context.get_engine(), object_type, files, "Dropping files")
+    op.drop_sqlfile_objects(context.get_connectable(), object_type, files, "Dropping files")
 
 @action('drop-obsolete', True)
 def drop_obsolete(context):

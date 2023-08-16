@@ -290,6 +290,33 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     return script_output
 
 
+def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> List[Iterable]:
+    """Drop SQL scripts from list of files in transaction. 
+    Rollback if any of the batches fail.
+    
+    Arguments
+    ---------
+    connection
+        SQL Alchemy Connection.
+    drop_queries
+        Dictionary of files and drop queries.
+    """
+    script_output = []
+    files = drop_queries.keys()
+    try:
+        for file in files:
+            logger.info(path.basename(file))
+            results = execute_query(connection, query = drop_queries[file])
+            script_output.append(results)
+    except:
+        connection.rollback()
+        error_msg = "Failed to drop the following file:\n{}".format(file)
+        error_msg = error_msg + '\nSee log for error details.'
+        error_msg = error_msg + " \n " + format_exc()
+        raise Exception(error_msg)
+    return script_output
+
+
 def execute_from_file(connectable: Union[Engine, Connection, Session], file_path: str, scripting_variables: dict = None, include_headers: bool = False, 
         file_transaction: bool = False, commit_transaction: bool = True) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.

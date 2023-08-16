@@ -11,7 +11,7 @@ from pathlib import Path
 from traceback import format_exc
 from typing import Any, Callable, Union
 
-from ahjo.database_utilities import execute_from_file, execute_try_catch, execute_files_in_transaction
+from ahjo.database_utilities import execute_from_file, execute_try_catch, execute_files_in_transaction, drop_files_in_transaction
 from ahjo.interface_methods import format_to_table
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine, Connection
@@ -39,7 +39,7 @@ def sql_files_found(data_src):
         logger.warning("Parameter 'data_src' should be non-empty string or list.")
     return files
 
-def deploy_sqlfiles(connectable: Union[Engine, Connection, Session], data_src: Union[str, list], message: str, display_output: bool = False, 
+def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str, list], message: str, display_output: bool = False, 
         scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False) -> bool:
     """Run every SQL script file found in given directory/filelist and print the executed file names.
 
@@ -49,7 +49,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection, Session], data_src: U
     Parameters
     ----------
     connectable
-        SQL Alchemy Engine, Connection or Session.
+        SQL Alchemy Engine or Connection.
     data_src
         If data_src is string: path of directory holding the SQL script files.
         If data_src is list: list of filepaths referencing to the SQL scripts.
@@ -79,12 +79,9 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection, Session], data_src: U
         If any of the files in given directory/filelist fail to deploy.
     """
     with OperationManager(message):
-        connectable_type = type(connectable)
-        if not (connectable_type is Engine or connectable_type is Session or connectable_type is Connection):
-            raise ValueError("""First parameter of function 'deploy_sqlfiles' should be instance of sqlalchemy Engine, Connection or Session. 
-                Check your custom actions!"""
-            )
 
+        connectable_type = type(connectable)
+        check_connectable_type(connectable, "deploy_sqlfiles")
         files = sql_files_found(data_src)
         n_files = len(files)
         error_msg = None
@@ -136,15 +133,15 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection, Session], data_src: U
         return True
 
 
-def drop_sqlfile_objects(engine: Engine, object_type: str, data_src: Union[str, list], message: str):
+def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: str, data_src: Union[str, list], message: str):
     """Drop all the objects created in SQL script files of an directory.
 
     The naming of the files should be consistent!
 
     Parameters
     ----------
-    engine
-        SQL Alchemy engine.
+    connectable
+        SQL Alchemy engine or connection.
     object_type
         Type of database object.
     data_src
@@ -159,24 +156,38 @@ def drop_sqlfile_objects(engine: Engine, object_type: str, data_src: Union[str, 
         If any of the files in given directory/filelist fail to drop after multiple tries.
     """
     with OperationManager(message):
+   
+        connectable_type = type(connectable)
+        check_connectable_type(connectable, "drop_sqlfile_objects")
 
         files = sql_files_found(data_src)
         n_files = len(files)
         if n_files == 0: return False
 
-        failed = sql_file_loop(
-            drop_sql_from_file, 
-            engine,
-            object_type, 
-            file_list = files, 
-            max_loop = n_files
-        )
-
-        if len(failed) > 0:
-            error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed.keys()))
-            for fail_messages in failed.values():
-                error_msg = error_msg + ''.join(fail_messages)
-            raise RuntimeError(error_msg)
+        if connectable_type == Engine:
+            failed = sql_file_loop(
+                drop_sql_from_file, 
+                connectable,
+                object_type, 
+                file_list = files, 
+                max_loop = n_files
+            )
+            if len(failed) > 0:
+                error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed.keys()))
+                for fail_messages in failed.values():
+                    error_msg = error_msg + ''.join(fail_messages)
+                raise RuntimeError(error_msg)
+        else:
+            try:
+                drop_queries = {}
+                for file in files:
+                    drop_queries[file] = drop_sql_query(file, object_type)
+                drop_files_in_transaction(connectable, drop_queries)
+            except:
+                error_msg = "Failed to deploy the following files:\n{}".format(
+                    '\n'.join(files))
+                error_msg = error_msg + '\nSee log for error details.'
+                error_msg = error_msg + " \n " + format_exc()      
 
 
 def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Session], display_output: bool, scripting_variables: dict, 
@@ -225,6 +236,10 @@ def drop_sql_from_file(file: str, engine: Engine, object_type: str):
     object_type
         Type of database object.
     '''
+    execute_try_catch(engine, query = drop_sql_query(file, object_type))
+
+
+def drop_sql_query(file, object_type):
     parts = path.basename(file).split('.')
     # SQL files are assumed to be named in format: schema.object.sql
     # The only exception is assemblies. Assemblies don't have schema.
@@ -234,8 +249,7 @@ def drop_sql_from_file(file: str, engine: Engine, object_type: str):
         if len(parts) != 3:
             raise RuntimeError(f'File {file} not in <schema.object.sql> format.')
         object_name = parts[0] + '.' + parts[1]
-    query = f"DROP {object_type} {object_name}"
-    execute_try_catch(engine, query=query)
+    return f"DROP {object_type} {object_name}"
 
 
 def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_loop: int = 10) -> dict:
@@ -277,3 +291,10 @@ def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_
     if len(copy_list) > 0:
         return {f: list(errors[f]) for f in copy_list}
     return {}
+
+
+def check_connectable_type(connectable, func_name):
+    connectable_type = type(connectable)
+    if not (connectable_type is Engine or connectable_type is Session or connectable_type is Connection):
+        error_msg = f"First parameter of function '{func_name}' should be instance of sqlalchemy Engine or Connection. Check your custom actions!"
+        raise ValueError(error_msg)
