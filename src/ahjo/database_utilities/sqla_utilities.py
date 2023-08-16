@@ -310,10 +310,7 @@ def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> Lis
             script_output.append(results)
     except:
         connection.rollback()
-        error_msg = "Failed to drop the following file:\n{}".format(file)
-        error_msg = error_msg + '\nSee log for error details.'
-        error_msg = error_msg + " \n " + format_exc()
-        raise Exception(error_msg)
+        raise
     return script_output
 
 

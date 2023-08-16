@@ -176,7 +176,6 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
                 error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed.keys()))
                 for fail_messages in failed.values():
                     error_msg = error_msg + ''.join(fail_messages)
-                raise RuntimeError(error_msg)
         else:
             try:
                 drop_queries = {}
@@ -184,10 +183,11 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
                     drop_queries[file] = drop_sql_query(file, object_type)
                 drop_files_in_transaction(connectable, drop_queries)
             except:
-                error_msg = "Failed to deploy the following files:\n{}".format(
-                    '\n'.join(files))
-                error_msg = error_msg + '\nSee log for error details.'
-                error_msg = error_msg + " \n " + format_exc()      
+                error_msg = "Error occured while dropping files."
+                error_msg = error_msg + " \n " + format_exc()
+
+        if error_msg is not None:
+            raise RuntimeError(error_msg)
 
 
 def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Session], display_output: bool, scripting_variables: dict, 
