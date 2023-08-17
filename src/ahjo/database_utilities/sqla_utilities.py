@@ -315,7 +315,7 @@ def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> Lis
 
 
 def execute_from_file(connectable: Union[Engine, Connection, Session], file_path: str, scripting_variables: dict = None, include_headers: bool = False, 
-        file_transaction: bool = False, commit_transaction: bool = True) -> List[Iterable]:
+        file_transaction: bool = False, commit_transaction: bool = False) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.
     File is must be UTF-8 or UTF-8 with BOM.
 
@@ -350,7 +350,7 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
     connectable_type = type(connectable)
     if connectable_type == Engine:
         connection_obj = connectable.connect()
-        if not file_transaction and commit_transaction:
+        if not file_transaction:
             connection_obj.execution_options(isolation_level='AUTOCOMMIT')
     else:
         connection_obj = connectable

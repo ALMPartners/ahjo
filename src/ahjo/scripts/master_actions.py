@@ -124,10 +124,10 @@ def deploy_files(context, **kwargs):
 @action(affects_database=True, dependencies=['init'])
 def assembly(context):
     """(MSSQL) Drop and deploy CLR-procedures and assemblies."""
-    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
-    op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
-    op.deploy_sqlfiles(context.get_engine(), "./database/assemblies/", "Deploying assemblies")
-    op.deploy_sqlfiles(context.get_engine(), "./database/clr-procedures/", "Deploying CLR-procedures")
+    op.drop_sqlfile_objects(context.get_connectable(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
+    op.drop_sqlfile_objects(context.get_connectable(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
+    op.deploy_sqlfiles(context.get_connectable(), "./database/assemblies/", "Deploying assemblies")
+    op.deploy_sqlfiles(context.get_connectable(), "./database/clr-procedures/", "Deploying CLR-procedures")
 
 
 @action(affects_database=True, dependencies=['deploy'])
@@ -206,7 +206,7 @@ def drop_files(context, **kwargs):
 def drop_obsolete(context):
     """Drop obsolete database objects."""
     du.execute_from_file(
-        context.get_engine(),
+        context.get_connectable(),
         './database/drop_obsolete_objects.sql'
     )
 

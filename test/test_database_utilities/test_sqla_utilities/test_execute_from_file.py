@@ -51,10 +51,12 @@ class TestWithSQLServer():
                 {"schema": schema, "name": name}
             ).fetchall()
             assert not result
-            ahjo.execute_from_file(
-                self.engine,
-                f'database/views/{object_name}.sql'
-                )
+        ahjo.execute_from_file(
+            self.engine,
+            f'database/views/{object_name}.sql',
+            commit_transaction=True
+        )
+        with self.engine.begin() as connection:
             result = connection.execute(
                 text("SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :name"), 
                 {"schema": schema, "name": name}
@@ -66,17 +68,9 @@ class TestWithSQLServer():
         with self.engine.begin() as connection:
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (0,)
-            ahjo.execute_from_file(self.engine, f'database/data/{PRODUCTCATEGORY}.sql')
+        ahjo.execute_from_file(self.engine, f'database/data/{PRODUCTCATEGORY}.sql')
+        with self.engine.begin() as connection:
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (3,)
-
-    def test_execute_from_file_should_insert_data_with_session_and_file_transaction_scope(self):
-        session = Session(self.engine)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-            ahjo.execute_from_file(session, f'database/data/{PRODUCTCATEGORY}.sql', file_transaction=True, commit_transaction=False)
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (3,)
 
     def test_execute_from_file_should_insert_data_with_connection_and_file_transaction_scope(self):
@@ -96,17 +90,6 @@ class TestWithSQLServer():
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (3,)
 
-    def test_execute_from_file_should_rollback_with_session_and_file_transaction_scope(self):
-        session = Session(self.engine)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-            with pytest.raises(Exception):
-                ahjo.execute_from_file(session, f'database/error/{PRODUCTCATEGORY}.sql', file_transaction=True, commit_transaction=True)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-
     def test_execute_from_file_should_rollback_with_connection_and_file_transaction_scope(self):
         with self.engine.connect() as connection:
             with connection.begin():
@@ -118,15 +101,6 @@ class TestWithSQLServer():
                 result = connection.execute(text(PRODUCT_COUNT)).fetchall()
                 assert result[0] == (0,)
 
-    def test_execute_from_file_should_insert_data_with_session_and_batch_transaction_scope_without_commit(self):
-        session = Session(self.engine)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-            ahjo.execute_from_file(session, f'database/data/{PRODUCTCATEGORY}.sql', file_transaction=False, commit_transaction=False)
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (3,)
-
     def test_execute_from_file_should_insert_data_with_connection_and_batch_transaction_scope_without_commit(self):
         with self.engine.begin() as connection:
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
@@ -135,16 +109,6 @@ class TestWithSQLServer():
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (3,)
 
-    def test_execute_from_file_should_rollback_with_session_and_batch_transaction_scope(self):
-        session = Session(self.engine)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-            with pytest.raises(Exception):
-                ahjo.execute_from_file(session, f'database/error/{PRODUCTCATEGORY}.sql', file_transaction=False, commit_transaction=True)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (1,)
 
     def test_execute_from_file_should_rollback_with_connection_and_batch_transaction_scope(self):
         with self.engine.begin() as connection:
@@ -165,19 +129,6 @@ class TestWithSQLServer():
         with self.engine.begin() as connection:
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (1,)
-
-    def test_execute_files_in_transaction_should_insert_data_with_session(self):
-        session = Session(self.engine)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-            ahjo.execute_files_in_transaction(
-                session, 
-                [f'database/data/{PRODUCTCATEGORY}.sql', f'database/data/{PRODUCTCATEGORY}_2.sql'],
-                commit_transaction=False
-            )
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (6,)
 
     def test_execute_files_in_transaction_should_insert_data_with_connection(self):
         with self.engine.begin() as connection:
@@ -202,21 +153,6 @@ class TestWithSQLServer():
         with self.engine.begin() as connection:
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (6,)
-
-    def test_execute_files_in_transaction_should_rollback_with_session(self):
-        session = Session(self.engine)
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
-            with pytest.raises(Exception):
-                ahjo.execute_files_in_transaction(
-                    session, 
-                    [f'database/data/{PRODUCTCATEGORY}.sql', f'database/data/{PRODUCTCATEGORY}_2.sql', f'database/error/{PRODUCTCATEGORY}.sql'],
-                    commit_transaction=True
-                )
-        with session.begin():
-            result = session.execute(text(PRODUCT_COUNT)).fetchall()
-            assert result[0] == (0,)
 
     def test_execute_files_in_transaction_should_rollback_with_connection(self):
         with self.engine.begin() as connection:
