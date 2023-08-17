@@ -13,6 +13,7 @@ from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine import Connection
+from typing import Union
 
 from alembic import command
 from alembic.config import Config
@@ -51,20 +52,20 @@ def upgrade_db_to_latest_alembic_version(config_filename: str, connection: Conne
         command.upgrade(alembic_config(config_filename, connection = connection), 'head')
 
 
-def downgrade_db_to_alembic_base(config_filename: str):
+def downgrade_db_to_alembic_base(config_filename: str, connection: Connection = None):
     """Run Alembic 'downgrade base' in the same python-process
     by calling Alembic's API.
     """
     with OperationManager('Downgrading to base'):
-        command.downgrade(alembic_config(config_filename), 'base')
+        command.downgrade(alembic_config(config_filename, connection = connection), 'base')
 
 
-def print_alembic_version(engine: Engine, alembic_version_table: str):
+def print_alembic_version(connectable: Union[Engine, Connection], alembic_version_table: str):
     """Print last deployed revision number from Alembic version table."""
     with OperationManager('Checking Alembic version from database'):
         alembic_version_query = f"SELECT * FROM {alembic_version_table}"
         try:
-            alembic_version = execute_query(engine, query=alembic_version_query)[0][0]
+            alembic_version = execute_query(connectable, query=alembic_version_query)[0][0]
             logger.info("Alembic version: " + alembic_version)
         except IndexError:
             logger.info(

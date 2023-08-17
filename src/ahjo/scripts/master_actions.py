@@ -16,6 +16,7 @@ import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from sqlalchemy.sql import text
+from sqlalchemy.engine import Connection
 
 logger = getLogger('ahjo')
 
@@ -84,9 +85,10 @@ def structure(context):
 @action(affects_database=True, dependencies=['init'])
 def deploy(context):
     """(MSSQL) Run 'alembic upgrade head'. Deploy functions, views and prodecures. Update extended properties and Git version."""
+    connectable = context.get_connectable()
     op.upgrade_db_to_latest_alembic_version(
         context.config_filename,
-        connection = context.get_connection() if context.enable_transaction else None
+        connection = context.get_connection() if type(connectable) == Connection else None
     )
     op.deploy_sqlfiles(context.get_connectable(), "./database/functions/", "Deploying functions")
     op.deploy_sqlfiles(context.get_connectable(), "./database/views/", "Deploying views")
@@ -168,7 +170,7 @@ def testdata(context):
 def create_db_permissions(context):
     """(MSSQL) Set permissions for users."""
     if context.configuration.get("db_permission_invoke_method") == "sqlalchemy":
-        connection = context.get_connection() if context.enable_transaction else context.get_engine()
+        connection = context.get_connectable()
     else:
         connection = context.get_conn_info()
     kwargs = dict(
@@ -213,12 +215,13 @@ def drop_obsolete(context):
 @action(affects_database=True, dependencies=["init"])
 def downgrade(context):
     """(MSSQL) Drop views, procedures, functions and clr-procedures. Run 'alembic downgrade'."""
-    op.drop_sqlfile_objects(context.get_engine(), 'VIEW', "./database/views/", "Dropping views")
-    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/procedures/", "Dropping procedures")
-    op.drop_sqlfile_objects(context.get_engine(), 'FUNCTION', "./database/functions/", "Dropping functions")
-    op.drop_sqlfile_objects(context.get_engine(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
-    op.drop_sqlfile_objects(context.get_engine(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
-    op.downgrade_db_to_alembic_base(context.config_filename)
+    connectable = context.get_connectable()
+    op.drop_sqlfile_objects(connectable, 'VIEW', "./database/views/", "Dropping views")
+    op.drop_sqlfile_objects(connectable, 'PROCEDURE', "./database/procedures/", "Dropping procedures")
+    op.drop_sqlfile_objects(connectable, 'FUNCTION', "./database/functions/", "Dropping functions")
+    op.drop_sqlfile_objects(connectable, 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
+    op.drop_sqlfile_objects(connectable, 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
+    op.downgrade_db_to_alembic_base(context.config_filename, connection = context.get_connection() if type(connectable) == Connection else None)
 
 
 @action()
@@ -231,21 +234,21 @@ def test(context):
 def version(context):
     """Print Git and Alembic version."""
     op.print_git_version(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration.get('git_table_schema', 'dbo'),
         context.configuration.get('git_table', 'git_version')
-        )
+    )
     op.print_alembic_version(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration['alembic_version_table']
-        )
+    )
 
 
 @action(dependencies=["deploy"])
 def update_file_obj_prop(context):
     """(MSSQL) Update extended properties from database to files."""
     op.update_file_object_properties(
-        context.get_engine(),
+        context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
         )
 

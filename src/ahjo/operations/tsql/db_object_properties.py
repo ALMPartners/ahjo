@@ -155,7 +155,7 @@ def exec_update_extended_properties(connectable: Union[Engine, Connection], obje
         logger.info("------")
 
 
-def update_file_object_properties(engine: Engine, schema_list: list):
+def update_file_object_properties(connectable: Union[Engine, Connection], schema_list: list):
     """Write extended properties to JSON file.
     If project doesn't have docs directory, create it.
 
@@ -165,8 +165,8 @@ def update_file_object_properties(engine: Engine, schema_list: list):
 
     Arguments
     ---------
-    engine : sqlalchemy.engine.Engine
-        SQL Alchemy engine.
+    connectable
+        SQL Alchemy engine or connection.
     schema_list : list of str
         List of schemas to be documented.
     """
@@ -184,7 +184,7 @@ def update_file_object_properties(engine: Engine, schema_list: list):
             f'Fetching extended properties for schemas {", ".join(schema_list)}')
         for object_type in DB_OBJECTS:
             existing_metadata = query_metadata(
-                engine,
+                connectable,
                 DB_OBJECTS[object_type],
                 schema_list,
                 properties_only=True

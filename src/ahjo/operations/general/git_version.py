@@ -156,22 +156,22 @@ def _update_git_db_record(connectable: Union[Engine, Connection], git_table_sche
     connection.execute(update_query)
 
 
-def _get_git_version(engine: Engine, git_table_schema: str, git_table: str):
+def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str):
     """Return the first row of the Git version table."""
     result = None
     try:
         metadata = MetaData()
         git_version_table = _sqla_git_table(metadata, git_table_schema, git_table)
-        result = execute_query(engine, query=git_version_table.select())[0]
+        result = execute_query(connectable, query=git_version_table.select())[0]
     except Exception as error:
         logger.error('Failed to read GIT version table. See log for detailed error message.')
         logger.debug(error)
     return result
 
 
-def print_git_version(engine: Engine, git_table_schema: str, git_table: str):
+def print_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str):
     with OperationManager('Checking Git version from database'):
-        repository, branch, version = _get_git_version(engine, git_table_schema, git_table)
+        repository, branch, version = _get_git_version(connectable, git_table_schema, git_table)
         logger.info(f"Repository: {repository}")
         logger.info(f"Branch: {branch}")
         logger.info(f"Version: {version}")
