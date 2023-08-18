@@ -257,10 +257,12 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     errors = {}
     n_files = len(files)
     loop_files = files.copy()
+    looped_files = set()
     try:
         for _ in range(n_files):
             for file in loop_files:
-                logger.info(path.basename(file))
+                if file not in looped_files: logger.info(path.basename(file))
+                looped_files.add(file)
                 batches = _file_to_batches(dialect_name, file, scripting_variables)
                 try:
                     results = _execute_batches(connection_obj, batches, include_headers=include_headers, commit_transaction=False, rollback_on_error=False)
@@ -275,7 +277,7 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
             if n_files == len(succeeded_files):
                 break
         if n_files != len(succeeded_files):
-            error_msg = "Failed to deploy the following files:\n{}".format('\n'.join(errors.keys()))
+            error_msg = "Failed to deploy files."
             error_msg = error_msg + '\nSee log for error details.'
             for fail_object, fail_messages in errors.items():
                 logger.debug(f'----- Error for object {fail_object} -----')

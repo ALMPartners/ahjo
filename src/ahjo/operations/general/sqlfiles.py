@@ -109,27 +109,19 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
                 for fail_object, fail_messages in failed.items():
                     logger.debug(f'----- Error for object {fail_object} -----')
                     logger.debug(''.join(fail_messages))
+                raise RuntimeError(error_msg)
         else:
-            try:
-                output = execute_files_in_transaction(
-                    connectable, 
-                    files, 
-                    scripting_variables = scripting_variables, 
-                    include_headers=True,
-                    commit_transaction = commit_transaction
-                )
-                if display_output:
-                    for result in output:
-                        logger.info(format_to_table(result))
-            except:
-                error_msg = "Failed to deploy the following files:\n{}".format(
-                    '\n'.join(files))
-                error_msg = error_msg + '\nSee log for error details.'
-                error_msg = error_msg + " \n " + format_exc()
+            output = execute_files_in_transaction(
+                connectable, 
+                files, 
+                scripting_variables = scripting_variables, 
+                include_headers=True,
+                commit_transaction = commit_transaction
+            )
+            if display_output:
+                for result in output:
+                    logger.info(format_to_table(result))
             
-        if error_msg is not None:
-            raise RuntimeError(error_msg)
-
         return True
 
 
