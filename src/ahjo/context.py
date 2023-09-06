@@ -88,6 +88,14 @@ class Context:
         return self.connection
 
 
+    def get_enable_transaction(self) -> bool:
+        return self.enable_transaction
+
+
+    def set_enable_transaction(self, enable_transaction: bool):
+        self.enable_transaction = enable_transaction
+
+
     def commit_and_close_transaction(self):
         if self.connectivity_type == "connection":
             if self.transaction is not None:

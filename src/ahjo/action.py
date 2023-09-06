@@ -163,8 +163,8 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list], s
     return True
 
 
-def execute_action(action_name: str, config_filename: str, engine: Engine = None, 
-        skip_confirmation: bool = False, load_collation: bool = False, *args, **kwargs):
+def execute_action(action_name: str, config_filename: str, engine: Engine = None, skip_confirmation: bool = False, 
+        load_collation: bool = False, context: Context = None, *args, **kwargs):
     """Prepare and execute given action.
 
     Does the logging and error handling for preparation.
@@ -184,7 +184,8 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
     """
     logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
-        context = Context(config_filename, engine)
+        if context is None:
+            context = Context(config_filename, engine)
         # validity check
         action_valid = check_action_validity(
             action_name, 
@@ -212,7 +213,7 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
     
     action_output = action.function(context, *args, **kwargs)
     
-    if context.enable_transaction: 
+    if context.get_enable_transaction(): 
         context.commit_and_close_transaction()
 
     return action_output

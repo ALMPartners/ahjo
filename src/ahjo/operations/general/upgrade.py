@@ -10,6 +10,7 @@ from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, cre
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.scripts.utils import display_collation_info
 from ahjo.action import execute_action
+from ahjo.context import Context
 
 
 logger = getLogger('ahjo')
@@ -22,18 +23,27 @@ def upgrade(config_filename: str, version: str = None):
         # Load settings
         config = load_json_conf(config_filename)
         upgrade_actions = load_json_conf(config.get("upgrade_actions_file", "./upgrade_actions.jsonc"))
-        conn_info = create_conn_info(config)
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
+        connectable_type = config.get("sqla_default_connectable_type", "engine")
+        updated_versions = []
 
-        # Create sqlalchemy engine
-        engine = create_sqlalchemy_engine(
-            create_sqlalchemy_url(conn_info), 
-            token = conn_info.get("token")
+        # Create context
+        context = Context(config_filename)
+        context.set_enable_transaction(False)
+        
+        # Display database collation
+        display_collation_info(
+            context.get_engine(),
+            config.get("target_database_name"),
+            sql_dialect = config.get("sql_dialect", "mssql+pyodbc"),
+            config_collation_name = config.get("database_collation", "Latin1_General_CS_AS"),
+            config_catalog_collation_type_desc = config.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
         )
+        logger.info('------')
 
         # Get the current git commit from database
-        _, _, current_db_version = _get_git_version(engine, git_table_schema, git_table)
+        _, _, current_db_version = _get_git_version(context.get_connectable(), git_table_schema, git_table)
 
         # Select versions to be deployed
         version_actions = get_upgradable_version_actions(upgrade_actions, current_db_version)
@@ -41,16 +51,6 @@ def upgrade(config_filename: str, version: str = None):
         # Validate user input
         if version is not None:
             version_actions = validate_version(version, version_actions, upgrade_actions, current_db_version)
-
-        # Display database collation
-        display_collation_info(
-            engine, 
-            config.get("target_database_name"),
-            sql_dialect = config.get("sql_dialect", "mssql+pyodbc"),
-            config_collation_name = config.get("database_collation", "Latin1_General_CS_AS"),
-            config_catalog_collation_type_desc = config.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
-        )
-        logger.info('------')
 
         # Format are_you_sure message
         are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
@@ -85,22 +85,33 @@ def upgrade(config_filename: str, version: str = None):
 
                 # Run action
                 execute_action(
-                    *[action_name, config_filename, engine, True],
+                    *[action_name, config_filename, None, True, False, context],
                     **kwargs
                 )
 
             # Check that the database version was updated
-            _, _, db_version = _get_git_version(engine, git_table_schema, git_table)
+            _, _, db_version = _get_git_version(context.get_connectable(), git_table_schema, git_table)
             if db_version != git_version:
                 raise Exception(f"Database (version {db_version}) was not updated to match the git version: {git_version}")
             
-            logger.info(f"Database successfully upgraded to version {db_version}")
-            logger.info("------")
+            updated_versions.append(db_version)
+
+        if connectable_type == "connection":
+            connection = context.get_connectable()
+            connection.commit()
+            connection.close()
             
     except Exception as error:
-        # Todo: Add rollback?
         logger.error('Error during ahjo project upgrade:')
         logger.error(error)
+        if connectable_type == "connection":
+            logger.error('Aborted upgrade. Changes were not committed to the database.')
+
+    else:
+        logger.info("The following versions were successfully upgraded: ")
+        for version in updated_versions:
+            logger.info(" " * 2 + version)
+        logger.info("------")
 
 
 def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
