@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019, 2020, 2021 ALM Partners Oy
+# Copyright 2019 - 2023 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 """Initialize operations.
@@ -41,7 +41,6 @@ PROJECT_STRUCTURE = {
     ".gitignore": "resources/files/.gitignore",
     "ahjo_actions.py": "resources/files/ahjo_actions.py",
     "alembic.ini": "resources/files/alembic.ini",
-    "config_development.jsonc": "resources/files/config_development.jsonc",
     "README.md": "empty file"
 }
 
@@ -75,7 +74,7 @@ def create_local_config_base(config_filename: str):
                 print('Problem creating local config file: {}'.format(err))
 
 
-def create_new_project(project_name: str, init_location: str, message: str):
+def create_new_project(project_name: str, init_location: str, message: str, project_config_format: str = "json"):
     '''Create project root directory and call populate_project.'''
     with OperationManager(message):
         project_root = path.join(init_location, project_name)
@@ -83,6 +82,10 @@ def create_new_project(project_name: str, init_location: str, message: str):
             print(f'Folder {project_root} already exists. Terminating.')
             return
         makedirs(project_root)
+        if project_config_format == "jsonc":
+            PROJECT_STRUCTURE["config_development.jsonc"] = "resources/files/config_development.jsonc"
+        else:
+            PROJECT_STRUCTURE["config_development.json"] = "resources/files/config_development.json"
         populate_project(project_root, PROJECT_STRUCTURE)
         print(f'Project {project_root} created.')
 

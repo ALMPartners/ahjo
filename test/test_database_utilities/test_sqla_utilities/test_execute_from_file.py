@@ -4,7 +4,6 @@ import ahjo.database_utilities.sqla_utilities as ahjo
 import pytest
 from yaml import safe_load
 from sqlalchemy.sql import text
-from sqlalchemy.orm import Session
 
 MSSQL_PATTERNS = ahjo.get_dialect_patterns('mssql')
 POSTGRESQL_PATTERNS = ahjo.get_dialect_patterns('postgresql')

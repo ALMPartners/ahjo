@@ -14,6 +14,7 @@ robotframework/*.png
 
 # config stuff
 config_*.json*
+!config_development.json
 !config_development.jsonc
 
 # package stuff

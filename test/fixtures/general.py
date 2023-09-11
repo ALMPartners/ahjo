@@ -18,7 +18,7 @@ from base64 import b64encode
 from shutil import copytree
 from os import environ, getcwd, path
 
-import commentjson as json
+import json
 import pytest
 from alembic import command
 from alembic.config import Config
@@ -44,7 +44,7 @@ def ahjo_config():
     This fixture is used when creating engine fixture.
     """
     def read_samples_ahjo_config(sample_directory):
-        sample_config = path.join(sample_directory, 'config_development.jsonc')
+        sample_config = path.join(sample_directory, 'config_development.json')
         with open(sample_config) as f:
             config = json.load(f)
             config = config['BACKEND']
@@ -83,7 +83,7 @@ def rewrite_sample_configuration(sample_root, hostname, port_number):
     """Open sample project configuration file and rewrite
     server hostname, port number, username file path and password file path.
     """
-    test_configuration = path.join(sample_root, 'config_development.jsonc')
+    test_configuration = path.join(sample_root, 'config_development.json')
     with open(test_configuration, 'r') as f:
         config = json.load(f)
     config['BACKEND']['target_server_hostname'] = hostname
@@ -115,7 +115,7 @@ def run_alembic_action():
         main_section = alembic_config.config_ini_section
         alembic_config.get_section(main_section)
         alembic_config.cmd_opts = Namespace(
-            x=["main_config=config_development.jsonc"])
+            x=["main_config=config_development.json"])
         if action == 'upgrade':
             command.upgrade(alembic_config, target)
         elif action == 'downgrade':

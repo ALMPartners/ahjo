@@ -25,7 +25,7 @@ config = context.config
 fileConfig(config.config_file_name, disable_existing_loggers=False)
 logger = getLogger('alembic.env.py')
 
-# Load project config file (config_development.jsonc)
+# Load project config file (config_development.json)
 main_config_path = context.get_x_argument(as_dictionary=True).get('main_config')
 if main_config_path is None:
     logger.info('No extra alembic argument "-x main_config=config.file" given.')

@@ -22,7 +22,7 @@ def upgrade(config_filename: str, version: str = None):
 
         # Load settings
         config = load_json_conf(config_filename)
-        upgrade_actions = load_json_conf(config.get("upgrade_actions_file", "./upgrade_actions.jsonc"))
+        upgrade_actions = load_json_conf(config.get("upgrade_actions_file", "./upgrade_actions.json"))
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("sqla_default_connectable_type", "engine")

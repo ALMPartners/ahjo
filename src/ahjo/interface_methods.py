@@ -8,7 +8,10 @@ from pathlib import Path
 from re import sub
 from typing import Iterable, List, Union
 
-import commentjson as cjson
+try: # try to use commentjson, if not found, use json
+    import commentjson as json
+except ModuleNotFoundError as err:
+    import json as json
 
 logger = getLogger('ahjo')
 
@@ -24,7 +27,7 @@ def load_json_conf(conf_file: str, key: str = 'BACKEND') -> dict:
         return None
     with open(f_path, encoding='utf-8') as f:
         raw_data = f.read()
-    data = cjson.loads(raw_data)
+    data = json.loads(raw_data)
     key_value = data.get(key, None)
     if key_value:
         return key_value

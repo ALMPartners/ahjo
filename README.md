@@ -14,7 +14,6 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 # Dependencies
 ## Common
 * [alembic](https://pypi.org/project/alembic/)
-* [commentjson](https://pypi.org/project/commentjson/)
 * [pyparsing](https://pypi.org/project/pyparsing/)
 * [SQL Alchemy](https://pypi.org/project/SQLAlchemy/)
 
@@ -25,6 +24,9 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 
 ### azure
 * [azure-identity](https://pypi.org/project/azure-identity/)
+
+### jsonc
+* [commentjson](https://pypi.org/project/commentjson/)
 
 # Install Guide
 
@@ -51,12 +53,13 @@ pip install ahjo[mssql]
 
 ```
 cd .\ahjo
-pip install [-e] .[mssql]
+pip install [-e] .[mssql,azure,jsonc]
 ```
 
 ## Available platform tags
 - `mssql` - Microsoft SQL Server
 - `azure` - Microsoft Azure SQL Database
+- `jsonc` - Comment JSON
 
 # Project Initialization
 Create a new project by running the following command:

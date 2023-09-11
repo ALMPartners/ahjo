@@ -15,7 +15,7 @@ class TestWithSQLServer():
     def alembic_mssql_setup_and_teardown(self, ahjo_config, mssql_sample, mssql_engine, run_alembic_action):
         self.config = ahjo_config(mssql_sample)
         self.alembic_table = self.config['alembic_version_table_schema'] + '.' + self.config['alembic_version_table']
-        self.config_filepath = path.join(mssql_sample, 'config_development.jsonc')
+        self.config_filepath = path.join(mssql_sample, 'config_development.json')
         self.engine = mssql_engine
         old_cwd = getcwd()
         chdir(mssql_sample)

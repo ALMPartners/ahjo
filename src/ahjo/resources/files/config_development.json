@@ -1,0 +1,13 @@
+{
+    "BACKEND": {
+        "allowed_actions": "ALL",
+        "url_of_remote_git_repository": "",
+        "git_table": "git_version",
+        "git_table_schema": "dbo",
+        "sql_port": 14330,
+        "sql_driver": "ODBC Driver 17 for SQL Server",
+        "sql_dialect": "mssql+pyodbc",
+        "target_server_hostname": "localhost",
+        "target_database_name": "DB NAME"
+    }
+}

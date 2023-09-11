@@ -1,0 +1,18 @@
+{
+    "BACKEND": {
+        "allowed_actions": "ALL"
+        ,"url_of_remote_git_repository": "Ahjo MSSQL sample"
+        ,"git_table": "git_version"
+        ,"git_table_schema": "dbo"
+        ,"sql_port": null
+        ,"sql_driver": "ODBC Driver 17 for SQL Server"
+        ,"sql_dialect": "mssql+pyodbc"
+        ,"target_server_hostname": null
+        ,"target_database_name": "AHJO_TEST"
+        ,"username_file": null
+        ,"password_file": null
+        ,"alembic_version_table": "alembic_version"
+        ,"alembic_version_table_schema": "dbo"
+        ,"metadata_allowed_schemas": ["store", "report"]
+    }
+}
