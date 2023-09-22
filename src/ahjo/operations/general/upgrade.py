@@ -102,7 +102,8 @@ def upgrade(config_filename: str, version: str = None):
             connection.close()
             
     except Exception as error:
-        logger.error('Error during ahjo project upgrade:')
+        # Todo: Add rollback?
+        logger.error('Ahjo project upgrade failed:')
         logger.error(error)
         if connectable_type == "connection":
             logger.error('Aborted upgrade. Changes were not committed to the database.')
@@ -122,22 +123,22 @@ def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
 
     version_actions = copy.deepcopy(upgrade_actions)
     git_tags = _get_all_tags()
-    oldest_tag = git_tags[-1]
     tag_set = set(git_tags)
 
     if current_version not in tag_set:
         raise ValueError(f"Current version {current_version} does not exist in the repository.")
 
-    # Filter out versions that are older than the current database version
+    # From upgrade actions, remove versions that are previous to the current version.
     for version in upgrade_actions:
-        if version != oldest_tag:
+        try:
             previous_version = _get_previous_tag(version)
+        except: # No previous version found.
+            raise ValueError(f"Upgrade actions cannot be defined for the first version: {version}.")
+        else: # Previous version found
             if previous_version == current_version:
                 break
             else:
                 version_actions.pop(version)
-        else: 
-            break
 
     # Validate versions and actions.
     previous_version = None
