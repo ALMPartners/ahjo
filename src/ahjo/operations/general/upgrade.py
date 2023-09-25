@@ -4,15 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
+import sys
+import importlib
+import os
 from logging import getLogger
 from ahjo.interface_methods import load_json_conf, are_you_sure
-from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.scripts.utils import display_collation_info
 from ahjo.action import execute_action
 from ahjo.context import Context
 
 
+sys.path.append(os.getcwd())
 logger = getLogger('ahjo')
 
 
@@ -22,7 +25,8 @@ def upgrade(config_filename: str, version: str = None):
 
         # Load settings
         config = load_json_conf(config_filename)
-        upgrade_actions = load_json_conf(config.get("upgrade_actions_file", "./upgrade_actions.json"))
+        json_format = "jsonc" if importlib.util.find_spec("commentjson") is not None else "json"
+        upgrade_actions = load_json_conf(config.get("upgrade_actions_file", f"./upgrade_actions.{json_format}"))
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("sqla_default_connectable_type", "engine")
@@ -68,6 +72,9 @@ def upgrade(config_filename: str, version: str = None):
 
             # Checkout the next upgradable git version
             _checkout_tag(git_version)
+
+            # Reload master actions & update global variable: registered_actions
+            importlib.reload(importlib.import_module("ahjo_actions"))
 
             # Deploy version upgrades
             actions = version_actions[git_version]

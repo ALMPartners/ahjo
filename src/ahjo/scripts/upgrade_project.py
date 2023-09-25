@@ -13,7 +13,6 @@ import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.operations.general.upgrade import upgrade
-from ahjo.action import import_actions
 from ahjo.scripts.utils import get_config_path
 
 
@@ -26,7 +25,6 @@ line = "-" * len(info_msg)
 logger.info(line)
 logger.info(info_msg)
 logger.info(line)
-import_actions()
 
 def main():
     parser = argparse.ArgumentParser()
