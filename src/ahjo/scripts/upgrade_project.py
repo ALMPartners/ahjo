@@ -13,7 +13,7 @@ import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.operations.general.upgrade import upgrade
-from ahjo.scripts.utils import get_config_path
+from ahjo.context import get_config_path
 
 
 # load logging config

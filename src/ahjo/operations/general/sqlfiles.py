@@ -11,6 +11,7 @@ from pathlib import Path
 from traceback import format_exc
 from typing import Any, Callable, Union
 
+from ahjo.interface_methods import rearrange_params
 from ahjo.database_utilities import execute_from_file, execute_try_catch, execute_files_in_transaction, drop_files_in_transaction
 from ahjo.interface_methods import format_to_table
 from ahjo.operation_manager import OperationManager
@@ -39,6 +40,8 @@ def sql_files_found(data_src):
         logger.warning("Parameter 'data_src' should be non-empty string or list.")
     return files
 
+
+@rearrange_params({"engine": "connectable"})
 def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str, list], message: str, display_output: bool = False, 
         scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False) -> bool:
     """Run every SQL script file found in given directory/filelist and print the executed file names.
@@ -125,6 +128,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         return True
 
 
+@rearrange_params({"engine": "connectable"})
 def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: str, data_src: Union[str, list], message: str):
     """Drop all the objects created in SQL script files of an directory.
 
@@ -182,6 +186,7 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
             raise RuntimeError(error_msg)
 
 
+@rearrange_params({"engine": "connectable"})
 def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Session], display_output: bool, scripting_variables: dict, 
         file_transaction: bool = False, commit_transaction: bool = True):
     '''Run single SQL script file.

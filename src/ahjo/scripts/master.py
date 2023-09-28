@@ -6,16 +6,17 @@
 import argparse
 import os
 import ahjo.scripts.master_actions
+from ahjo.version import __version__ as ahjo_version
 
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.action import execute_action, list_actions, import_actions
-from ahjo.scripts.utils import get_config_path, config_is_valid
+from ahjo.context import get_config_path, config_is_valid
 
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo')
 
-info_msg = "    Ahjo - Database deployment framework    "
+info_msg = f"    Ahjo v{ahjo_version} - Database deployment framework    "
 line = "-" * len(info_msg)
 print(line)
 print(info_msg)

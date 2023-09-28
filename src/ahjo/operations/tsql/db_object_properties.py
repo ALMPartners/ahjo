@@ -21,6 +21,7 @@ from logging import getLogger
 from os import makedirs, path
 from typing import Union
 
+from ahjo.interface_methods import rearrange_params
 from ahjo.context import AHJO_PATH
 from ahjo.database_utilities import execute_query, get_schema_names
 from ahjo.operation_manager import OperationManager
@@ -66,6 +67,7 @@ DB_OBJECTS = {
 }
 
 
+@rearrange_params({"engine": "connectable"})
 def update_db_object_properties(connectable: Union[Engine, Connection], schema_list: list):
     """Update extended properties from file to database.
 
@@ -116,6 +118,7 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
                         )
 
 
+@rearrange_params({"engine": "connectable"})
 def exec_update_extended_properties(connectable: Union[Engine, Connection], object_name: str, object_metadata: dict, extended_property_name: str, extended_property_value: str):
     """Update object's extended properties by calling either
     procedure sp_addextendedproperty or sp_updateextendedproperty.
@@ -155,6 +158,7 @@ def exec_update_extended_properties(connectable: Union[Engine, Connection], obje
         logger.info("------")
 
 
+@rearrange_params({"engine": "connectable"})
 def update_file_object_properties(connectable: Union[Engine, Connection], schema_list: list):
     """Write extended properties to JSON file.
     If project doesn't have docs directory, create it.
@@ -195,12 +199,14 @@ def update_file_object_properties(connectable: Union[Engine, Connection], schema
         logger.debug('Extended properties fetched')
 
 
+@rearrange_params({"engine": "connectable"})
 def query_metadata(connectable: Union[Engine, Connection], metadata: dict, schema_list: list, properties_only: bool = False) -> dict:
     query_path = path.join(AHJO_PATH, metadata['query'])
     query_result = prepare_and_exec_query(connectable, query_path=query_path, param_list=schema_list)
     return result_set_to_dict(query_result, metadata['key_columns'], properties_only)
 
 
+@rearrange_params({"engine": "connectable"})
 def prepare_and_exec_query(connectable: Union[Engine, Connection], query_path: str, param_list: list) -> list:
     """Open query from query_path and set correct amount of
     parameter placeholders to question mark. Finally, execute query."""

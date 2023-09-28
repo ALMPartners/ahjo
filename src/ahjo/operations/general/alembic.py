@@ -9,6 +9,7 @@ from logging import getLogger
 from os import path
 
 from ahjo.context import AHJO_PATH
+from ahjo.interface_methods import rearrange_params
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine
@@ -60,6 +61,7 @@ def downgrade_db_to_alembic_base(config_filename: str, connection: Connection = 
         command.downgrade(alembic_config(config_filename, connection = connection), 'base')
 
 
+@rearrange_params({"engine": "connectable"})
 def print_alembic_version(connectable: Union[Engine, Connection], alembic_version_table: str):
     """Print last deployed revision number from Alembic version table."""
     with OperationManager('Checking Alembic version from database'):

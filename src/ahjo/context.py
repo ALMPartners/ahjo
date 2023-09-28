@@ -3,6 +3,7 @@
 # Copyright 2019 - 2022 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 from logging import getLogger
 from os import path
 from typing import Union
@@ -170,3 +171,38 @@ def merge_config_files(config_filename: str) -> dict:
         except Exception as err:
             logger.error(f'Could not open file {local_path}: {err}')
     return config_data
+
+
+def get_config_path(config_filename: str) -> str:
+    '''Get configuration filename from environment variable if not given as argument.'''
+    if config_filename is None and 'AHJO_CONFIG_PATH' in os.environ:
+        return os.environ.get('AHJO_CONFIG_PATH')
+    return config_filename
+
+
+def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
+    '''Validate configuration file.'''
+
+    # Check if configuration file exists.
+    if config_path is None:
+        logger.error("Error: Configuration filename is required.")
+        return False
+    
+    configuration = load_json_conf(config_path)
+
+    # Allow only non-interactive authentication methods in non-interactive mode.
+    if non_interactive:
+        azure_auth = configuration.get("azure_authentication")
+        if azure_auth is not None:
+            if azure_auth == "ActiveDirectoryInteractive" :
+                logger.error("Error: Azure authentication method ActiveDirectoryInteractive is not supported in non-interactive mode.")
+                return False
+        else:
+            if configuration.get("username_file") is None:
+                logger.error("Error: Username file is required in non-interactive mode.")
+                return False
+            if configuration.get("password_file") is None:
+                logger.error("Error: Password file is required in non-interactive mode.")
+                return False
+
+    return True

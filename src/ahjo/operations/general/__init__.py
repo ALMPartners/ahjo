@@ -36,3 +36,7 @@ from ahjo.operations.general.sqlfiles import (
 from ahjo.operations.general.upgrade import (
     upgrade
 )
+
+from ahjo.operations.general.db_info import (
+    print_db_collation
+)

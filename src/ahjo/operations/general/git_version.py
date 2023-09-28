@@ -10,6 +10,7 @@ from shlex import split
 from subprocess import check_output, run
 from typing import Tuple, Union
 
+from ahjo.interface_methods import rearrange_params
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from ahjo.interface_methods import load_json_conf
@@ -32,6 +33,7 @@ def _sqla_git_table(metadata: MetaData, git_table_schema: str, git_table: str) -
     )
 
 
+@rearrange_params({"engine": "connectable"})
 def update_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str, repository: str = None, git_version_info_path: str = None):
     """Store the Git remote, branch and commit information to database.
     Alembic version does not catch changes to views and procedures, but git version catches.
@@ -112,6 +114,8 @@ def _checkout_tag(tag: str):
     if checkout_version != tag:
         raise Exception(f"Failed to checkout git version: {tag}")
 
+
+@rearrange_params({"engine": "connectable"})
 def _update_git_db_record(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
     """Update or create a Git version table."""
     metadata = MetaData()
@@ -156,6 +160,7 @@ def _update_git_db_record(connectable: Union[Engine, Connection], git_table_sche
     connection.execute(update_query)
 
 
+@rearrange_params({"engine": "connectable"})
 def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str):
     """Return the first row of the Git version table."""
     result = None
@@ -169,6 +174,7 @@ def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: s
     return result
 
 
+@rearrange_params({"engine": "connectable"})
 def print_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str):
     with OperationManager('Checking Git version from database'):
         repository, branch, version = _get_git_version(connectable, git_table_schema, git_table)

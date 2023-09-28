@@ -93,3 +93,17 @@ def format_to_table(lst_of_iter: List[Iterable]) -> str:
             formatted_output += col_formats[i].format(str(cell))
         formatted_output += '\n'
     return formatted_output
+
+
+def rearrange_params(kwarg_map):
+    """ Decorator for rearranging keyword arguments. """
+    def decorator(func): 
+        def wrapped(*args, **kwargs):
+            new_kwargs = {}
+            for k, v in kwargs.items():
+                if k in kwarg_map:
+                    logger.debug(f"Keyword argument '{k}' is deprecated. Use '{kwarg_map[k]}' instead.")
+                new_kwargs[kwarg_map.get(k, k)] = v
+            return func(*args, **new_kwargs)
+        return wrapped
+    return decorator

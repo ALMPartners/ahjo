@@ -5,6 +5,7 @@
 
 """Utility functions for sqlalchemy
 """
+from ahjo.interface_methods import rearrange_params
 from logging import getLogger
 from os import path
 from re import DOTALL, sub
@@ -153,6 +154,7 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     return engine
 
 
+@rearrange_params({"engine": "connectable"})
 def execute_query(connectable: Union[Engine, Connection, Session], query: str, variables: Union[dict, list, tuple] = None, 
         isolation_level: str = 'AUTOCOMMIT', include_headers: bool = False) -> List[Iterable]:
     """Execute query with chosen isolation level.
@@ -230,6 +232,7 @@ def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw:
                 raise
 
 
+@rearrange_params({"engine": "connectable"})
 def execute_files_in_transaction(connectable: Union[Engine, Connection, Session], files: list, scripting_variables: dict = None, 
         include_headers: bool = False, commit_transaction: bool = True) -> List[Iterable]:
     """Execute SQL scripts from list of files in transaction. 
@@ -316,6 +319,7 @@ def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> Lis
     return script_output
 
 
+@rearrange_params({"engine": "connectable"})
 def execute_from_file(connectable: Union[Engine, Connection, Session], file_path: str, scripting_variables: dict = None, include_headers: bool = False, 
         file_transaction: bool = False, commit_transaction: bool = False) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.
@@ -390,6 +394,7 @@ def _file_to_batches(dialect_name, file_path, scripting_variables):
     return _split_to_batches(dialect, sql)
 
 
+@rearrange_params({"engine": "connectable"})
 def _execute_batches(connectable: Union[Connection, Session], batches: list, include_headers: bool = False, 
         commit_transaction: bool = True, rollback_on_error: bool = True):
     """Execute batches of SQL statements."""
@@ -416,6 +421,7 @@ def _execute_batches(connectable: Union[Connection, Session], batches: list, inc
     return script_output
 
 
+@rearrange_params({"engine": "connectable"})
 def _execute_batch(connectable: Union[Connection, Session], batch: str, script_output: list, include_headers: bool = False):
     """Execute batch of SQL statements."""
     result_set = connectable.execute(text(batch))
@@ -424,6 +430,7 @@ def _execute_batch(connectable: Union[Connection, Session], batch: str, script_o
             script_output.append(list(result_set.keys()))
         script_output.extend([row for row in result_set])
     return script_output
+
 
 def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variables: dict):
     """Insert scripting variables into SQL,
@@ -491,6 +498,7 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
     return batches
 
 
+@rearrange_params({"engine": "connectable"})
 def get_dialect_name(connectable: Union[Engine, Connection, Session]) -> str:
     """Return dialect name from Engine, Connection or Session."""
     connectable_type = type(connectable)
@@ -502,6 +510,8 @@ def get_dialect_name(connectable: Union[Engine, Connection, Session]) -> str:
         dialect_name = connectable.name
     return dialect_name
 
+
+@rearrange_params({"engine": "connectable"})
 def get_schema_names(connectable: Union[Engine, Connection]) -> List[str]:
     """Return schema names from database."""
     inspector = inspect(connectable)

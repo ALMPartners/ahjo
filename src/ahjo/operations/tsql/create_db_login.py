@@ -9,6 +9,7 @@ Global variable QUERIES holds SQL select statements to
 retrieve session ids and login name from database.'''
 from logging import getLogger
 
+from ahjo.interface_methods import rearrange_params
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine, Connection
@@ -22,6 +23,7 @@ QUERIES = {
 }
 
 
+@rearrange_params({"engine": "connectable"})
 def create_db_login(connectable: Union[Engine, Connection], login_name: str, login_password: str, default_db: str):
     '''First, kill all sessions related to login. Second, drop login.
     Third, create login with given password and default database.

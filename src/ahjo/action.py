@@ -14,7 +14,7 @@ from typing import Any, Callable, List, Union
 from ahjo.context import Context
 from ahjo.interface_methods import are_you_sure
 from ahjo.operation_manager import OperationManager, format_message
-from ahjo.scripts.utils import display_collation_info
+from ahjo.operations.general.db_info import print_db_collation
 from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
@@ -197,15 +197,7 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
         action = registered_actions.get(action_name)
 
         # display database collation
-        if load_collation:
-            display_collation_info(
-                context.get_engine(), 
-                context.configuration["target_database_name"],
-                sql_dialect = context.configuration.get("sql_dialect", "mssql+pyodbc"),
-                config_collation_name = context.configuration.get("database_collation", "Latin1_General_CS_AS"),
-                config_catalog_collation_type_desc = context.configuration.get("catalog_collation_type_desc", "DATABASE_DEFAULT")
-            )
-            logger.info('------')
+        if load_collation: print_db_collation(context)
         
         # user confirmation
         if not skip_confirmation and not action.pre_exec_check(context):

@@ -1,4 +1,4 @@
-from ahjo.operations.tsql.collation import get_collation_info
+from ahjo.operations.tsql.db_info import get_collation
 
 import pytest
 
@@ -12,6 +12,6 @@ class TestWithSQLServer():
         self.engine = mssql_engine
 
     def test_collation_info_should_exist(self):
-        collation, _, server_edition = get_collation_info(self.engine, self.config['target_database_name'])
+        collation, _, server_edition = get_collation(self.engine, self.config['target_database_name'])
         assert collation is not None and server_edition is not None
 
