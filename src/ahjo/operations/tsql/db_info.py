@@ -1,3 +1,9 @@
+# Ahjo - Database deployment framework
+#
+# Copyright 2019 - 2023 ALM Partners Oy
+# SPDX-License-Identifier: Apache-2.0
+
+"""Operations for loading and printing database information."""
 
 from logging import getLogger
 from ahjo.operation_manager import format_message

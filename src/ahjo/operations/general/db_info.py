@@ -1,3 +1,9 @@
+# Ahjo - Database deployment framework
+#
+# Copyright 2019 - 2023 ALM Partners Oy
+# SPDX-License-Identifier: Apache-2.0
+
+"""Module for database information related operations."""
 
 from ahjo.operations.tsql.db_info import print_collation as print_collation_tsql
 from ahjo.context import Context
