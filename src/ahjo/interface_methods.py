@@ -102,7 +102,7 @@ def rearrange_params(kwarg_map):
             new_kwargs = {}
             for k, v in kwargs.items():
                 if k in kwarg_map:
-                    logger.debug(f"Keyword argument '{k}' is deprecated. Use '{kwarg_map[k]}' instead.")
+                    logger.debug(f"Keyword argument '{k}' in '{func.__name__}' is deprecated. Use '{kwarg_map[k]}' instead.")
                 new_kwargs[kwarg_map.get(k, k)] = v
             return func(*args, **new_kwargs)
         return wrapped
