@@ -10,7 +10,8 @@ import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.action import execute_action, list_actions, import_actions
-from ahjo.context import get_config_path, config_is_valid
+from ahjo.context import get_config_path, config_is_valid, Context
+from ahjo.operations.general.db_info import print_db_collation
 
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo')
@@ -46,8 +47,12 @@ def main():
         non_interactive = args.non_interactive
         if not config_is_valid(config_path, non_interactive = non_interactive):
             return
+        
+        context = Context(config_path)
+        if context.configuration.get("display_db_info", True):
+            print_db_collation(context)
 
-        kwargs = {"load_collation": True}
+        kwargs = {"context": context}
         if len(args.files) > 0 : kwargs['files'] = args.files
         if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
         if non_interactive : kwargs['skip_confirmation'] = True

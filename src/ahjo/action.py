@@ -14,7 +14,6 @@ from typing import Any, Callable, List, Union
 from ahjo.context import Context
 from ahjo.interface_methods import are_you_sure
 from ahjo.operation_manager import OperationManager, format_message
-from ahjo.operations.general.db_info import print_db_collation
 from sqlalchemy.engine import Engine
 
 logger = getLogger('ahjo')
@@ -164,7 +163,7 @@ def check_action_validity(action_name: str, allowed_actions: Union[str, list], s
 
 
 def execute_action(action_name: str, config_filename: str, engine: Engine = None, skip_confirmation: bool = False, 
-        load_collation: bool = False, context: Context = None, *args, **kwargs):
+        context: Context = None, *args, **kwargs):
     """Prepare and execute given action.
 
     Does the logging and error handling for preparation.
@@ -179,8 +178,8 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
         SQL Alchemy engine.
     skip_confirmation: bool
         If True, user confirmation is disabled.
-    load_collation: bool
-        If True, collation information is loaded from the database.
+    context: ahjo.context.Context
+        Context object. If None, a new one is created.
     """
     logger.info('------')
     with OperationManager('Starting to execute "' + action_name + '"'):
@@ -195,9 +194,6 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
         if not action_valid: 
             return
         action = registered_actions.get(action_name)
-
-        # display database collation
-        if load_collation: print_db_collation(context)
         
         # user confirmation
         if not skip_confirmation and not action.pre_exec_check(context):

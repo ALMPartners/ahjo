@@ -44,7 +44,6 @@ def print_collation(engine: Engine, db_name: str, config_collation_name: str = "
                 logger.info("   Database catalog collation setting: " + catalog_collation_type_desc)
     
     logger.info("")
-    logger.info('------')
 
 
 def get_collation(engine: Engine, db_name: str) -> tuple:

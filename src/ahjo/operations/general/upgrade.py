@@ -37,7 +37,8 @@ def upgrade(config_filename: str, version: str = None):
         context.set_enable_transaction(False)
         
         # Display database collation
-        print_db_collation(context)
+        if context.configuration.get("display_db_info", True):
+            print_db_collation(context)
 
         # Get the current git commit from database
         _, _, current_db_version = _get_git_version(context.get_connectable(), git_table_schema, git_table)

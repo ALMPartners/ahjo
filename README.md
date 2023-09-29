@@ -279,8 +279,9 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | db_permission_invoke_method | No | Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy". | str | |
 | odbc_trust_server_certificate | No | Value of TrustServerCertificate in ODBC connection string. | str | "no" |
 | odbc_encrypt | No | Value of Encrypt in ODBC connection string. | str | "yes" |
-| upgrade_actions_file | No | Configuration file for upgrade actions | str | "./upgrade_actions.jsonc" |
+| upgrade_actions_file | No | Configuration file for upgrade actions. | str | "./upgrade_actions.jsonc" |
 | catalog_collation_type_desc | No | Catalog collation setting of database. If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database | str | "DATABASE_DEFAULT" |
+| display_db_info | No | Print database collation information to console before running actions. | boolean | true |
 
 
 ## Using Alembic with Ahjo
