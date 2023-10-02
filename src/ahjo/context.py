@@ -43,7 +43,7 @@ class Context:
     def get_connectable(self) -> Union[Engine, Connection]:
         """Return Engine or Connection depending on connectivity type."""
         if self.connectivity_type is None:
-            self.connectivity_type = self.configuration.get("sqla_default_connectable_type", "engine").lower()
+            self.connectivity_type = self.configuration.get("context_connectable_type", "engine").lower()
         if self.connectivity_type == "connection":
             return self.get_connection()
         return self.get_engine()
@@ -79,7 +79,7 @@ class Context:
         if self.connection is None:
             self.connection = self.get_engine().connect()
         if self.enable_transaction is None:
-            if self.configuration.get("transaction_action", "yes").lower() == "yes":
+            if self.configuration.get("transaction_mode", "begin_once").lower() == "begin_once":
                 self.enable_transaction = True
             else:
                 self.enable_transaction = False

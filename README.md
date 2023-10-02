@@ -282,6 +282,8 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | upgrade_actions_file | No | Configuration file for upgrade actions. | str | "./upgrade_actions.jsonc" |
 | catalog_collation_type_desc | No | Catalog collation setting of database. If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database | str | "DATABASE_DEFAULT" |
 | display_db_info | No | Print database collation information to console before running actions. | boolean | true |
+| context_connectable_type | No | Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection". | str | "engine" |
+| transaction_mode | No | Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". Possible values are "begin_once" and "commit_as_you_go". If "begin_once", a transaction is started before running actions and committed after all actions are run. If "commit_as_you_go", a transaction is started before running action but is not committed automatically. | str | "begin_once" |
 
 
 ## Using Alembic with Ahjo

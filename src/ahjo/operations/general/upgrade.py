@@ -29,7 +29,7 @@ def upgrade(config_filename: str, version: str = None):
         upgrade_actions = load_json_conf(config.get("upgrade_actions_file", f"./upgrade_actions.{json_format}"))
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
-        connectable_type = config.get("sqla_default_connectable_type", "engine")
+        connectable_type = config.get("context_connectable_type", "engine")
         updated_versions = []
 
         # Create context
