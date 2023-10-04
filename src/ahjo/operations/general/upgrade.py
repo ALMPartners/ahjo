@@ -86,7 +86,7 @@ def upgrade(config_filename: str, version: str = None):
 
                 # Run action
                 execute_action(
-                    *[action_name, config_filename, None, True, False, context],
+                    *[action_name, config_filename, None, True, context],
                     **kwargs
                 )
 

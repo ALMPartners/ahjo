@@ -92,7 +92,6 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
             execute_action(
                 project_action, 
                 project_config_path, 
-                master_engine, 
-                skip_confirmation = skip_project_confirmation,
-                load_collation = True
+                engine = master_engine, 
+                skip_confirmation = skip_project_confirmation
             )
