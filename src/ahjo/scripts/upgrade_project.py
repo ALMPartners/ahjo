@@ -13,7 +13,7 @@ import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.operations.general.upgrade import upgrade
-from ahjo.context import get_config_path
+from ahjo.context import get_config_path, config_is_valid
 
 
 # load logging config
@@ -30,17 +30,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("config_filename", help="Configuration filename.", type=str, nargs="?")
     parser.add_argument("-v", "--version", type=str, help="Version to upgrade to.", required=False)
+    parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
     args = parser.parse_args()
 
     config_filename = get_config_path(args.config_filename)
-
-    if config_filename is None:
-        logger.error("Error: Configuration filename is required.")
+    non_interactive = args.non_interactive
+    if not config_is_valid(config_filename, non_interactive = non_interactive):
         return
     
     upgrade(
         config_filename,
-        args.version
+        args.version,
+        skip_confirmation = non_interactive
     )
 
     

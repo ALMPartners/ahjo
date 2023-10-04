@@ -19,7 +19,7 @@ sys.path.append(os.getcwd())
 logger = getLogger('ahjo')
 
 
-def upgrade(config_filename: str, version: str = None):
+def upgrade(config_filename: str, version: str = None, skip_confirmation: bool = False):
     """Upgrade database with upgrade actions."""
     try:
 
@@ -50,17 +50,17 @@ def upgrade(config_filename: str, version: str = None):
         if version is not None:
             version_actions = validate_version(version, version_actions, upgrade_actions, current_db_version)
 
-        # Format are_you_sure message
-        are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
-        for tag in version_actions:
-            are_you_sure_msg.append(tag + ":")
-            action_names = [action[0] if isinstance(action, list) else action for action in version_actions[tag]]
-            are_you_sure_msg.append(" " * 2 + ", ".join(action_names))
+        if not skip_confirmation:
+            # Format are_you_sure message
+            are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
+            for tag in version_actions:
+                are_you_sure_msg.append(tag + ":")
+                action_names = [action[0] if isinstance(action, list) else action for action in version_actions[tag]]
+                are_you_sure_msg.append(" " * 2 + ", ".join(action_names))
+            are_you_sure_msg.append("")
 
-        are_you_sure_msg.append("")
-
-        # Confirm action
-        if not are_you_sure(are_you_sure_msg, False): return False
+            # Confirm action
+            if not are_you_sure(are_you_sure_msg, False): return False
 
         for git_version in version_actions:
 
@@ -103,7 +103,6 @@ def upgrade(config_filename: str, version: str = None):
             connection.close()
             
     except Exception as error:
-        # Todo: Add rollback?
         logger.error('Ahjo project upgrade failed:')
         logger.error(error)
         if connectable_type == "connection":
