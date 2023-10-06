@@ -3,15 +3,12 @@
 # Copyright 2019, 2020, 2021 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
+import ahjo.util.jsonc as json
 from logging import getLogger
 from pathlib import Path
 from re import sub
 from typing import Iterable, List, Union
 
-try: # try to use commentjson, if not found, use json
-    import commentjson as json
-except ModuleNotFoundError as err:
-    import json as json
 
 logger = getLogger('ahjo')
 

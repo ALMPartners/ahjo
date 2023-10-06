@@ -25,9 +25,6 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 ### azure
 * [azure-identity](https://pypi.org/project/azure-identity/)
 
-### jsonc
-* [commentjson](https://pypi.org/project/commentjson/)
-
 # Install Guide
 
 ## Install Guide 1 - PyPI
@@ -53,13 +50,12 @@ pip install ahjo[mssql]
 
 ```
 cd .\ahjo
-pip install [-e] .[mssql,azure,jsonc]
+pip install [-e] .[mssql,azure]
 ```
 
 ## Available platform tags
 - `mssql` - Microsoft SQL Server
 - `azure` - Microsoft Azure SQL Database
-- `jsonc` - Comment JSON
 
 # Project Initialization
 Create a new project by running the following command:

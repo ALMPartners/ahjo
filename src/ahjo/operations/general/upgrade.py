@@ -25,8 +25,7 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
 
         # Load settings
         config = load_json_conf(config_filename)
-        json_format = "jsonc" if importlib.util.find_spec("commentjson") is not None else "json"
-        upgrade_actions = load_json_conf(config.get("upgrade_actions_file", f"./upgrade_actions.{json_format}"))
+        upgrade_actions = load_json_conf(config.get("upgrade_actions_file", f"./upgrade_actions.jsonc"))
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("context_connectable_type", "engine")
