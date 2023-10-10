@@ -114,12 +114,14 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
                             object_name,
                             object_metadata,
                             property_name,
-                            property_value
+                            property_value,
+                            object_type = object_type
                         )
 
 
 @rearrange_params({"engine": "connectable"})
-def exec_update_extended_properties(connectable: Union[Engine, Connection], object_name: str, object_metadata: dict, extended_property_name: str, extended_property_value: str):
+def exec_update_extended_properties(connectable: Union[Engine, Connection], object_name: str, object_metadata: dict, 
+        extended_property_name: str, extended_property_value: str, object_type: str = ""):
     """Update object's extended properties by calling either
     procedure sp_addextendedproperty or sp_updateextendedproperty.
     If object_metadata is None, object does not exist in database.
@@ -152,10 +154,10 @@ def exec_update_extended_properties(connectable: Union[Engine, Connection], obje
         execute_query(connectable, procedure_call, params)
     except Exception as err:
         logger.warning(
-            f"Failed to update {object_name} extended property '{extended_property_name}'.")
+            f"Failed to update extended property '{extended_property_name}' for {object_type} '{object_name}'."
+        )
         logger.debug(f"Extended property value: {extended_property_value}")
         logger.debug(err, exc_info=1)
-        logger.info("------")
 
 
 @rearrange_params({"engine": "connectable"})
@@ -178,7 +180,7 @@ def update_file_object_properties(connectable: Union[Engine, Connection], schema
         if not path.exists(DOCS_DIR):
             makedirs(DOCS_DIR, exist_ok=True)
         if schema_list is None:
-            schema_list = [s for s in get_schema_names(engine)
+            schema_list = [s for s in get_schema_names(connectable)
                            if s not in EXCLUDED_SCHEMAS]
         elif len(schema_list) == 0:
             logger.warning(
