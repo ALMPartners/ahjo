@@ -376,6 +376,9 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
     else:
         script_output = _execute_batches(connection_obj, batches, include_headers=include_headers, commit_transaction=commit_transaction)
 
+    if connectable_type == Engine:
+        connection_obj.close()
+
     return script_output
 
 
