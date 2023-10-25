@@ -15,6 +15,7 @@ import ahjo.operations as op
 import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
+from ahjo.operations.general.scan import scan_project, SCAN_RULES_WHITELIST
 from sqlalchemy.sql import text
 from sqlalchemy.engine import Connection
 
@@ -262,5 +263,15 @@ def update_db_obj_prop(context):
         )
 
 
+@action(affects_database=False)
+def scan(context, **kwargs):
+    """ Scan ahjo project git files using search rules."""
+    scan_project(
+        filepaths_to_scan = kwargs["files"] if "files" in kwargs and len(kwargs["files"]) > 0 else ["^database/"],
+        scan_staging_area = True if "scan_staging_area" in kwargs else False,
+        search_rules = kwargs["search_rules"] if "search_rules" in kwargs and len(kwargs["search_rules"]) > 0 else SCAN_RULES_WHITELIST
+    )
+                
+    
 create_multiaction("complete-build", ["init", "deploy", "data", "testdata", "test"],
                    description="(MSSQL) Run 'init', 'deploy', 'data', 'testdata' and 'test' actions.")

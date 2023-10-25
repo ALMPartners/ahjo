@@ -40,3 +40,7 @@ from ahjo.operations.general.upgrade import (
 from ahjo.operations.general.db_info import (
     print_db_collation
 )
+
+from ahjo.operations.general.scan import (
+    scan_project
+)
