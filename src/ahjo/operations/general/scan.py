@@ -7,17 +7,14 @@
 import os
 import re
 import yaml
-import ahjo
 from datetime import datetime
 from typing import Union
 from logging import getLogger
-from logging.config import fileConfig
 from ahjo.operations.general.git_version import _get_git_commit_info
 from subprocess import check_output
 from dateutil.parser import parse
 
 logger = getLogger("ahjo")
-fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 
 # Allowed search rules
 SCAN_RULES_WHITELIST = {
