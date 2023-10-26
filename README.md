@@ -417,6 +417,45 @@ def structure(context):
 create_multiaction("complete-build", ["init", "structure", "deploy", "data", "test"])
 ```
 
+# Building an MSI installation package (optional)
+
+This assumes you have cloned the source code repository and have it open in a shell.
+
+Create a new, empty build venv and install build requirements into it.
+
+**Notice:** at the time of writing this (10/2023), [the latest stable cx_freeze version](https://cx-freeze.readthedocs.io/en/stable) (6.15.10) **does not support Python 3.12** yet. As soon as new cx_freeze version with Python 3.12 support is released, it should be taken in to use.
+
+```
+py -3.11 -m venv venv_msi_build
+.\venv_msi_build\Scripts\Activate.ps1 
+pip install -r .\msi_build_requirements.txt
+```
+
+**Notice:** the last command installs ahjo with the most common options. You may need to update msi_build_requirements.txt to suit your needs.
+
+**Notice:** if you make changes to the source code, you must install ahjo into build venv again to have those changes included in the next build. Editable pip install doesn't work here, so don't use it.
+
+With the build venv active, build the MSI package with the following command.
+
+```
+python .\msi_build.py bdist_msi
+```
+
+Find the built MSI installation package under (automatically created) `dist` directory. 
+
+## Install Guide - MSI installation package
+
+MSI installation package installs everything that is needed to execute ahjo shell commands including the required parts of the Python runtime setup. In other words, the target environment doesn't need to have Python installed and there is no need to create separate venvs for ahjo.
+
+1. Run the msi installer with the default settings it offers
+2. Make sure to start a new shell instance (e.g. Windows PowerShell) after the installation
+3. After a successful installation the following CLI commands are available in the shell:
+    - ahjo
+    - ahjo-init-project
+    - ahjo-multi-project-build
+    - ahjo-upgrade
+4. If a new shell instance can't find the executables, ensure that installation path is included in the PATH enviroment variable
+
 # License
 Copyright 2019 - 2023 ALM Partners Oy
 

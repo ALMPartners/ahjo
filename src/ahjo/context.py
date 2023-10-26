@@ -5,7 +5,7 @@
 
 import os
 from logging import getLogger
-from os import path
+import sys
 from typing import Union
 
 from sqlalchemy.engine import Engine, Connection
@@ -17,7 +17,20 @@ from ahjo.interface_methods import load_json_conf
 
 logger = getLogger('ahjo')
 
-AHJO_PATH = path.dirname(__file__)
+
+def _get_app_path() -> str:
+    """Get the current app path"""
+    # see https://cx-freeze.readthedocs.io/en/latest/faq.html#using-data-files
+    if getattr(sys, "frozen", False):
+        # Frozen = e.g. installed from an msi
+        app_path = os.path.dirname(sys.executable)
+    else:
+        # Not frozen = e.g. a manual venv installation
+        app_path = os.path.dirname(__file__)
+    return app_path
+
+
+AHJO_PATH = _get_app_path()
 
 
 class Context:

@@ -5,6 +5,7 @@
 
 import argparse
 import os
+import sys
 import ahjo.scripts.master_actions
 
 from logging import getLogger
@@ -13,10 +14,18 @@ from ahjo.action import execute_action, list_actions, import_actions
 from ahjo.context import get_config_path, config_is_valid, Context
 from ahjo.operations.general.db_info import print_db_collation
 
+try:
+    from ahjo.version import version as AHJO_VERSION
+except ImportError:
+    AHJO_VERSION = "?.?.?"
+
+# Indicator for a frozen executable (e.g. running from an msi installation)
+CX_FROZEN_TAG = " (frozen)" if getattr(sys, "frozen", False) else ""
+
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo')
 
-info_msg = f"    Ahjo - Database deployment framework    "
+info_msg = f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
 line = "-" * len(info_msg)
 print(line)
 print(info_msg)
