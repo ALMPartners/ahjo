@@ -10,8 +10,7 @@ import yaml
 from datetime import datetime
 from typing import Union
 from logging import getLogger
-from ahjo.operations.general.git_version import _get_git_commit_info, _get_all_files_in_staging_area, _get_all_files_in_working_directory
-from subprocess import check_output
+from ahjo.operations.general.git_version import _get_all_files_in_staging_area, _get_all_files_in_working_directory
 from dateutil.parser import parse
 
 logger = getLogger("ahjo")
@@ -252,14 +251,14 @@ def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml"):
         The file should be in the following format: 
 
         files:
-        - file_path: <file_path>
-            matches:
-            - <match>
-            - <match>
-        - file_path: <file_path>
-            matches:
-            - <match>
-            - <match>
+            - file_path: <file_path>
+              matches:
+                - <match>
+                - <match>
+            - file_path: <file_path>
+              matches:
+                - <match>
+
 
     """
     ignored_matches = {}
@@ -276,4 +275,8 @@ def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml"):
             logger.warning(f"Failed to load ignored matches from {file_path}.")
             logger.warning(e)
             pass
+    else: # Create empty ignore yaml file if it does not exist
+        with open(file_path, 'w') as stream:
+            yaml.dump({"files": []}, stream, default_flow_style=False)
+
     return ignored_matches

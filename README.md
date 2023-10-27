@@ -193,15 +193,51 @@ Pre-defined actions include:
 * version
     * Prints the alembic- and git-version currently in the database.
         * Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
+
 * update-file-obj-prop
     * Write objects and their extended properties (only SQL Server) to JSON files under *./docs* directory.
         * Documented schemas are listed in *metadata_allowed_schemas*.
+
 * update-db-obj-prop
     * Update documented extended properties (only SQL Server) from JSON files under *./docs* directory to database.
         * Updated schemas are listed in *metadata_allowed_schemas*.
+
 * test
     * Runs tests and returns the results.
         * Runs all SQL scripts under *./database/tests*.
+
+* scan
+    * Scans files in the working directory or git staging area and searches for matches with search rules. Search results are printed to the console and logged to a file.
+    * Arguments (all optional):
+        * `--search-rules` or `-sr`
+            * List of rules used to search for matches. Default value: `hetu`
+            * Currently it is only possible to search for Finnish Personal Identity Numbers (hetu) from files.
+        * `--files`
+            * List of file paths to scan. File paths are regular expressions. Default value: `^database/`
+            * Examples:
+                * Scan all files under database directory
+                    * `ahjo scan --files "^database/"`
+                * Scan only employee.sql file under database/data directory
+                    * `ahjo scan --files "^database/data/employee\.sql"`
+                * Scan all .sql files under database/data and database/procedures directories
+                    * `ahjo scan --files "^database/(data|procedures)/.*\.sql"`
+                * Scan all files starting with dm. in database/data directory
+                    * `ahjo scan --files "^database/data/dm\..*"`
+        * `--stage` or `-st`
+            * Scan files in git staging area instead of working directory.
+    * To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
+        * The file is created automatically when the scan command is run for the first time.
+        * The file should be in the following format: 
+            ```
+            files:
+                - file_path: <file_path>
+                  matches:
+                    - <match>
+                    - <match>
+                - file_path: <file_path>
+                  matches:
+                    - <match>
+            ```
 
 ### List
 You can view all available actions and their descriptions with command `ahjo list`.
