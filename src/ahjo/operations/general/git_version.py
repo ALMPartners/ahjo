@@ -3,7 +3,7 @@
 # Copyright 2019, 2020, 2021 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-"""Module for Git version operations."""
+"""Module for Git operations."""
 import os
 from logging import getLogger
 from shlex import split
@@ -113,6 +113,17 @@ def _checkout_tag(tag: str):
     _, checkout_version =_get_git_commit_info()
     if checkout_version != tag:
         raise Exception(f"Failed to checkout git version: {tag}")
+
+
+def _get_all_files_in_staging_area():
+    """ Retrieve all files in staging area with 'git diff' command. """
+    return check_output(["git", "diff", "--cached", "--name-only"]).decode("utf-8").strip().split("\n")
+
+
+def _get_all_files_in_working_directory():
+    """ Retrieve all files in working directory with 'git ls-tree' command. """
+    _, commit = _get_git_commit_info()
+    return check_output(["git", "ls-tree", "-r", "--name-only", commit]).decode("utf-8").strip().split("\n")
 
 
 @rearrange_params({"engine": "connectable"})

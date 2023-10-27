@@ -10,7 +10,7 @@ import yaml
 from datetime import datetime
 from typing import Union
 from logging import getLogger
-from ahjo.operations.general.git_version import _get_git_commit_info
+from ahjo.operations.general.git_version import _get_git_commit_info, _get_all_files_in_staging_area, _get_all_files_in_working_directory
 from subprocess import check_output
 from dateutil.parser import parse
 
@@ -33,7 +33,16 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
     Parameters
     ----------
     filepaths_to_scan
-        List of file paths to scan. 
+        List of file paths to scan. File paths are regular expressions.
+        Examples:
+            Scan all files under database directory
+                "^database/" scans all files in database directory
+            Scan only employee.sql file under database/data directory
+                "^database/data/employee\.sql"
+            Scan all .sql files under database/data directory
+                "^database/data/.*\.sql"
+            Scan all files starting with dm. in database/data directory
+                "^database/data/dm\..*"
     scan_staging_area   
         Scan files in git staging area instead of working directory.
     search_rules
@@ -55,69 +64,79 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
         }
     """
 
-    # Setup search rules and load ignored matches
+    # Setup search rules, load ignored matches, get files to scan and initialize result dictionary
     search_rules_set = set(search_rules).intersection(SCAN_RULES_WHITELIST) # filter out invalid search rules
     search_patterns = {key: SEARCH_PATTERNS[key] for key in search_rules_set} # select search patterns for search rules
     ignored_matches = load_ignored_matches() # load ignored matches from file
-
-    # Get files to scan
-    if scan_staging_area:
-        git_command = ["git", "diff", "--cached", "--name-only"] # all files in staging area
-    else:
-        _, commit = _get_git_commit_info()
-        git_command = ["git", "ls-tree", "-r", "--name-only", commit] # all files in working directory
-    git_files = check_output(git_command).decode("utf-8").strip().split("\n")
-
-    matches = {}
+    git_files = _get_all_files_in_staging_area() if scan_staging_area else _get_all_files_in_working_directory()
+    matches = {} # dictionary containing matches for each file and search rule
 
     # Scan each file
     for git_file in git_files:
 
-        # Iterate through file paths to scan
-        for scan_filepath_pattern in filepaths_to_scan:
+        # Check if file path is in allowed file paths
+        if not file_path_is_valid(git_file, filepaths_to_scan):
+            continue
 
-            # Check if file path is valid
-            git_filepath_valid = re.search(scan_filepath_pattern, git_file)
+        try: # Load file content
+            with open(git_file, "r") as f:
+                file_content = f.read()
+        except:
+            logger.warning(f"Failed to load file: {git_file}")
+            continue
 
-            if git_filepath_valid:
+        # Iterate through search rule patterns
+        for search_rule_name, file_content_pattern in search_patterns.items():
 
-                try: # Load file content
-                    with open(git_file, "r") as f:
-                        file_content = f.read()
-                except:
-                    logger.warning(f"Failed to load file: {git_file}")
+            # Check for matches in file content using search rule pattern
+            file_content_matches = [(m.start(0), m.end(0)) for m in re.finditer(file_content_pattern, file_content)]
+            if len(file_content_matches) == 0:
+                continue
+                
+            # Iterate through matches
+            for file_content_match in file_content_matches: 
+
+                match = file_content[file_content_match[0]:file_content_match[1]]
+
+                # Check if file match string is in ignored matches
+                if file_in_ignored_list(git_file, ignored_matches, match):
+                    continue
+                            
+                # Validate match
+                if search_rule_name == "hetu" and not is_hetu(match):
                     continue
 
-                # Iterate through search rule patterns
-                for search_rule_name, file_content_pattern in search_patterns.items():
-
-                    # Check for matches in file content using search rule pattern
-                    file_content_matches = [(m.start(0), m.end(0)) for m in re.finditer(file_content_pattern, file_content)]
-
-                    # Match(es) found
-                    if len(file_content_matches) > 0:
-                        for file_content_match in file_content_matches: # Iterate through matches
-
-                            match = file_content[file_content_match[0]:file_content_match[1]]
-
-                            # Check if file match string is in ignored matches
-                            if file_in_ignored_list(git_file, ignored_matches, match):
-                                continue
-                            
-                            # Validate match
-                            if search_rule_name == "hetu" and not is_hetu(match):
-                                continue
-
-                            # Add match to results
-                            if git_file not in matches:
-                                matches[git_file] = {}
-                            if search_rule_name not in matches[git_file]:
-                                matches[git_file][search_rule_name] = []
-                            matches[git_file][search_rule_name].append(match)
+                # Add match to results
+                if git_file not in matches:
+                    matches[git_file] = {}
+                if search_rule_name not in matches[git_file]:
+                    matches[git_file][search_rule_name] = []
+                matches[git_file][search_rule_name].append(match)
 
     log_scan_results(matches)
 
     return matches
+
+
+def file_path_is_valid(file_path: str, allowed_filepaths: list):
+    """ Check if file path is in allowed file paths. 
+    
+    Parameters
+    ----------
+    file_path
+        File path to check.
+    allowed_filepaths
+        List of allowed file paths. File paths are regular expressions.
+
+    Returns
+    -------
+    bool
+        Is file path in allowed file paths or not?
+    """
+    for scan_filepath_pattern in allowed_filepaths:
+        if re.search(scan_filepath_pattern, file_path):
+            return True
+    return False
 
 
 def is_hetu(match: str):
