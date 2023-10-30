@@ -3,7 +3,7 @@ Ahjo Framework
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ahjo)](https://pypi.org/project/ahjo/) [![PyPI](https://img.shields.io/pypi/v/ahjo)](https://pypi.org/project/ahjo/)
 
-# Description
+# <u>Description</u>
 
 Ahjo is a database project framework and a deployment script. It is made to unify database project deployment and development practices and to give basic tooling for such projects. 
 
@@ -11,7 +11,7 @@ Ahjo provides a base scripts for database deployment with simple commands ("acti
 
 Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Support for other backends than Microsoft SQL Server is currently limited.
 
-# Dependencies
+# <u>Dependencies</u>
 ## Common
 * [alembic](https://pypi.org/project/alembic/)
 * [pyparsing](https://pypi.org/project/pyparsing/)
@@ -25,7 +25,7 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 ### azure
 * [azure-identity](https://pypi.org/project/azure-identity/)
 
-# Install Guide
+# <u>Install Guide</u>
 
 ## Install Guide 1 - PyPI
 Install Ahjo (without platform-specific dependencies) from [Python Package Index](https://pypi.org/) with the following command:
@@ -36,7 +36,6 @@ In order to use Ahjo with the database engine of your choice, install platform-s
 ```
 pip install ahjo[mssql]
 ```
-
 
 ## Install Guide 2 - Clone and install
 1. Clone Ahjo
@@ -57,7 +56,48 @@ pip install [-e] .[mssql,azure]
 - `mssql` - Microsoft SQL Server
 - `azure` - Microsoft Azure SQL Database
 
-# Project Initialization
+## Install Guide 3 - MSI installation package (Optional, Windows only)
+
+### Building an MSI installation package (optional)
+
+This assumes you have cloned the source code repository and have it open in a shell.
+
+Create a new, empty build venv and install build requirements into it.
+
+**Notice:** at the time of writing this (10/2023), [the latest stable cx_freeze version](https://cx-freeze.readthedocs.io/en/stable) (6.15.10) **does not support Python 3.12** yet. As soon as new cx_freeze version with Python 3.12 support is released, it should be taken in to use.
+
+```
+py -3.11 -m venv venv_msi_build
+.\venv_msi_build\Scripts\Activate.ps1 
+pip install -r .\msi_build_requirements.txt
+```
+
+**Notice:** the last command installs ahjo with the most common options. You may need to update msi_build_requirements.txt to suit your needs.
+
+**Notice:** if you make changes to the source code, you must install ahjo into build venv again to have those changes included in the next build. Editable pip install doesn't work here, so don't use it.
+
+With the build venv active, build the MSI package with the following command.
+
+```
+python .\msi_build.py bdist_msi
+```
+
+Find the built MSI installation package under (automatically created) `dist` directory. 
+
+### Installing the MSI package
+
+MSI installation package installs everything that is needed to execute ahjo shell commands including the required parts of the Python runtime setup. In other words, the target environment doesn't need to have Python installed and there is no need to create separate venvs for ahjo.
+
+1. Run the msi installer with the default settings it offers
+2. Make sure to start a new shell instance (e.g. Windows PowerShell) after the installation
+3. After a successful installation the following CLI commands are available in the shell:
+    - ahjo
+    - ahjo-init-project
+    - ahjo-multi-project-build
+    - ahjo-upgrade
+4. If a new shell instance can't find the executables, ensure that installation path is included in the PATH enviroment variable
+
+# <u>Project Initialization</u>
 Create a new project by running the following command:
 ```
 ahjo-init-project
@@ -78,7 +118,7 @@ confirmed
 Project C:\projects\project_1 created.
 ```
 
-# Usage
+# <u>Usage</u>
 
 ## Usage Example
 
@@ -149,95 +189,99 @@ Depending on the configuration, the database credentials can be stored into file
 
 Pre-defined actions include:
 
-* init-config
-    * Initializes local configuration file. This file is intended to hold configurations that should not be versioned.
+### init-config
+Initializes local configuration file. This file is intended to hold configurations that should not be versioned.
 
-* init
-    * Creates the database. 
-        * Database is created with module [create_db.py](./ahjo/operations/tsql/create_db.py). Required configurations are *target_database_name*, *target_server_hostname* and *sql_port*. For optional configurations, see config file cheat sheet below.
+### init
+Creates the database. Database is created with module [create_db.py](./ahjo/operations/tsql/create_db.py). Required configurations are *target_database_name*, *target_server_hostname* and *sql_port*. For optional configurations, see config file cheat sheet below.
 
-* structure
-    * Creates database structure, that is schemas, tables and constraints. 
-        * Primary method runs all SQL files under directories *./database/schemas*, *./database/tables* and *./database/constraints*. Alternate method runs SQL script *./database/create_db_structure.sql*. If structure can't be created with primary method (one of the listed directories does not exists etc.), alternate method is attempted.
+### structure
+Creates database structure, that is schemas, tables and constraints. Primary method runs all SQL files under directories *./database/schemas*, *./database/tables* and *./database/constraints*. Alternate method runs SQL script *./database/create_db_structure.sql*. If structure can't be created with primary method (one of the listed directories does not exists etc.), alternate method is attempted.
 
-* deploy
-    * Runs alembic migrations, creates views, procedures and functions. 
-        * First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT version (`git describe`) to GIT version table.
+### deploy
+Runs alembic migrations, creates views, procedures and functions. First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT version (`git describe`) to GIT version table.
 
-* deploy-files
-    * Runs *alembic upgrade head*, creates database objects by executing all SQL files listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
-    * Example usage: `ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql` .
+### deploy-files
+Runs *alembic upgrade head*, creates database objects by executing all SQL files listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
+Example usage: `ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql` .
 
-* data
-    * Runs data insertion scripts.
-        * Runs all SQL files under *./database/data*.
+### data
+Runs data insertion scripts. Runs all SQL files under *./database/data*.
 
-* testdata
-    * Inserts data for testing into database.
-        * Runs all SQL files under *./database/data/testdata*.
+### testdata
+Inserts data for testing into database. Runs all SQL files under *./database/data/testdata*.
 
-* complete-build
-    * Runs actions init, deploy, data, testdata and test in order.
+### complete-build
+Runs actions init, deploy, data, testdata and test in order.
 
-* drop
-    * Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH.
+### drop
+Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH.
 
-* drop-files
-    * Drops database objects from locations that are listed in --files argument. Database objects can be views, procedures, functions or assemblies. Object type is read from --object_type argument. Acceptable --object_type parameters: view, procedure, function, assembly.
-    * Example usage: `ahjo drop-files .\config_development.jsonc --files ./database/procedures/dbo.procedure_1.sql ./database/procedures/dbo.procedure_2.sql --object_type procedure` .
+### drop-files
+Drops database objects from locations that are listed in --files argument. Database objects can be views, procedures, functions or assemblies. Object type is read from --object_type argument. Acceptable --object_type parameters: view, procedure, function, assembly.
+Example usage: `ahjo drop-files .\config_development.jsonc --files ./database/procedures/dbo.procedure_1.sql ./database/procedures/dbo.procedure_2.sql --object_type procedure` .
 
-* downgrade
-    * Reverts the database back to basic structure.
-        * First, drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Second, runs `alembic downgrade base`.
+### downgrade
+Reverts the database back to basic structure.
+First, drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Second, runs `alembic downgrade base`.
 
-* version
-    * Prints the alembic- and git-version currently in the database.
-        * Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
+### version
+Prints the alembic- and git-version currently in the database.
+Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
 
-* update-file-obj-prop
-    * Write objects and their extended properties (only SQL Server) to JSON files under *./docs* directory.
-        * Documented schemas are listed in *metadata_allowed_schemas*.
+### update-file-obj-prop
+Write objects and their extended properties (only SQL Server) to JSON files under *./docs* directory.
+Documented schemas are listed in *metadata_allowed_schemas*.
 
-* update-db-obj-prop
-    * Update documented extended properties (only SQL Server) from JSON files under *./docs* directory to database.
-        * Updated schemas are listed in *metadata_allowed_schemas*.
+### update-db-obj-prop
+Update documented extended properties (only SQL Server) from JSON files under *./docs* directory to database.
+Updated schemas are listed in *metadata_allowed_schemas*.
 
-* test
-    * Runs tests and returns the results.
-        * Runs all SQL scripts under *./database/tests*.
+### test
+Runs tests and returns the results.
+Runs all SQL scripts under *./database/tests*.
 
-* scan
-    * Scans files in the working directory or git staging area and searches for matches with search rules. Search results are printed to the console and logged to a file.
-    * Arguments (all optional):
-        * `--search-rules` or `-sr`
-            * List of rules used to search for matches. Default value: `hetu`
-            * Currently it is only possible to search for Finnish Personal Identity Numbers (hetu) from files.
-        * `--files`
-            * List of file paths to scan. File paths are regular expressions. Default value: `^database/`
-            * Examples:
-                * Scan all files under database directory
-                    * `ahjo scan --files "^database/"`
-                * Scan only employee.sql file under database/data directory
-                    * `ahjo scan --files "^database/data/employee\.sql"`
-                * Scan all .sql files under database/data and database/procedures directories
-                    * `ahjo scan --files "^database/(data|procedures)/.*\.sql"`
-                * Scan all files starting with dm. in database/data directory
-                    * `ahjo scan --files "^database/data/dm\..*"`
-        * `--stage` or `-st`
-            * Scan files in git staging area instead of working directory.
-    * To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
-        * The file is created automatically when the scan command is run for the first time.
-        * The file should be in the following format: 
-            ```
-            files:
-                - file_path: <file_path>
-                  matches:
-                    - <match>
-                    - <match>
-                - file_path: <file_path>
-                  matches:
-                    - <match>
-            ```
+###  scan
+Scans files in the working directory or git staging area and searches for matches with search rules. Search results are printed to the console and logged to a file.
+
+| Argument  | Shorthand | Description | Required | Default Value |
+| --- | --- | --- | --- | --- |
+| `--search-rules`  | `-sr` | List of rules used to search for matches. Currently it is only possible to search for Finnish Personal Identity Numbers (hetu) from files. | No | `hetu` |
+| `--files` | | List of file paths to scan. File paths are regular expressions. | No | `^database/` |
+| `--stage` | `-st` | Scan files in git staging area instead of working directory. | No | |
+
+#### Examples
+
+Scan all files under database directory and git staging area:
+
+`ahjo scan --files "^database/" --stage`
+
+Scan only employee.sql file under database/data directory:
+
+`ahjo scan --files "^database/data/employee\.sql"`
+
+Scan all .sql files under database/data and database/procedures directories:
+
+`ahjo scan --files "^database/(data|procedures)/.*\.sql"`
+
+Scan all files starting with dm. in database/data directory:
+
+`ahjo scan --files "^database/data/dm\..*"`
+
+#### Ignoring scan results
+To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
+The file is created automatically when the scan command is run for the first time.
+The file should be in the following format: 
+```
+    files:
+        - file_path: <file_path>
+        matches:
+            - <match>
+            - <match>
+        - file_path: <file_path>
+        matches:
+            - <match>
+```
 
 ### List
 You can view all available actions and their descriptions with command `ahjo list`.
@@ -341,7 +385,7 @@ Sign in interactively through your browser with the `az login` command.
 If the login is successful, ahjo will use Azure credentials for creating an engine that connects to an Azure SQL database.
 
 
-# Running actions from multiple projects
+## Running actions from multiple projects
 To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used:
 
 ```
@@ -391,7 +435,7 @@ The following settings are defined under the name of the ahjo project(s):
 `actions` - List of project actions to be executed
 
 
-# Ahjo project upgrade
+## Ahjo project upgrade
 Database updates can be run with `ahjo-upgrade` command. The command detects automatically the latest installed git version and runs the required database version updates (in order).
 The upgrade actions are defined in a JSONC file and its location is defined in `upgrade_actions_file` setting in project config file.
 The ahjo actions required for version upgrades are defined with key-value pairs, where key is the git version tag and value is a list of actions.
@@ -430,11 +474,10 @@ To upgrade specific version, use `-v` or `--version` flag:
 ahjo-upgrade -v v3.1.0
 ```
 
-
-# Logging
+# <u>Logging</u>
 Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file ahjo.log.
 
-# Customization
+# <u>Customization</u>
 Every default Ahjo action and multiaction can be overwritten in project's ahjo_actions.py file.
 
 In example below, *'init'* and *'complete-build'* actions are overwritten.
@@ -453,46 +496,7 @@ def structure(context):
 create_multiaction("complete-build", ["init", "structure", "deploy", "data", "test"])
 ```
 
-# Building an MSI installation package (optional)
-
-This assumes you have cloned the source code repository and have it open in a shell.
-
-Create a new, empty build venv and install build requirements into it.
-
-**Notice:** at the time of writing this (10/2023), [the latest stable cx_freeze version](https://cx-freeze.readthedocs.io/en/stable) (6.15.10) **does not support Python 3.12** yet. As soon as new cx_freeze version with Python 3.12 support is released, it should be taken in to use.
-
-```
-py -3.11 -m venv venv_msi_build
-.\venv_msi_build\Scripts\Activate.ps1 
-pip install -r .\msi_build_requirements.txt
-```
-
-**Notice:** the last command installs ahjo with the most common options. You may need to update msi_build_requirements.txt to suit your needs.
-
-**Notice:** if you make changes to the source code, you must install ahjo into build venv again to have those changes included in the next build. Editable pip install doesn't work here, so don't use it.
-
-With the build venv active, build the MSI package with the following command.
-
-```
-python .\msi_build.py bdist_msi
-```
-
-Find the built MSI installation package under (automatically created) `dist` directory. 
-
-## Install Guide - MSI installation package
-
-MSI installation package installs everything that is needed to execute ahjo shell commands including the required parts of the Python runtime setup. In other words, the target environment doesn't need to have Python installed and there is no need to create separate venvs for ahjo.
-
-1. Run the msi installer with the default settings it offers
-2. Make sure to start a new shell instance (e.g. Windows PowerShell) after the installation
-3. After a successful installation the following CLI commands are available in the shell:
-    - ahjo
-    - ahjo-init-project
-    - ahjo-multi-project-build
-    - ahjo-upgrade
-4. If a new shell instance can't find the executables, ensure that installation path is included in the PATH enviroment variable
-
-# License
+# <u>License</u>
 Copyright 2019 - 2023 ALM Partners Oy
 
 Licensed under the Apache License, Version 2.0 (the "License");
