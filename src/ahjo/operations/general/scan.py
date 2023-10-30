@@ -27,21 +27,12 @@ SEARCH_PATTERNS = {
 
 
 def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bool = False, search_rules: Union[list, set] = SCAN_RULES_WHITELIST):
-    """ Scan ahjo project git files using search rules. 
+    ''' Scan ahjo project git files using search rules. 
     
     Parameters
     ----------
     filepaths_to_scan
         List of file paths to scan. File paths are regular expressions.
-        Examples:
-            Scan all files under database directory
-                "^database/" scans all files in database directory
-            Scan only employee.sql file under database/data directory
-                "^database/data/employee\.sql"
-            Scan all .sql files under database/data directory
-                "^database/data/.*\.sql"
-            Scan all files starting with dm. in database/data directory
-                "^database/data/dm\..*"
     scan_staging_area   
         Scan files in git staging area instead of working directory.
     search_rules
@@ -61,7 +52,7 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
                 ]
             }
         }
-    """
+    '''
 
     # Setup search rules, load ignored matches, get files to scan and initialize result dictionary
     search_rules_set = set(search_rules).intersection(SCAN_RULES_WHITELIST) # filter out invalid search rules
