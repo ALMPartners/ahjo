@@ -53,10 +53,12 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
             }
         }
     '''
-
-    # Setup search rules, load ignored matches, get files to scan and initialize result dictionary
-    search_rules_set = set(search_rules).intersection(SCAN_RULES_WHITELIST) # filter out invalid search rules
-    search_patterns = {key: SEARCH_PATTERNS[key] for key in search_rules_set} # select search patterns for search rules
+    
+    # Setup search patterns, load ignored matches, get files to scan and initialize result dictionary
+    valid_search_rules = validate_search_rules(search_rules)
+    if len(valid_search_rules) == 0:
+        return {}
+    search_patterns = {key: SEARCH_PATTERNS[key] for key in valid_search_rules} # select search patterns for search rules
     ignored_matches = load_ignored_matches() # load ignored matches from file
     git_files = _get_all_files_in_staging_area() if scan_staging_area else _get_all_files_in_working_directory()
     matches = {} # dictionary containing matches for each file and search rule
@@ -106,6 +108,34 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
     log_scan_results(matches)
 
     return matches
+
+
+def validate_search_rules(search_rules: Union[list, set]):
+    """ Check if search rules are valid.
+
+    Parameters
+    ----------
+    search_rules
+        List of search rules to use in scan.
+
+    Returns
+    -------
+    search_rules_filtered
+        List of valid search rules.
+    """
+    search_rules_filtered = []
+    if not isinstance(search_rules, (list, set)):
+        raise TypeError(f"Invalid type for search_rules: {type(search_rules)}")
+    if len(search_rules) == 0:
+        raise ValueError("No search rules specified.")
+    for search_rule in search_rules:
+        if search_rule not in SCAN_RULES_WHITELIST:
+            logger.warning(f"{search_rule} is not a valid search rule. Skipping it.")
+            continue
+        search_rules_filtered.append(search_rule)
+    if len(search_rules_filtered) == 0:
+        logger.warning("No valid search rules specified. Use one of the following search rules: " + ','.join(SCAN_RULES_WHITELIST) + ".")
+    return search_rules_filtered
 
 
 def file_path_is_valid(file_path: str, allowed_filepaths: list):
