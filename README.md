@@ -272,15 +272,15 @@ Scan all files starting with dm. in database/data directory:
 To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
 The file is created automatically when the scan command is run for the first time.
 The file should be in the following format: 
-```
+```yaml
 files:
-  - file_path: <file_path>
+  - file_path: database/data/example_1.sql
     matches:
-      - <match>
-      - <match>
-  - file_path: <file_path>
+      - match_pattern_1
+      - match_pattern_2
+  - file_path: database/data/example_2.sql
     matches:
-      - <match>
+      - match_pattern_3
 ```
 
 ### List
