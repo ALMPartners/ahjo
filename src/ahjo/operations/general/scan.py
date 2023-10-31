@@ -62,6 +62,7 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
     ignored_matches = load_ignored_matches() # load ignored matches from file
     git_files = _get_all_files_in_staging_area() if scan_staging_area else _get_all_files_in_working_directory()
     matches = {} # dictionary containing matches for each file and search rule
+    n_matches = 0 # number of matches
 
     # Scan each file
     for git_file in git_files:
@@ -104,8 +105,9 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
                 if search_rule_name not in matches[git_file]:
                     matches[git_file][search_rule_name] = []
                 matches[git_file][search_rule_name].append(match)
+                n_matches += 1
 
-    log_scan_results(matches)
+    log_scan_results(matches, n_matches)
 
     return matches
 
@@ -233,19 +235,20 @@ def file_in_ignored_list(file: str, ignored_matches: dict, match: str):
     return False           
 
 
-def log_scan_results(matches: dict):
+def log_scan_results(matches: dict, n_matches: int):
     """ Log scan results. 
     
     Parameters
     ----------
     matches
         Dictionary containing matches for each file and search rule.
-
+    n_matches
+        Number of matches.
     """
     logger.info("Ahjo scan completed.")
     len_matches = len(matches)
     if len_matches > 0:
-        logger.info("Found " + str(len_matches) + " match" + ("es" if len_matches > 1 else "") + ":")
+        logger.info("Found " + str(n_matches) + " match" + ("es" if n_matches > 1 else "") + ":")
         logger.info("")
         for file in matches:
             logger.info(f"  File: {file}")
@@ -296,8 +299,24 @@ def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml"):
             logger.warning(f"Failed to load ignored matches from {file_path}.")
             logger.warning(e)
             pass
-    else: # Create empty ignore yaml file if it does not exist
+    else: # Create commented example ignore yaml file if it does not exist
         with open(file_path, 'w') as stream:
-            yaml.dump({"files": []}, stream, default_flow_style=False)
+            yaml.dump({
+                "files": [
+                    {
+                        "file_path": "database/data/example.sql",
+                        "matches": [
+                            "example_pattern_1",
+                            "example_pattern_2"
+                        ]
+                    },
+                    {
+                        "file_path": "database/data/example_2.sql",
+                        "matches": [
+                            "example_pattern_3",
+                        ]
+                    }
+                ]
+            }, stream, default_flow_style=False)
 
     return ignored_matches

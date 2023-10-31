@@ -273,14 +273,14 @@ To filter out false positives, scan results can be ignored by adding them to the
 The file is created automatically when the scan command is run for the first time.
 The file should be in the following format: 
 ```
-    files:
-        - file_path: <file_path>
-        matches:
-            - <match>
-            - <match>
-        - file_path: <file_path>
-        matches:
-            - <match>
+files:
+  - file_path: <file_path>
+    matches:
+      - <match>
+      - <match>
+  - file_path: <file_path>
+    matches:
+      - <match>
 ```
 
 ### List
