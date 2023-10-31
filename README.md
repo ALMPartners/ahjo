@@ -56,9 +56,9 @@ pip install [-e] .[mssql,azure]
 - `mssql` - Microsoft SQL Server
 - `azure` - Microsoft Azure SQL Database
 
-## Install Guide 3 - MSI installation package (Optional, Windows only)
+## Install Guide 3 - MSI installation package
 
-### Building an MSI installation package (optional)
+### Building an MSI installation package
 
 This assumes you have cloned the source code repository and have it open in a shell.
 
