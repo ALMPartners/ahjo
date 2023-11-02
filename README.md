@@ -479,6 +479,7 @@ ahjo-upgrade -v v3.1.0
 # <u>Scan pre-commit hook</u>
 Ahjo scan command can be used as a pre-commit hook to prevent committing files that contain sensitive information (e.g. personal identity numbers) to the repository.
 This can be accomplished by utilizing a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules.
+Currently the scan pre-commit hook searches for Finnish Personal Identity Numbers (hetu) from staged files under the project root directory. Later on, the search rules can be extended to cover other use cases as well.
 To use the hook, you need to have the `ahjo-scan.exe` accessible as a shell command. (e.g. the tool is installed from an MSI package, see Installation Guide 3).
 
 ## Setting up the hook
