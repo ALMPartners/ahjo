@@ -476,17 +476,17 @@ To upgrade specific version, use `-v` or `--version` flag:
 ahjo-upgrade -v v3.1.0
 ```
 
-# <u>Ahjo scan pre-commit hook</u>
-Ahjo scan can be used as a pre-commit hook to prevent committing files that contain sensitive information (e.g. personal identity numbers) to the repository.
+# <u>Scan pre-commit hook</u>
+Ahjo scan command can be used as a pre-commit hook to prevent committing files that contain sensitive information (e.g. personal identity numbers) to the repository.
 This can be accomplished by utilizing a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules.
-To use the hook, you need to have the ahjo-scan.exe accessible as a shell command. (e.g. the tool is installed from an MSI package, see Installation Guide 3).
+To use the hook, you need to have the `ahjo-scan.exe` accessible as a shell command. (e.g. the tool is installed from an MSI package, see Installation Guide 3).
 
 ## Setting up the hook
 To install the hook, run the following command in the project root directory:
 ```
 ahjo-install-git-hook
 ```
-The script creates a file named `pre-commit` to Git hooks directory. By default, Git hooks are located in the .git/hooks directory of the repository. This can be changed by setting the `core.hooksPath` configuration variable to the desired path. See [Git documentation](https://git-scm.com/docs/githooks) for more information.
+The script creates a file named `pre-commit` to Git hooks directory. By default, Git hooks are located in the `.git/hooks` directory of the repository. This can be changed by setting the `core.hooksPath` configuration variable to the desired path. See [Git documentation](https://git-scm.com/docs/githooks) for more information.
 
 
 # <u>Logging</u>
