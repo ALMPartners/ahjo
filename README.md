@@ -118,9 +118,7 @@ confirmed
 Project C:\projects\project_1 created.
 ```
 
-# <u>Usage</u>
-
-## Usage Example
+# <u>Usage Example</u>
 
 Before running actions:
 
@@ -179,7 +177,7 @@ Action downgrade is not permitted, allowed actions: deploy, data
 
 To add your own actions (f.e. for more complex testing), modify ahjo_actions.py.
 
-## Script and arguments
+# <u>Script and arguments</u>
 ```
 ahjo <action> <config_filename>
 ```
@@ -189,59 +187,59 @@ Depending on the configuration, the database credentials can be stored into file
 
 Pre-defined actions include:
 
-### init-config
+## init-config
 Initializes local configuration file. This file is intended to hold configurations that should not be versioned.
 
-### init
+## init
 Creates the database. Database is created with module [create_db.py](./ahjo/operations/tsql/create_db.py). Required configurations are *target_database_name*, *target_server_hostname* and *sql_port*. For optional configurations, see config file cheat sheet below.
 
-### structure
+## structure
 Creates database structure, that is schemas, tables and constraints. Primary method runs all SQL files under directories *./database/schemas*, *./database/tables* and *./database/constraints*. Alternate method runs SQL script *./database/create_db_structure.sql*. If structure can't be created with primary method (one of the listed directories does not exists etc.), alternate method is attempted.
 
-### deploy
+## deploy
 Runs alembic migrations, creates views, procedures and functions. First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT version (`git describe`) to GIT version table.
 
-### deploy-files
+## deploy-files
 Runs *alembic upgrade head*, creates database objects by executing all SQL files listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
 Example usage: `ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql` .
 
-### data
+## data
 Runs data insertion scripts. Runs all SQL files under *./database/data*.
 
-### testdata
+## testdata
 Inserts data for testing into database. Runs all SQL files under *./database/data/testdata*.
 
-### complete-build
+## complete-build
 Runs actions init, deploy, data, testdata and test in order.
 
-### drop
+## drop
 Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH.
 
-### drop-files
+## drop-files
 Drops database objects from locations that are listed in --files argument. Database objects can be views, procedures, functions or assemblies. Object type is read from --object_type argument. Acceptable --object_type parameters: view, procedure, function, assembly.
 Example usage: `ahjo drop-files .\config_development.jsonc --files ./database/procedures/dbo.procedure_1.sql ./database/procedures/dbo.procedure_2.sql --object_type procedure` .
 
-### downgrade
+## downgrade
 Reverts the database back to basic structure.
 First, drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH. Second, runs `alembic downgrade base`.
 
-### version
+## version
 Prints the alembic- and git-version currently in the database.
 Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
 
-### update-file-obj-prop
+## update-file-obj-prop
 Write objects and their extended properties (only SQL Server) to JSON files under *./docs* directory.
 Documented schemas are listed in *metadata_allowed_schemas*.
 
-### update-db-obj-prop
+## update-db-obj-prop
 Update documented extended properties (only SQL Server) from JSON files under *./docs* directory to database.
 Updated schemas are listed in *metadata_allowed_schemas*.
 
-### test
+## test
 Runs tests and returns the results.
 Runs all SQL scripts under *./database/tests*.
 
-###  scan
+##  scan
 Scans files in the working directory or git staging area and searches for matches with search rules. Search results are printed to the console and logged to a file.
 
 | Argument  | Shorthand | Description | Required | Default Value |
@@ -250,7 +248,7 @@ Scans files in the working directory or git staging area and searches for matche
 | `--files` | | List of file paths to scan. File paths are regular expressions. | No | `^database/` |
 | `--stage` | `-st` | Scan files in git staging area instead of working directory. | No | |
 
-#### Examples
+### Examples
 
 Scan all files under database directory and git staging area:
 
@@ -272,7 +270,7 @@ Scan all files starting with dm. in database/data directory:
 
 `ahjo scan --files "^database/data/dm\..*"`
 
-#### Ignoring scan results
+### Ignoring scan results
 To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
 The file is created automatically when the scan command is run for the first time.
 The file should be in the following format: 
@@ -287,7 +285,7 @@ files:
       - match_pattern_3
 ```
 
-### List
+## List
 You can view all available actions and their descriptions with command `ahjo list`.
 ```
 ahjo list
@@ -301,7 +299,7 @@ List of available actions
 .
 ```
 
-## Config File
+# <u>Config File</u>
 Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo configs are located in *BACKEND* section of file. Below is an example of config file and a list of default configuration parameters.
 ```
 {
@@ -366,7 +364,7 @@ Ahjo requires config file to be JSON or JSONC (JSON with comments) format. Ahjo 
 | transaction_mode | No | Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". Possible values are "begin_once" and "commit_as_you_go". If "begin_once", a transaction is started before running actions and committed after all actions are run. If "commit_as_you_go", a transaction is started before running actions but not committed automatically. | str | "begin_once" |
 
 
-## Using Alembic with Ahjo
+# <u>Using Alembic with Ahjo</u>
 Alembic upgrade HEAD is used in deploy action, but for many use cases other alembic commands are needed. For these needs Ahjo comes with a [env.py](./ahjo/resources/files/env.py) file that enables running Alembic commands without running Ahjo.
 
 The env.py modifications provide logging integration to Ahjo, default naming schema and possibility to run alembic according to project configuration. The engines are created according to configuration, and there is no need for storing plain-text connection strings in the project.
@@ -379,7 +377,7 @@ alembic -x main_config=config_development.jsonc downgrade -1
 The [env.py](./ahjo/resources/files/env.py) is created in initialize-project command.
 
 
-## Authentication with azure-identity
+# <u>Authentication with azure-identity</u>
 Instructions for enabling azure identity authentication in ahjo:
 
 1. Install [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) & [azure-identity](https://pypi.org/project/azure-identity/) 
@@ -389,7 +387,7 @@ Sign in interactively through your browser with the `az login` command.
 If the login is successful, ahjo will use Azure credentials for creating an engine that connects to an Azure SQL database.
 
 
-## Running actions from multiple projects
+# <u>Running actions from multiple projects</u>
 To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used:
 
 ```
@@ -439,7 +437,7 @@ The following settings are defined under the name of the ahjo project(s):
 `actions` - List of project actions to be executed
 
 
-## Ahjo project upgrade
+# <u>Ahjo project upgrade</u>
 Database updates can be run with `ahjo-upgrade` command. The command detects automatically the latest installed git version and runs the required database version updates (in order).
 The upgrade actions are defined in a JSONC file and its location is defined in `upgrade_actions_file` setting in project config file.
 The ahjo actions required for version upgrades are defined with key-value pairs, where key is the git version tag and value is a list of actions.
@@ -478,12 +476,12 @@ To upgrade specific version, use `-v` or `--version` flag:
 ahjo-upgrade -v v3.1.0
 ```
 
-## Ahjo scan as a pre-commit hook
+# <u>Ahjo scan pre-commit hook</u>
 Ahjo scan can be used as a pre-commit hook to prevent committing files that contain sensitive information (e.g. personal identity numbers) to the repository.
-This may be done by using a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules.
-Using the hook requires that you have `ahjo-scan.exe` available as a shell command (e.g. the tool is installed from an MSI package, see Installation Guide 3).
+This can be accomplished by utilizing a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules.
+To use the hook, you need to have the ahjo-scan.exe accessible as a shell command. (e.g. the tool is installed from an MSI package, see Installation Guide 3).
 
-### Setting up the hook
+## Setting up the hook
 To install the hook, run the following command in the project root directory:
 ```
 ahjo-install-git-hook
