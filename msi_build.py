@@ -79,6 +79,20 @@ ahjo_upgrade_exe = Executable(
     icon=icon,
 )
 
+ahjo_scan_exe = Executable(
+    "src/ahjo/scripts/scan_project.py",
+    target_name=f"{ahjo_exe_prefix}-scan.exe", 
+    base=None,
+    icon=icon,
+)
+
+ahjo_install_git_hook_exe = Executable(
+    "src/ahjo/scripts/install_git_hook.py",
+    target_name=f"{ahjo_exe_prefix}-install-git-hook.exe", 
+    base=None,
+    icon=icon,
+)
+
 setup(
     name=name,
     version=version,
@@ -87,5 +101,12 @@ setup(
     url=url,
     description=description,
     options=options,
-    executables=[ahjo_main_exe, ahjo_init_project_exe, ahjo_multi_project_build_exe, ahjo_upgrade_exe],
+    executables=[
+        ahjo_main_exe, 
+        ahjo_init_project_exe, 
+        ahjo_multi_project_build_exe, 
+        ahjo_upgrade_exe, 
+        ahjo_scan_exe,
+        ahjo_install_git_hook_exe
+    ],
 )

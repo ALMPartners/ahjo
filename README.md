@@ -256,6 +256,10 @@ Scan all files under database directory and git staging area:
 
 `ahjo scan --files "^database/" --stage`
 
+Scan all files under project root:
+
+`ahjo scan --files "^.*"`
+
 Scan only employee.sql file under database/data directory:
 
 `ahjo scan --files "^database/data/employee\.sql"`
@@ -473,6 +477,19 @@ To upgrade specific version, use `-v` or `--version` flag:
 ```
 ahjo-upgrade -v v3.1.0
 ```
+
+## Ahjo scan as a pre-commit hook
+Ahjo scan can be used as a pre-commit hook to prevent committing files that contain sensitive information (e.g. personal identity numbers) to the repository.
+This may be done by using a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules.
+Using the hook requires that you have `ahjo-scan.exe` available as a shell command (e.g. the tool is installed from an MSI package, see Installation Guide 3).
+
+### Setting up the hook
+To install the hook, run the following command in the project root directory:
+```
+ahjo-install-git-hook
+```
+The script creates a file named `pre-commit` to Git hooks directory. By default, Git hooks are located in the .git/hooks directory of the repository. This can be changed by setting the `core.hooksPath` configuration variable to the desired path. See [Git documentation](https://git-scm.com/docs/githooks) for more information.
+
 
 # <u>Logging</u>
 Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file ahjo.log.

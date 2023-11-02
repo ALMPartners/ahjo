@@ -192,3 +192,11 @@ def print_git_version(connectable: Union[Engine, Connection], git_table_schema: 
         logger.info(f"Repository: {repository}")
         logger.info(f"Branch: {branch}")
         logger.info(f"Version: {version}")
+
+
+def get_git_hooks_path() -> str:
+    """Return the path to the Git hooks directory."""
+    git_hooks_path = check_output(["git", "rev-parse", "--git-path", "hooks"]).decode("utf-8").strip()
+    if git_hooks_path == "":
+        git_hooks_path = ".git/hooks"
+    return git_hooks_path

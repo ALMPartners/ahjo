@@ -3,7 +3,7 @@
 # Copyright 2019 - 2023 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-""" """
+""" Module for scanning ahjo project files. """
 import os
 import re
 import yaml
@@ -15,18 +15,14 @@ from dateutil.parser import parse
 
 logger = getLogger("ahjo")
 
-# Allowed search rules
-SCAN_RULES_WHITELIST = {
-    "hetu" # Finnish Personal Identity Number
-}
-
-# Search patterns for search rules
+SCAN_RULES_WHITELIST = {"hetu"}
+RULE_DESCRIPTIONS = {"hetu": "Finnish Personal Identity Number"}
 SEARCH_PATTERNS = {
     "hetu": r"(0[1-9]|[1-2]\d|3[01])(0[1-9]|1[0-2])(\d\d)([-+A-FU-Y])(\d\d\d)([0-9A-FHJ-NPR-Y])"
 }
 
 
-def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bool = False, search_rules: Union[list, set] = SCAN_RULES_WHITELIST):
+def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bool = False, search_rules: Union[list, set] = SCAN_RULES_WHITELIST) -> dict:
     ''' Scan ahjo project git files using search rules. 
     
     Parameters
@@ -54,13 +50,16 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
         }
     '''
     
-    # Setup search patterns, load ignored matches, get files to scan and initialize result dictionary
+    # Check if search rules are valid
     valid_search_rules = validate_search_rules(search_rules)
     if len(valid_search_rules) == 0:
         return {}
+    
+    # Setup search patterns, load ignored matches, get files to scan and initialize result dictionary
     search_patterns = {key: SEARCH_PATTERNS[key] for key in valid_search_rules} # select search patterns for search rules
     ignored_matches = load_ignored_matches() # load ignored matches from file
     git_files = _get_all_files_in_staging_area() if scan_staging_area else _get_all_files_in_working_directory()
+    git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
     matches = {} # dictionary containing matches for each file and search rule
     n_matches = 0 # number of matches
 
@@ -75,7 +74,7 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
             with open(git_file, "r") as f:
                 file_content = f.read()
         except:
-            logger.warning(f"Failed to load file: {git_file}")
+            logger.debug(f"Failed to load file: {git_file}")
             continue
 
         # Iterate through search rule patterns
@@ -112,7 +111,7 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
     return matches
 
 
-def validate_search_rules(search_rules: Union[list, set]):
+def validate_search_rules(search_rules: Union[list, set]) -> list:
     """ Check if search rules are valid.
 
     Parameters
@@ -140,7 +139,7 @@ def validate_search_rules(search_rules: Union[list, set]):
     return search_rules_filtered
 
 
-def file_path_is_valid(file_path: str, allowed_filepaths: list):
+def file_path_is_valid(file_path: str, allowed_filepaths: list) -> bool:
     """ Check if file path is in allowed file paths. 
     
     Parameters
@@ -161,7 +160,7 @@ def file_path_is_valid(file_path: str, allowed_filepaths: list):
     return False
 
 
-def is_hetu(match: str):
+def is_hetu(match: str) -> bool:
     """ Check if match is valid hetu (Finnish Personal Identity Number).
 
     Parameters
@@ -211,7 +210,7 @@ def is_hetu(match: str):
     return True
 
 
-def file_in_ignored_list(file: str, ignored_matches: dict, match: str):
+def file_in_ignored_list(file: str, ignored_matches: dict, match: str) -> bool:
     """ Check if file content match is in ignored matches. 
     
     Parameters
@@ -235,7 +234,7 @@ def file_in_ignored_list(file: str, ignored_matches: dict, match: str):
     return False           
 
 
-def log_scan_results(matches: dict, n_matches: int):
+def log_scan_results(matches: dict, n_matches: int) -> None:
     """ Log scan results. 
     
     Parameters
@@ -245,26 +244,21 @@ def log_scan_results(matches: dict, n_matches: int):
     n_matches
         Number of matches.
     """
-    logger.info("Ahjo scan completed.")
     len_matches = len(matches)
     if len_matches > 0:
-        logger.info("Found " + str(n_matches) + " match" + ("es" if n_matches > 1 else "") + ":")
+        logger.info("Scan completed. Found " + str(n_matches) + " match" + ("es" if n_matches > 1 else "") + ":")
         logger.info("")
         for file in matches:
             logger.info(f"  File: {file}")
             for search_rule in matches[file]:
-                logger.info(f"  Search rule: {search_rule}")
+                logger.info(f"  Search rule: {RULE_DESCRIPTIONS[search_rule]}")
                 logger.info(f"  Matches:")
                 for match in matches[file][search_rule]:
                     logger.info(f"      {match}")
                 logger.info("")
-        logger.info("""If you want to ignore a match, add it to the ahjo_scan_ignore.yaml file.""")
-        logger.info("")
-    else:
-        logger.info("No matches found.")
 
 
-def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml"):
+def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
     """ Load ignored matches from file. Matches in this file are ignored in scan results.
     
     Parameters
@@ -299,7 +293,7 @@ def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml"):
             logger.warning(f"Failed to load ignored matches from {file_path}.")
             logger.warning(e)
             pass
-    else: # Create commented example ignore yaml file if it does not exist
+    else: # Create example ignore yaml file if it does not exist
         with open(file_path, 'w') as stream:
             yaml.dump({
                 "files": [
