@@ -260,7 +260,7 @@ Scan all files under project root:
 
 Scan only employee.sql file under database/data directory:
 
-`ahjo scan --files "^database/data/employee\.sql"`
+`ahjo scan --files "^database/data/employee.sql$"`
 
 Scan all .sql files under database/data and database/procedures directories:
 

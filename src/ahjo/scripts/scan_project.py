@@ -35,6 +35,7 @@ def main():
         filepaths_to_scan = args.files if len(args.files) > 0 else ["^database/"],
         scan_staging_area = True if args.stage else False,
         search_rules = args.search_rules if args.search_rules and len(args.search_rules) > 0 else SCAN_RULES_WHITELIST,
+        log_additional_info = quiet_mode
     )
     matches_found = len(matches) > 0
 

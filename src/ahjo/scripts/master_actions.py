@@ -266,18 +266,11 @@ def update_db_obj_prop(context):
 @action(affects_database=False)
 def scan(context, **kwargs):
     """ Scan ahjo project git files using search rules."""
-    scan_results = scan_project(
+    scan_project(
         filepaths_to_scan = kwargs["files"] if "files" in kwargs and len(kwargs["files"]) > 0 else ["^database/"],
         scan_staging_area = True if "scan_staging_area" in kwargs else False,
         search_rules = kwargs["search_rules"] if "search_rules" in kwargs and len(kwargs["search_rules"]) > 0 else SCAN_RULES_WHITELIST
     )
-    if len(scan_results) > 0:
-        logger.info("""If you want to ignore a match, add it to the ahjo_scan_ignore.yaml file.""")
-        logger.info("")
-    else:
-        logger.info("Scan completed.")
-        logger.info("No matches found.")
-        logger.info("")
                 
     
 create_multiaction("complete-build", ["init", "deploy", "data", "testdata", "test"],

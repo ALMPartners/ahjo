@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Union
 from logging import getLogger
 from ahjo.operations.general.git_version import _get_all_files_in_staging_area, _get_all_files_in_working_directory
-from dateutil.parser import parse
 
 logger = getLogger("ahjo")
 
@@ -22,7 +21,8 @@ SEARCH_PATTERNS = {
 }
 
 
-def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bool = False, search_rules: Union[list, set] = SCAN_RULES_WHITELIST) -> dict:
+def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bool = False, 
+    search_rules: Union[list, set] = SCAN_RULES_WHITELIST, log_additional_info: bool = True) -> dict:
     ''' Scan ahjo project git files using search rules. 
     
     Parameters
@@ -35,6 +35,8 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
         List of search rules to use in scan.
         Allowed search rules: 
             - hetu (Finnish Personal Identity Number)
+    log_additional_info
+        Log scan status info. This is disabled when running in quiet mode (e.g. pre-commit hook).
     
     Returns
     -------
@@ -50,13 +52,13 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
         }
     '''
     
-    # Check if search rules are valid
-    valid_search_rules = validate_search_rules(search_rules)
-    if len(valid_search_rules) == 0:
-        return {}
+    # Validate parameters
+    if not valid_search_rules(search_rules) or not valid_filepaths_to_scan(filepaths_to_scan):
+        logger.warning("Scan aborted.")
+        return None
     
     # Setup search patterns, load ignored matches, get files to scan and initialize result dictionary
-    search_patterns = {key: SEARCH_PATTERNS[key] for key in valid_search_rules} # select search patterns for search rules
+    search_patterns = {key: SEARCH_PATTERNS[key] for key in search_rules} # select search patterns for search rules
     ignored_matches = load_ignored_matches() # load ignored matches from file
     git_files = _get_all_files_in_staging_area() if scan_staging_area else _get_all_files_in_working_directory()
     git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
@@ -107,11 +109,12 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
                 n_matches += 1
 
     log_scan_results(matches, n_matches)
+    if log_additional_info: log_scan_status_info(n_matches > 0)
 
     return matches
 
 
-def validate_search_rules(search_rules: Union[list, set]) -> list:
+def valid_search_rules(search_rules: Union[list, set]) -> list:
     """ Check if search rules are valid.
 
     Parameters
@@ -121,22 +124,46 @@ def validate_search_rules(search_rules: Union[list, set]) -> list:
 
     Returns
     -------
-    search_rules_filtered
-        List of valid search rules.
+    bool
+        Are search rules valid or not?
     """
-    search_rules_filtered = []
     if not isinstance(search_rules, (list, set)):
-        raise TypeError(f"Invalid type for search_rules: {type(search_rules)}")
+        logger.warning(f"Invalid type for search_rules: {type(search_rules)}")
+        return False
     if len(search_rules) == 0:
-        raise ValueError("No search rules specified.")
+        logger.warning("No search rules specified.")
+        return False
     for search_rule in search_rules:
         if search_rule not in SCAN_RULES_WHITELIST:
-            logger.warning(f"{search_rule} is not a valid search rule. Skipping it.")
-            continue
-        search_rules_filtered.append(search_rule)
-    if len(search_rules_filtered) == 0:
-        logger.warning("No valid search rules specified. Use one of the following search rules: " + ','.join(SCAN_RULES_WHITELIST) + ".")
-    return search_rules_filtered
+            logger.warning("Invalid search rule: " + search_rule + ". Use one of the following search rules: " + ','.join(SCAN_RULES_WHITELIST) + ".")
+            return False
+    return True
+
+
+def valid_filepaths_to_scan(filepaths_to_scan):
+    """ Check if file paths to scan are valid.
+
+    Parameters
+    ----------
+    filepaths_to_scan
+        List of file paths to scan. File paths are regular expressions.
+    
+    Returns
+    -------
+    bool
+        Are file paths to scan valid or not?
+    """
+    if not isinstance(filepaths_to_scan, list): 
+        logger.warning(f"Invalid type for filepaths_to_scan: {type(filepaths_to_scan)}")
+        return False
+    if len(filepaths_to_scan) == 0:
+        logger.warning("No file paths specified.")
+        return False
+    for f_path in filepaths_to_scan:
+        if not isinstance(f_path, str):
+            logger.warning(f"Invalid type for file path: {type(f_path)}")
+            return False
+    return True
 
 
 def file_path_is_valid(file_path: str, allowed_filepaths: list) -> bool:
@@ -154,6 +181,7 @@ def file_path_is_valid(file_path: str, allowed_filepaths: list) -> bool:
     bool
         Is file path in allowed file paths or not?
     """
+    if len(file_path) == 0: return False
     for scan_filepath_pattern in allowed_filepaths:
         if re.search(scan_filepath_pattern, file_path):
             return True
@@ -177,6 +205,9 @@ def is_hetu(match: str) -> bool:
         tarkistusmerkin validointi? (https://www.tuomas.salste.net/doc/tunnus/henkilotunnus.html)
     """
 
+    if len(match) != 11:
+        return False
+
     birth_day = match[0:2]
     birth_month = match[2:4]
     hetu_mark = match[6]
@@ -194,7 +225,7 @@ def is_hetu(match: str) -> bool:
 
     # Check if date is valid
     try: 
-        hetu_date = parse(birth_day + "." + birth_month + "." + birth_year, dayfirst=True)
+        hetu_date = datetime.strptime(birth_day + "-" + birth_month + "-" + birth_year, '%d-%m-%Y')
     except:
         return False
 
@@ -256,6 +287,23 @@ def log_scan_results(matches: dict, n_matches: int) -> None:
                 for match in matches[file][search_rule]:
                     logger.info(f"      {match}")
                 logger.info("")
+
+
+def log_scan_status_info(matches_found: bool) -> None:
+    """ Log scan status info. 
+     
+    Parameters
+    ----------
+    matches_found
+        Are there any matches?     
+    """
+    if matches_found:
+        logger.info("""If you want to ignore a match, add it to the ahjo_scan_ignore.yaml file.""")
+        logger.info("")
+    else:
+        logger.info("Scan completed.")
+        logger.info("No matches found.")
+        logger.info("")
 
 
 def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
