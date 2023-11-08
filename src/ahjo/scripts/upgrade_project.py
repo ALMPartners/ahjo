@@ -10,6 +10,7 @@
 import argparse
 import os
 import ahjo.scripts.master_actions
+import sys
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.operations.general.upgrade import upgrade
@@ -36,13 +37,14 @@ def main():
     config_filename = get_config_path(args.config_filename)
     non_interactive = args.non_interactive
     if not config_is_valid(config_filename, non_interactive = non_interactive):
-        return
-    
-    upgrade(
+        sys.exit(1)
+
+    upgrade_succeeded = upgrade(
         config_filename,
         args.version,
         skip_confirmation = non_interactive
     )
+    sys.exit(0) if upgrade_succeeded else sys.exit(1)
 
     
 if __name__ == '__main__':

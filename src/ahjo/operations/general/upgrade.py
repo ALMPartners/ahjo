@@ -22,7 +22,22 @@ logger = getLogger('ahjo')
 
 
 def upgrade(config_filename: str, version: str = None, skip_confirmation: bool = False):
-    """Upgrade database with upgrade actions."""
+    """Upgrade database with upgrade actions.
+    
+    Parameters
+    ----------
+    config_filename : str
+        Path to the configuration file.
+    version : str, optional
+        Version to be upgraded. If not defined, the next upgradable version is upgraded.
+    skip_confirmation : bool, optional
+        Skip confirmation prompt. Default is False.
+    
+    Returns
+    -------
+    bool
+        True if upgrade was successful, otherwise False.
+    """
     try:
         # Load settings
         config = load_conf(config_filename)
@@ -116,12 +131,15 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
         logger.error(error)
         if connectable_type == "connection":
             logger.error('Aborted upgrade. Changes were not committed to the database.')
+        return False
 
     else:
         logger.info("The following versions were successfully upgraded: ")
         for version in updated_versions:
             logger.info(" " * 2 + version)
         logger.info("------")
+
+    return True
 
 
 def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
