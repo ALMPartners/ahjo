@@ -302,8 +302,11 @@ List of available actions
 ```
 
 # <u>Config File</u>
-Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format. Ahjo configs are located in *BACKEND* section of file. Below is an example of config file and a list of default configuration parameters.
-```
+Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format. Ahjo configs are located in *BACKEND* section of file. 
+Below is an example of config file (in both JSONC and YAML format) and a cheat sheet for config file parameters.
+
+## JSONC config file
+```jsonc
 {
     "BACKEND": {
         "allowed_actions": "ALL",
@@ -327,6 +330,24 @@ Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format.
 }
 ```
 
+## YAML config file
+```yaml
+BACKEND:
+  ## List of allowed Ahjo actions. If all actions are allowed use "ALL" option.
+  allowed_actions: ALL
+  ## Git repository url and git version table information.
+  url_of_remote_git_repository: ''
+  git_table: git_version
+  git_table_schema: dbo
+  ## Database connection information.
+  sql_port: 14330
+  sql_driver: ODBC Driver 17 for SQL Server
+  sql_dialect: mssql+pyodbc
+  target_server_hostname: localhost
+  target_database_name: DB_NAME
+```
+
+## Config file cheat sheet
 | Parameter  | Required | Description | Type | Default Value |
 | --- | --- | --- | --- | --- |
 | alembic_version_table | No | Name of Alembic version table. Table holds the current revision number. | str | "alembic_version" |
@@ -364,22 +385,7 @@ Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format.
 | transaction_mode | No | Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". Possible values are "begin_once" and "commit_as_you_go". If "begin_once", a transaction is started before running actions and committed after all actions are run. If "commit_as_you_go", a transaction is started before running actions but not committed automatically. | str | "begin_once" |
 | git_version_info_path | No | Path to git version info file. Retrieve git commit information from this file if git repository is not available. JSON file format: {"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"} | str | |
 
-From Ahjo v3.4.0 onwards, the config file can be in YAML format. Below is an example of config file in YAML format:
-```yaml
-BACKEND:
-  ## List of allowed Ahjo actions. If all actions are allowed use "ALL" option.
-  allowed_actions: ALL
-  ## Git repository url and git version table information.
-  url_of_remote_git_repository: ''
-  git_table: git_version
-  git_table_schema: dbo
-  ## Database connection information.
-  sql_port: 14330
-  sql_driver: ODBC Driver 17 for SQL Server
-  sql_dialect: mssql+pyodbc
-  target_server_hostname: localhost
-  target_database_name: DB_NAME
-```
+## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 
 ```
 ahjo-config --convert-to <target_format> --config <config_file_path> --output <output_file_path>
