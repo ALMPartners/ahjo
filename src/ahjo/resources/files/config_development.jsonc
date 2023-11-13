@@ -52,8 +52,13 @@
         //,"skipped_actions": []
         // Configuration file for upgrade actions
         //,"upgrade_actions_file": "./upgrade_actions.jsonc"
+        // Catalog collation setting of database.
+        // If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database.
         //,"catalog_collation_type_desc": "DATABASE_DEFAULT"
+        // Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection".
         //,"context_connectable_type": "engine"
+        // Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". 
+        // Possible values are "begin_once" and "commit_as_you_go".
         //,"transaction_mode": "begin_once"
     }
 }

@@ -58,7 +58,9 @@ BACKEND:
   #catalog_collation_type_desc: DATABASE_DEFAULT
   ## Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection".
   #context_connectable_type: engine
-  ## Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection".
+  ## Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". 
+  ## Possible values are "begin_once" and "commit_as_you_go". If "begin_once", a transaction is started before running actions and committed after all actions are run. 
+  ## If "commit_as_you_go", a transaction is started before running actions but not committed automatically.
   #transaction_mode: begin_once
   ## Path to git version info file. Retrieve git commit information from this file if git repository is not available.
   ## JSON file format: {"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"}
