@@ -1,7 +1,7 @@
 import ahjo.operations.general.git_version as git
 import logging
 import pytest
-from ahjo.interface_methods import load_json_conf
+from ahjo.interface_methods import load_conf
 from os import environ, path
 from subprocess import check_output
 from sqlalchemy import Column, MetaData, String, Table, select
@@ -109,7 +109,7 @@ class TestWithSQLServer():
         git.update_git_version(self.engine, self.git_table_schema, 
                                 self.git_table, repository=None, 
                                 git_version_info_path=self.git_version_info_path)
-        git_version_info = load_json_conf(self.git_version_info_path)
+        git_version_info = load_conf(self.git_version_info_path)
         self.assert_git_version_table_results(
             self.get_commit_info_from_git_table(),
             git_version_info["repository"],

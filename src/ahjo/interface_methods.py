@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import ahjo.util.jsonc as json
+import yaml
 from logging import getLogger
 from pathlib import Path
 from re import sub
@@ -11,6 +12,17 @@ from typing import Iterable, List, Union
 
 
 logger = getLogger('ahjo')
+
+
+def load_conf(conf_file: str, key: str = 'BACKEND'):
+    """ Read configuration from file (JSON, JSONC, YAML or YML). """
+    if conf_file.endswith('.json') or conf_file.endswith('.jsonc'):
+        return load_json_conf(conf_file, key)
+    elif conf_file.endswith('.yaml') or conf_file.endswith('.yml'):
+        return load_yaml_conf(conf_file, key)
+    else:
+        logger.error("Error: Configuration file must be in JSON, JSONC, YAML or YML format.")
+        return False
 
 
 def load_json_conf(conf_file: str, key: str = 'BACKEND') -> dict:
@@ -25,6 +37,23 @@ def load_json_conf(conf_file: str, key: str = 'BACKEND') -> dict:
     with open(f_path, encoding='utf-8') as f:
         raw_data = f.read()
     data = json.loads(raw_data)
+    key_value = data.get(key, None)
+    if key_value:
+        return key_value
+    return data
+
+
+def load_yaml_conf(conf_file: str, key: str = 'BACKEND') -> dict:
+    """Read configuration from file (YAML).
+
+    Return contents of 'key' block.
+    """
+    f_path = Path(conf_file)
+    if not f_path.is_file():
+        logger.error("No such file: " + f_path.absolute().as_posix())
+        return None
+    with open(f_path, encoding='utf-8') as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
     key_value = data.get(key, None)
     if key_value:
         return key_value
@@ -55,6 +84,7 @@ def are_you_sure(message: Union[str, list], use_logger: bool = True) -> bool:
     display_message('cancelled', use_logger)
     return False
 
+
 def display_message(message: Union[str, list], use_logger: bool = True):
     """ Print or log a message (str) or multiple messages (list). """
     if isinstance(message, list):
@@ -62,6 +92,7 @@ def display_message(message: Union[str, list], use_logger: bool = True):
             logger.info(msg) if use_logger else print(msg)
     else:
         logger.info(message) if use_logger else print(message)
+
 
 def remove_special_chars(in_string: str) -> str:
     '''Return a cleared string, that is, remove all characters except

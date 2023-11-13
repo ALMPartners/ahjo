@@ -21,7 +21,7 @@ def main():
     print('This is Ahjo project initialization command.')
     project_name_raw = input('Enter project name: ')
     project_name = remove_special_chars(project_name_raw)
-    project_config_format = "jsonc" if input("Select configuration file format (json/jsonc): ") == "jsonc" else "json"
+    project_config_format = input("Select configuration file format (yaml/json/jsonc): ")
     warning_message = f"You are about to initialize a new project {project_name} to location {INIT_LOCATION}"
     if are_you_sure(warning_message):
         create_new_project(

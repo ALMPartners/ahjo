@@ -17,7 +17,7 @@ from pathlib import Path
 from shutil import copyfile
 
 from ahjo.context import AHJO_PATH, filter_nested_dict
-from ahjo.interface_methods import load_json_conf
+from ahjo.interface_methods import load_conf
 from ahjo.operation_manager import OperationManager
 
 PROJECT_STRUCTURE = {
@@ -56,7 +56,7 @@ def create_local_config_base(config_filename: str):
         if not Path(config_filename).is_file():
             print("File not found: " + config_filename)
             return
-        config_data = load_json_conf(config_filename, key='')
+        config_data = load_conf(config_filename, key='')
         local_path = config_data.get('LOCAL', None)
         if not local_path:
             print("Local config not defined in {}".format(config_filename))
@@ -74,18 +74,21 @@ def create_local_config_base(config_filename: str):
                 print('Problem creating local config file: {}'.format(err))
 
 
-def create_new_project(project_name: str, init_location: str, message: str, project_config_format: str = "json"):
+def create_new_project(project_name: str, init_location: str, message: str, project_config_format: str = "yaml"):
     '''Create project root directory and call populate_project.'''
     with OperationManager(message):
+
+        if project_config_format not in ["jsonc", "json", "yaml"]:
+            print(f"Unknown config format {project_config_format}. Terminating.")
+            return
+
         project_root = path.join(init_location, project_name)
         if path.exists(project_root):
             print(f'Folder {project_root} already exists. Terminating.')
             return
         makedirs(project_root)
-        if project_config_format == "jsonc":
-            PROJECT_STRUCTURE["config_development.jsonc"] = "resources/files/config_development.jsonc"
-        else:
-            PROJECT_STRUCTURE["config_development.json"] = "resources/files/config_development.json"
+ 
+        PROJECT_STRUCTURE[f"config_development.{project_config_format}"] = f"resources/files/config_development.{project_config_format}"
         populate_project(project_root, PROJECT_STRUCTURE)
         print(f'Project {project_root} created.')
 
