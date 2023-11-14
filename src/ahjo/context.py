@@ -4,16 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from logging import getLogger
 import sys
+import yaml
+import json
+from logging import getLogger
 from typing import Union
-
 from sqlalchemy.engine import Engine, Connection
-
-from ahjo.database_utilities import (create_conn_info,
-                                     create_sqlalchemy_engine,
-                                     create_sqlalchemy_url)
-from ahjo.interface_methods import load_json_conf
+from ahjo.database_utilities import (create_conn_info, create_sqlalchemy_engine, create_sqlalchemy_url)
+from ahjo.interface_methods import load_conf, load_json_conf, load_yaml_conf
 
 logger = getLogger('ahjo')
 
@@ -44,7 +42,7 @@ class Context:
         self.enable_transaction = None
         self.connectivity_type = None
         self.config_filename = config_filename
-        self.configuration = load_json_conf(config_filename)
+        self.configuration = load_conf(config_filename)
         if self.configuration is None:
             raise Exception("No configuration found")
         
@@ -173,11 +171,11 @@ def merge_config_files(config_filename: str) -> dict:
     """Return the contents of config_filename or merged contents,
     if there exists a link to another config file in config_filename.
     """
-    config_data = load_json_conf(config_filename, key='')
+    config_data = load_conf(config_filename, key='')
     local_path = config_data.get('LOCAL', None)
     if local_path is not None:
         try:
-            local_data = load_json_conf(local_path, key='')
+            local_data = load_conf(local_path, key='')
             if local_data is not None:
                 merged_configs = merge_nested_dicts(config_data, local_data)
                 return merged_configs
@@ -196,12 +194,7 @@ def get_config_path(config_filename: str) -> str:
 def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
     '''Validate configuration file.'''
 
-    # Check if configuration file exists.
-    if config_path is None:
-        logger.error("Error: Configuration filename is required.")
-        return False
-    
-    configuration = load_json_conf(config_path)
+    configuration = load_conf(config_path)
 
     # Allow only non-interactive authentication methods in non-interactive mode.
     if non_interactive:
@@ -219,3 +212,39 @@ def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
                 return False
 
     return True
+
+
+def convert_config_to_yaml(config_path: str = "config_development.jsonc", output_path: str = "config_development.yaml") -> bool:
+    '''Convert json/jsonc config file to YAML format.'''
+    try:
+
+        # Check if config file is in json or jsonc format.
+        if not (config_path.endswith('.jsonc') or config_path.endswith('.json')):
+            logger.error(f'Error: Configuration file must be in JSON or JSONC format.')
+            return False
+
+        configuration = load_json_conf(config_path, key=None)
+        with open(output_path, 'w+', encoding='utf-8') as file:
+            yaml.dump(configuration, file, default_flow_style=False)
+        return True
+    except Exception as err:
+        logger.error(f'Could not convert config file to YAML format: {err}')
+        return False
+    
+
+def convert_config_to_json(config_path: str = "config_development.yaml", output_path: str = "config_development.json") -> bool:
+    '''Convert YAML config file to JSON format.'''
+    try:
+
+        # Check if config file is in yaml or yml format.
+        if not (config_path.endswith('.yaml') or config_path.endswith('.yml')):
+            logger.error(f'Error: Configuration file must be in YAML or YML format.')
+            return False
+
+        configuration = load_yaml_conf(config_path, key=None)
+        with open(output_path, 'w+', encoding='utf-8') as file:
+            json.dump(configuration, file, indent=4)
+        return True
+    except Exception as err:
+        logger.error(f'Could not convert config file to JSON format: {err}')
+        return False

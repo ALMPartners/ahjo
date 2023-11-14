@@ -8,7 +8,7 @@ import os
 import importlib
 import sys
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
-from ahjo.interface_methods import load_json_conf, are_you_sure
+from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.action import execute_action, registered_actions
 from ahjo.operation_manager import format_message
 from logging import getLogger
@@ -28,9 +28,9 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
     """
 
     # Load multi-project-build config
-    anchor_path = load_json_conf(master_config_path, "projects_path")
-    config_conn_info = load_json_conf(master_config_path, "connection_info")
-    ahjo_projects = load_json_conf(master_config_path, "projects")
+    anchor_path = load_conf(master_config_path, "projects_path")
+    config_conn_info = load_conf(master_config_path, "connection_info")
+    ahjo_projects = load_conf(master_config_path, "projects")
     anchor_parent_path_str = str(Path(anchor_path).parent)
     anchor_name = Path(anchor_path).parts[-1]
 

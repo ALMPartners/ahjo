@@ -1,6 +1,10 @@
 {
     "BACKEND": {
+        // ----------------------------
+        // -- Required configuration --
+        // ----------------------------
         // List of allowed Ahjo actions. If all actions are allowed use "ALL" option.
+        // Example: ["deploy", "data"].
         "allowed_actions": "ALL"
         // Git repository url and git version table information
         ,"url_of_remote_git_repository": ""
@@ -12,7 +16,9 @@
         ,"sql_dialect": "mssql+pyodbc"
         ,"target_server_hostname": "localhost"
         ,"target_database_name": "DB NAME"
+        // ----------------------------
         // -- Optional configuration --
+        // ----------------------------
         //,"git_version_info_path": "git_version.json"
         // Database file location for init-action
         //,"database_data_path": "/var/opt/mssql/data/<DB NAME>.mdf"
@@ -46,8 +52,13 @@
         //,"skipped_actions": []
         // Configuration file for upgrade actions
         //,"upgrade_actions_file": "./upgrade_actions.jsonc"
+        // Catalog collation setting of database.
+        // If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database.
         //,"catalog_collation_type_desc": "DATABASE_DEFAULT"
+        // Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection".
         //,"context_connectable_type": "engine"
+        // Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". 
+        // Possible values are "begin_once" and "commit_as_you_go".
         //,"transaction_mode": "begin_once"
     }
 }

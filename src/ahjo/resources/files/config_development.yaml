@@ -1,0 +1,66 @@
+BACKEND:
+  # ----------------------------
+  # -- Required configuration --
+  # ----------------------------
+  ## List of allowed Ahjo actions. If all actions are allowed use "ALL" option.
+  ## Example: ["deploy", "data"].
+  allowed_actions: ALL
+  ## Git repository url and git version table information.
+  url_of_remote_git_repository: ''
+  git_table: git_version
+  git_table_schema: dbo
+  ## Database connection information.
+  sql_port: 14330
+  sql_driver: ODBC Driver 17 for SQL Server
+  sql_dialect: mssql+pyodbc
+  target_server_hostname: localhost
+  target_database_name: DB_NAME
+  # ----------------------------
+  # -- Optional configuration --
+  # ----------------------------
+  ## Database file location for init-action.
+  #database_data_path: /var/opt/mssql/data/<DB NAME>.mdf
+  #database_log_path: /var/opt/mssql/data/<DB NAME>.ldf
+  ## Database extra options (optional for init).
+  #database_init_size: 100
+  #database_max_size: 10000
+  #database_file_growth: 500
+  #database_compatibility_level: 140
+  #database_collation: Latin1_General_CS_AS
+  ## Credentials for database connection.
+  ## Storing credentials to files is not secure, and not recommended in a production environment!
+  ## The files for usernames and passwords should be different, or commented out for no password saving.
+  #username_file: C:\Hash\username_ahjo.txt
+  #password_file: C:\Hash\password_ahjo.txt
+  ## Authentication type to Azure AD.
+  ## Possible values: "ActiveDirectoryPassword", "ActiveDirectoryInteractive", 
+  ## "ActiveDirectoryIntegrated", "AzureIdentity".
+  #azure_authentication: ActiveDirectoryIntegrated
+  ## The table that alembic creates automatically for migration version handling.
+  #alembic_version_table: alembic_version
+  #alembic_version_table_schema: dbo
+  ## List of documented schemas
+  #metadata_allowed_schemas: []
+  ## List of dictionaries containing file locations & scripting variables for setting up database permissions from sql file(s). 
+  ## Dictionary holds keys: "source" (str) and "variables" 
+  #db_permissions: []
+  ## Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy".
+  #db_permission_invoke_method: sqlcmd
+  ## ODBC connection string settings
+  #odbc_encrypt: 'yes'
+  #odbc_trust_server_certificate: 'no'
+  ## List of actions that are skipped
+  #skipped_actions: []
+  ## Configuration file for upgrade actions
+  #upgrade_actions_file: ./upgrade_actions.jsonc
+  ## Catalog collation setting of database.  
+  ## If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database.
+  #catalog_collation_type_desc: DATABASE_DEFAULT
+  ## Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection".
+  #context_connectable_type: engine
+  ## Transaction management style for ahjo actions. Applied only if context_connectable_type is "connection". 
+  ## Possible values are "begin_once" and "commit_as_you_go".
+  #transaction_mode: begin_once
+  ## Path to git version info file. Retrieve git commit information from this file if git repository is not available.
+  ## JSON file format: {"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"}
+  #git_version_info_path: git_version.json
