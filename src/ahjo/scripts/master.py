@@ -62,6 +62,10 @@ def main():
         context = Context(config_path)
         if context.configuration.get("display_db_info", True):
             print_db_collation(context)
+        # Use different logger configuration for Windows Event Log
+        # Preferably we should have only one logger configuration, but this is a workaround for now
+        if context.configuration.get("windows_event_log", False):
+            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
 
         kwargs = {"context": context}
         if len(args.files) > 0 : kwargs['files'] = args.files
