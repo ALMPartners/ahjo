@@ -67,7 +67,10 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
         # Load logging config
         os.chdir(project_path)
         sys.path.append(os.getcwd())
-        fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
+        if load_conf(project_config_path).get("windows_event_log", False):
+            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
+        else:
+            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
         logger = getLogger('ahjo')
         logger.info('------')
         logger.info('Building ahjo project: ' + ahjo_project)
