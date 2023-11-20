@@ -100,7 +100,7 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
                 logger.info(format_message(f"Succesfully loaded {action_name}"))
 
         except Exception as e:
-            logger.exception(format_message(f"Error while loading ahjo actions: {e}"))
+            logger.error(format_message(f"Error while loading ahjo actions: {e}"))
             raise
 
         os.chdir(project_path)

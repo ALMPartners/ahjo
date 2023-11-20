@@ -251,5 +251,5 @@ def import_actions(ahjo_action_files: list = DEFAULT_ACTIONS_SRC, reload_module:
             logger.info(format_message(f"Succesfully loaded {action_name}"))
 
     except Exception as e:
-        logger.exception(format_message(f"Error while loading ahjo actions: {e}"))
+        logger.error(format_message(f"Error while loading ahjo actions: {e}"))
         raise
