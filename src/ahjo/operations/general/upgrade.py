@@ -13,7 +13,7 @@ from logging.config import fileConfig
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.operations.general.db_info import print_db_collation
-from ahjo.action import execute_action
+from ahjo.action import execute_action, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import Context
 
 
@@ -72,8 +72,12 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
             # Checkout the next upgradable git version
             _checkout_tag(git_version)
 
-            # Reload master actions & update global variable: registered_actions
-            importlib.reload(importlib.import_module("ahjo_actions"))
+            # Reload ahjo actions
+            config = load_conf(config_filename)
+            import_actions(
+                ahjo_action_files = config.get("ahjo_action_files", DEFAULT_ACTIONS_SRC), 
+                reload_module = True
+            )
 
             # Deploy version upgrades
             actions = version_actions[git_version]

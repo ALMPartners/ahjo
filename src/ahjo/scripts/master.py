@@ -10,7 +10,7 @@ import ahjo.scripts.master_actions
 
 from logging import getLogger
 from logging.config import fileConfig
-from ahjo.action import execute_action, list_actions, import_actions
+from ahjo.action import execute_action, list_actions, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import get_config_path, config_is_valid, Context
 from ahjo.operations.general.db_info import print_db_collation
 
@@ -31,8 +31,6 @@ print(line)
 print(info_msg)
 print(line)
 
-import_actions()
-
 
 def main():
 
@@ -50,16 +48,20 @@ def main():
     logger.debug(f'File(s):  {args.files}')
     logger.debug(f'Object type:  {args.object_type}')
 
+    config_path = get_config_path(args.config_filename)
+    context = Context(config_path)
+    import_actions(
+        ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
+    )
+
     if args.action == 'list':
         list_actions()
     else:
 
-        config_path = get_config_path(args.config_filename)
         non_interactive = args.non_interactive
         if not config_is_valid(config_path, non_interactive = non_interactive):
             return
         
-        context = Context(config_path)
         if context.configuration.get("display_db_info", True):
             print_db_collation(context)
         # Use different logger configuration for Windows Event Log

@@ -523,7 +523,23 @@ The script creates a file named `pre-commit` to Git hooks directory. By default,
 Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file ahjo.log. Logging can be done to Windows Event Log by setting `windows_event_log` to `true` in config file. This feature can be utilized for Azure Monitor activities, for example.
 
 # <u>Customization</u>
-Every default Ahjo action and multiaction can be overwritten in project's ahjo_actions.py file.
+
+## Setting up custom action files
+Every default Ahjo action and multiaction can be overwritten in project's Ahjo actions file. By default, the file is located in `ahjo_actions.py`, but the location can be changed in config file with key `ahjo_action_files`. It is possible to define multiple Ahjo actions files. This can be useful for example when you want to use different actions for different environments. Here is an example of `ahjo_action_files` configuration:
+```jsonc
+"ahjo_action_files": [
+    {
+        "source_file": "ahjo_prod_actions.py", // The location is relative to project root directory.
+        "name": "Example project Ahjo actions (prod)" // Name is used in logging.
+    },
+    {
+        "source_file": "ahjo_dev_actions.py", 
+        "name": "Example project Ahjo actions (dev)"
+    }
+]
+```
+
+## Overwriting default Ahjo actions
 
 In example below, *'init'* and *'complete-build'* actions are overwritten.
 ```

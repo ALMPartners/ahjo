@@ -9,12 +9,11 @@ import importlib
 import sys
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
 from ahjo.interface_methods import load_conf, are_you_sure
-from ahjo.action import execute_action, registered_actions
+from ahjo.action import execute_action, registered_actions, DEFAULT_ACTIONS_SRC
 from ahjo.operation_manager import format_message
 from logging import getLogger
 from logging.config import fileConfig
 from pathlib import Path
-from sqlalchemy import create_engine
 
 
 def run_multi_project_build(master_config_path: str, skip_project_confirmation = True):
@@ -77,17 +76,33 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
 
         # Import ahjo project actions
         os.chdir(anchor_parent_path_str)
-        if os.path.exists(anchor_name + "/" + ahjo_project + '/ahjo_actions.py'):
-            logger.debug(format_message(ahjo_project + ' ahjo_actions found'))
-            try:
+
+        try:
+            # Load user defined actions
+            project_config_dict = load_conf(project_config_path)
+            ahjo_action_files = project_config_dict.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
+            
+            for action_file in ahjo_action_files:
+
+                action_source = action_file["source_file"]
+                action_module = action_source.replace(".py", "").replace("/", ".").replace("\\", ".")
+                action_name = action_file["name"]
+
+                # Check if action file exists
+                if not os.path.exists(anchor_name + "/" + ahjo_project + "/" + action_source):
+                    logger.info(format_message(f"{action_name} not found"))
+                    raise Exception(f"{action_name} not found")
+                
+                # Load actions
                 sys.path.append(os.getcwd())
-                importlib.import_module(anchor_name + "." + ahjo_project + ".ahjo_actions")
-                logger.info(format_message('Succesfully loaded ' + ahjo_project + ' ahjo_actions'))
-            except:
-                logger.exception(format_message('Error while loading ' + ahjo_project + ' ahjo_actions'))
-                raise
-        else:
-            logger.info(format_message(ahjo_project + ' ahjo_actions not found'))
+                importlib.import_module(anchor_name + "." + ahjo_project + "." + action_module)
+
+                logger.info(format_message(f"Succesfully loaded {action_name}"))
+
+        except Exception as e:
+            logger.exception(format_message(f"Error while loading ahjo actions: {e}"))
+            raise
+
         os.chdir(project_path)
 
         # Run ahjo actions
@@ -98,3 +113,4 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
                 engine = master_engine, 
                 skip_confirmation = skip_project_confirmation
             )
+        

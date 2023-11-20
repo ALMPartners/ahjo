@@ -7,6 +7,7 @@
 
 import os
 import sys
+import importlib
 
 from logging import getLogger
 from typing import Any, Callable, List, Union
@@ -21,6 +22,7 @@ logger = getLogger('ahjo')
 # dict containing information of all defined actions
 # action register makes it possible to handle user-defined actions
 registered_actions = {}
+DEFAULT_ACTIONS_SRC = [{"source_file": "ahjo_actions.py", "name": "Ahjo actions"}]
 
 
 def action(name: str = None, affects_database: bool = False, dependencies: List[str] = []) -> Callable[[Context, Any], Any]:
@@ -216,15 +218,38 @@ def list_actions():
             f"'{key}': {registeration.function.__doc__ or 'No description available.'}")
 
 
-def import_actions():
-    if os.path.exists('ahjo_actions.py') or os.path.exists('./ahjo_actions'):
-        logger.debug(format_message('ahjo_actions found'))
-        try:
+def import_actions(ahjo_action_files: list = DEFAULT_ACTIONS_SRC, reload_module: bool = False) -> None:
+    """Import actions from user defined action files. 
+    
+    Arguments
+    ---------
+    ahjo_action_files: list
+        Ahjo action files to be imported. 
+        If None, default action file (ahjo_actions.py) is imported from current working directory.
+
+    reload_module: bool
+        Reload ahjo actions if True.
+    
+    """
+    try:
+        for action_file in ahjo_action_files:
+        
+            action_source = action_file["source_file"]
+            action_module = action_source.replace(".py", "").replace("/", ".").replace("\\", ".")
+            action_name = action_file["name"]
+
+            # Check if action file exists
+            if not os.path.exists(action_source):
+                logger.info(format_message(f"{action_name} not found"))
+                raise Exception(f"{action_name} not found")
+
+            # Load actions
             sys.path.append(os.getcwd())
-            import ahjo_actions
-            logger.info(format_message('Succesfully loaded ahjo_actions'))
-        except:
-            logger.exception(format_message('Error while loading ahjo_actions'))
-            raise
-    else:
-        logger.info(format_message('ahjo_actions not found'))
+            imported_module = importlib.import_module(action_module)
+            if reload_module: importlib.reload(imported_module)
+
+            logger.info(format_message(f"Succesfully loaded {action_name}"))
+
+    except Exception as e:
+        logger.exception(format_message(f"Error while loading ahjo actions: {e}"))
+        raise
