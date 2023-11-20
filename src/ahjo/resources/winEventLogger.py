@@ -15,8 +15,8 @@ class winEventHandler(Handler):
         Emit a record.
         """
         # If message is not empty and not only dashes, then send it to Windows Event Log
-        if x.msg and x.msg != '' and not bool(re.search('^[-]*+$', x.msg)):
-            msg = re.sub("^([\[]).*?([\]])", "", x.msg).lstrip() # remove timestamps from the start of message
+        if x.msg and x.msg != '' and not bool(re.search('^[-]*+$', str(x.msg))):
+            msg = re.sub("^([\[]).*?([\]])", "", str(x.msg)).lstrip() # remove timestamps from the start of message
             winLevels = {
                 "DEBUG": win32evtlog.EVENTLOG_INFORMATION_TYPE,
                 "INFO": win32evtlog.EVENTLOG_INFORMATION_TYPE,

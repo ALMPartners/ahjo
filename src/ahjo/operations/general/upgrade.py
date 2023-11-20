@@ -7,6 +7,7 @@ import copy
 import sys
 import importlib
 import os
+import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.interface_methods import load_conf, are_you_sure
@@ -26,12 +27,13 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
 
         # Load settings
         config = load_conf(config_filename)
-        if config.get("windows_event_log", False):
-            fileConfig(os.path.join(os.path.dirname(__file__), 'resources/logger_winLog.ini'))
         upgrade_actions = load_conf(config.get("upgrade_actions_file", f"./upgrade_actions.jsonc"))
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("context_connectable_type", "engine")
+        if config.get("windows_event_log", False):
+            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
+            logger = getLogger('ahjo')
         updated_versions = []
 
         # Create context
