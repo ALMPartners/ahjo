@@ -31,9 +31,10 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("context_connectable_type", "engine")
         if config.get("windows_event_log", False):
-            global logger
             fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
-            logger = getLogger('ahjo')
+        else:
+            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
+        logger = getLogger('ahjo')
         updated_versions = []
 
         # Create context

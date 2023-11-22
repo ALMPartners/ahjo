@@ -33,6 +33,11 @@ if main_config_path is None:
 logger.info(f'Main config file: {main_config_path}')
 
 main_config = load_conf(main_config_path)
+
+# Use Windows Event Logger if project config has specified setting windows_event_log = true
+if not main_config.get("windows_event_log", False):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
+
 conn_info = create_conn_info(main_config)
 
 version_table_schema = main_config.get("alembic_version_table_schema", "dbo")
