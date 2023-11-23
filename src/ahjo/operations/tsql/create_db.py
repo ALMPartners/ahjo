@@ -56,12 +56,12 @@ def create_db(engine: Engine, db_name: str, db_path: str, log_path: str, init_si
         )
         for sid in session_ids:
             execute_query(engine, f'KILL {sid.session_id}')
-        execute_query(engine, f'DROP DATABASE {db_name}')
+        execute_query(engine, f'DROP DATABASE [{db_name}]')
 
     def create_database():
         '''Create database and alter its collation, compatibility level and recovery.'''
         # If filepaths are not given - do not specify database/log files and their size
-        create_query = f"CREATE DATABASE {db_name}"
+        create_query = f"CREATE DATABASE [{db_name}]"
         if db_path is not None and log_path is not None:
             db_file = path.splitext(path.basename(db_path))[0] + '_dat'
             log_file = path.splitext(path.basename(log_path))[0] + '_log'
@@ -87,14 +87,14 @@ def create_db(engine: Engine, db_name: str, db_path: str, log_path: str, init_si
         if collation is not None:
             execute_query(
                 engine,
-                f'ALTER DATABASE {db_name} COLLATE {collation}'
+                f'ALTER DATABASE [{db_name}] COLLATE {collation}'
             )
         if compatibility_level is not None:
             execute_query(
                 engine,
-                f'ALTER DATABASE {db_name} SET COMPATIBILITY_LEVEL = {compatibility_level}'
+                f'ALTER DATABASE [{db_name}] SET COMPATIBILITY_LEVEL = {compatibility_level}'
             )
-        execute_query(engine, f'ALTER DATABASE {db_name} SET RECOVERY SIMPLE')
+        execute_query(engine, f'ALTER DATABASE [{db_name}] SET RECOVERY SIMPLE')
 
     with OperationManager('Creating database'):
         db_id = execute_query(
