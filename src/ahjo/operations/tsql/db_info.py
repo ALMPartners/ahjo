@@ -14,10 +14,15 @@ logger = getLogger('ahjo')
 
 
 def print_collation(engine: Engine, db_name: str, config_collation_name: str = "Latin1_General_CS_AS", 
-                    config_catalog_collation_type_desc: str="DATABASE_DEFAULT"):
+                    config_catalog_collation_type_desc: str="DATABASE_DEFAULT") -> None:
     """Log collation information from the database."""
 
     logger.info(format_message("Loading database connection settings"))
+
+    # Check if the database exists
+    if not check_if_db_exists(engine, db_name):
+        logger.info(format_message("Skipping database collation check. Database does not exist."))
+        return
 
     try:
         collation, catalog_collation_type_desc, server_edition = get_collation(engine, db_name)
@@ -44,6 +49,20 @@ def print_collation(engine: Engine, db_name: str, config_collation_name: str = "
                 logger.info("   Database catalog collation setting: " + catalog_collation_type_desc)
     
     logger.info("")
+
+
+def check_if_db_exists(engine: Engine, db_name: str) -> bool:
+    """Check if the database exists."""
+    try:
+        with engine.connect() as connection:
+            db_exists = connection.execute(
+                text("SELECT COUNT(*) FROM sys.databases WHERE name = :db_name"),
+                {"db_name": db_name}
+            ).fetchone()[0]
+    except Exception:
+        db_exists = False
+
+    return db_exists
 
 
 def get_collation(engine: Engine, db_name: str) -> tuple:

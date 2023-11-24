@@ -10,7 +10,7 @@ import ahjo.scripts.master_actions
 
 from logging import getLogger
 from logging.config import fileConfig
-from ahjo.action import execute_action, list_actions, import_actions, DEFAULT_ACTIONS_SRC
+from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
 from ahjo.context import get_config_path, config_is_valid, Context
 from ahjo.operations.general.db_info import print_db_collation
 
@@ -42,8 +42,11 @@ def main():
     parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
     parser.add_argument("-st", "--stage", action="store_true", required=False, help="Scan files in git staging area instead of working directory")
     parser.add_argument("-sr", "--search-rules", help="Search rules for ahjo scan action", nargs="*")
+
     args = parser.parse_args()
-    logger.debug(f'Action:  {args.action}')
+    ahjo_action = args.action
+
+    logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')
     logger.debug(f'File(s):  {args.files}')
     logger.debug(f'Object type:  {args.object_type}')
@@ -54,7 +57,7 @@ def main():
         ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
     )
 
-    if args.action == 'list':
+    if ahjo_action == 'list':
         list_actions()
     else:
 
@@ -62,8 +65,9 @@ def main():
         if not config_is_valid(config_path, non_interactive = non_interactive):
             return
         
-        if context.configuration.get("display_db_info", True):
+        if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action):
             print_db_collation(context)
+        
         # Use different logger configuration for Windows Event Log
         # Preferably we should have only one logger configuration, but this is a workaround for now
         if context.configuration.get("windows_event_log", False):
@@ -76,7 +80,7 @@ def main():
         if args.stage : kwargs['scan_staging_area'] = True
         if args.search_rules: kwargs['search_rules'] = args.search_rules
         execute_action(
-            *[args.action, config_path],
+            *[ahjo_action, config_path],
             **kwargs
         )
 

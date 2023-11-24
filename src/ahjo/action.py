@@ -253,3 +253,22 @@ def import_actions(ahjo_action_files: list = DEFAULT_ACTIONS_SRC, reload_module:
     except Exception as e:
         logger.error(format_message(f"Error while loading ahjo actions: {e}"))
         raise
+
+
+def action_affects_db(action_name: str) -> bool:
+    """Check if given action affects database.
+
+    Arguments
+    ---------
+    action_name: str
+        The name of the action to check
+
+    Returns
+    -------
+    bool
+        Does the action affect database?
+    """
+    if action_name in registered_actions:
+        return registered_actions[action_name].affects_database
+    else:
+        return False
