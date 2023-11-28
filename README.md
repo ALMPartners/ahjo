@@ -97,6 +97,9 @@ MSI installation package installs everything that is needed to execute ahjo shel
     - ahjo-init-project
     - ahjo-multi-project-build
     - ahjo-upgrade
+    - ahjo-scan
+    - ahjo-install-git-hook
+    - ahjo-config
 4. If a new shell instance can't find the executables, ensure that installation path is included in the PATH enviroment variable
 
 # <u>Project Initialization</u>

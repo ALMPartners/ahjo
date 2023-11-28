@@ -39,6 +39,7 @@ build_exe_options = {
 
 # Installable distribution options
 bdist_msi_options = {
+    "all_users": True,
     "upgrade_code": upgrade_code,
     "add_to_path": True,
     "initial_target_dir": "[%s]\%s\%s" % (programfiles_dir, author, name),
@@ -93,6 +94,13 @@ ahjo_install_git_hook_exe = Executable(
     icon=icon,
 )
 
+ahjo_config_exe = Executable(
+    "src/ahjo/scripts/config.py",
+    target_name=f"{ahjo_exe_prefix}-config.exe", 
+    base=None,
+    icon=icon,
+)
+
 setup(
     name=name,
     version=version,
@@ -107,6 +115,7 @@ setup(
         ahjo_multi_project_build_exe, 
         ahjo_upgrade_exe, 
         ahjo_scan_exe,
-        ahjo_install_git_hook_exe
+        ahjo_install_git_hook_exe,
+        ahjo_config_exe
     ],
 )
