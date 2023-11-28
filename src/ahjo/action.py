@@ -250,6 +250,15 @@ def import_actions(ahjo_action_files: list = DEFAULT_ACTIONS_SRC, reload_module:
 
             logger.info(format_message(f"Succesfully loaded {action_name}"))
 
+    except ModuleNotFoundError as e:
+        logger.error(format_message(
+            f"Error while importing modules from {action_source}. Make sure that the modules are installed in the same environment as ahjo."
+        ))
+        if getattr(sys, "frozen", False): # installed from an msi
+            logger.error(format_message(
+                "The action file might contain dependencies that are not included in the MSI package. Use a pip-installed version of ahjo and install the custom dependencies with pip."
+            ))
+        raise
     except Exception as e:
         logger.error(format_message(f"Error while loading ahjo actions: {e}"))
         raise
