@@ -427,7 +427,7 @@ ahjo-multi-project-build path/to/config_file.jsonc
 Use `-c` or `--confirm` flag to enable confirmation messages for ahjo actions.  
 Below is an example of JSONC config file. With the following definition, multi-project-build command executes complete-build actions of three ahjo projects:
 
-```
+```json
 {
     "projects_path": "path/to/projects_folder",
     "connection_info": {
@@ -477,7 +477,7 @@ The dictionary contains the parameters of the action as key-value pairs, where k
 
 Below is an example of upgrade actions file:
 
-```
+```json
 {
 	"v3.0.0": [
 		"deploy",
@@ -526,7 +526,7 @@ Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also wri
 # <u>Customization</u>
 
 ## Setting up custom action files
-Every default Ahjo action and multiaction can be overwritten in project's Ahjo actions file. By default, the file is located in `ahjo_actions.py`, but the location can be changed in config file with key `ahjo_action_files`. It is possible to define multiple Ahjo actions files. This can be useful for example when you want to use different actions for different environments. Here is an example of `ahjo_action_files` configuration:
+Every default Ahjo action and multiaction can be overwritten in project's Ahjo actions file. By default, the file is located in `ahjo_actions.py`, but the location can be changed in config file with key `ahjo_action_files`. It is possible to define multiple Ahjo actions files. This can be useful for example when you want to use different actions for different environments or separate actions that are compatible with MSI-installed ahjo from actions that are compatible with pip-installed ahjo. The action files are loaded in order, so if you define multiple actions for the same action name, the last loaded action file will be used. If a multi-action uses actions from different files, remember to load all the subactions before the multi-action. Here is an example of `ahjo_action_files` configuration:
 ```jsonc
 "ahjo_action_files": [
     {
@@ -543,7 +543,7 @@ Every default Ahjo action and multiaction can be overwritten in project's Ahjo a
 ## Overwriting default Ahjo actions
 
 In example below, *'init'* and *'complete-build'* actions are overwritten.
-```
+```python
 import ahjo.operations as op
 from ahjo.action import action, create_multiaction
 
