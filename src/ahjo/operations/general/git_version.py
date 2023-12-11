@@ -47,8 +47,8 @@ def update_git_version(connectable: Union[Engine, Connection], git_table_schema:
                 )
             elif Path(default_git_version_info_path).is_file():
                 branch, commit, repository = _load_git_commit_info_json(
-                    git_version_info_path = default_git_version_info_path
-                )                
+                    git_version_info_path = str(default_git_version_info_path)
+                )
             else:
                 branch, commit = _get_git_commit_info()
                 if repository is None:

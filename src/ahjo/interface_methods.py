@@ -16,6 +16,7 @@ logger = getLogger('ahjo')
 
 def load_conf(conf_file: str, key: str = 'BACKEND'):
     """ Read configuration from file (JSON, JSONC, YAML or YML). """
+    if not isinstance(conf_file, str): conf_file = str(conf_file)
     if conf_file.endswith('.json') or conf_file.endswith('.jsonc'):
         return load_json_conf(conf_file, key)
     elif conf_file.endswith('.yaml') or conf_file.endswith('.yml'):
