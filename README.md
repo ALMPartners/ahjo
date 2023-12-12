@@ -319,7 +319,7 @@ Below is an example of config file (in both JSONC and YAML format) and a cheat s
         "git_table_schema": "dbo",
         //Database connection information
         "sql_port": 1433,
-        "sql_driver": "SQL Server",
+        "sql_driver": "ODBC Driver 17 for SQL Server",
         "target_database_name": "PROJECTX",
         "target_server_hostname": "localhost",
         // Database file location
@@ -435,7 +435,7 @@ Below is an example of JSONC config file. With the following definition, multi-p
     "projects_path": "path/to/projects_folder",
     "connection_info": {
         "sql_port": 14330,
-        "sql_driver": "SQL Server",
+        "sql_driver": "ODBC Driver 17 for SQL Server",
         "target_server_hostname": "localhost"
     },
     "projects": {

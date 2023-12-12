@@ -49,6 +49,8 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     dialect = conn_info.get('dialect')
     host = conn_info.get('host')
     port = conn_info.get('port')
+    odbc_trust_server_certificate = conn_info.get('odbc_trust_server_certificate', 'no')
+    odbc_encrypt = conn_info.get('odbc_encrypt', 'yes')
 
     if use_master_db is True:
         database = MASTER_DB.get(dialect)
@@ -64,8 +66,6 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     if azure_auth is not None:
 
         odbc = ''
-        odbc_trust_server_certificate = conn_info.get('odbc_trust_server_certificate', 'no')
-        odbc_encrypt = conn_info.get('odbc_encrypt', 'yes')
         azure_auth_lower = azure_auth.lower()
         
         if azure_auth_lower == 'activedirectorypassword':
@@ -106,6 +106,12 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
                 database = database,
                 query = query
             )
+
+    # Specific parameters for ODBC Driver 18.0 for SQL Server
+    # More info: https://techcommunity.microsoft.com/t5/sql-server-blog/odbc-driver-18-0-for-sql-server-released/ba-p/3169228
+    if driver.lower() == "odbc driver 18 for sql server":
+        query["TrustServerCertificate"] = odbc_trust_server_certificate
+        query["Encrypt"] = odbc_encrypt
 
     return URL.create(
         drivername = dialect,

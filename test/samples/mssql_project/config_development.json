@@ -5,7 +5,7 @@
         ,"git_table": "git_version"
         ,"git_table_schema": "dbo"
         ,"sql_port": null
-        ,"sql_driver": "ODBC Driver 17 for SQL Server"
+        ,"sql_driver": "ODBC Driver 18 for SQL Server"
         ,"sql_dialect": "mssql+pyodbc"
         ,"target_server_hostname": null
         ,"target_database_name": "AHJO_TEST"
@@ -14,5 +14,7 @@
         ,"alembic_version_table": "alembic_version"
         ,"alembic_version_table_schema": "dbo"
         ,"metadata_allowed_schemas": ["store", "report"]
+        ,"odbc_trust_server_certificate": "yes"
+        ,"odbc_encrypt": "yes"
     }
 }

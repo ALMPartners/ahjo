@@ -29,6 +29,14 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
     """Create engine for MSSQL server master database.
     """
     config = ahjo_config(mssql_sample)
+    query = {}
+    driver = config['sql_driver']
+    query["driver"] = driver
+
+    if driver.lower() == "odbc driver 18 for sql server":
+        query["TrustServerCertificate"] = config['odbc_trust_server_certificate']
+        query["Encrypt"] = config['odbc_encrypt']
+
     connection_url = URL.create(
         drivername="mssql+pyodbc",
         username=request.config.getoption('mssql_username'),
@@ -36,7 +44,7 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
         host=config['target_server_hostname'],
         port=config['sql_port'],
         database='master',
-        query={'driver': config['sql_driver']}
+        query=query
     )
     return create_sqlalchemy_engine(connection_url)
 
@@ -46,6 +54,14 @@ def mssql_engine(request, ahjo_config, mssql_sample):
     """Create engine for MSSQL server test database.
     """
     config = ahjo_config(mssql_sample)
+    query = {}
+    driver = config['sql_driver']
+    query["driver"] = driver
+
+    if driver.lower() == "odbc driver 18 for sql server":
+        query["TrustServerCertificate"] = config['odbc_trust_server_certificate']
+        query["Encrypt"] = config['odbc_encrypt']
+
     connection_url = URL.create(
         drivername="mssql+pyodbc",
         username=request.config.getoption('mssql_username'),
@@ -53,7 +69,7 @@ def mssql_engine(request, ahjo_config, mssql_sample):
         host=config['target_server_hostname'],
         port=config['sql_port'],
         database=config['target_database_name'],
-        query={'driver': config['sql_driver']}
+        query=query
     )
     return create_sqlalchemy_engine(connection_url)
 
