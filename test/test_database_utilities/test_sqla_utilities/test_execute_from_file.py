@@ -100,6 +100,24 @@ class TestWithSQLServer():
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
             assert result[0] == (0,)
 
+    def test_execute_from_file_error_should_close_connection_with_engine(self):
+        for _ in range(10):
+            with pytest.raises(Exception):
+                ahjo.execute_from_file(self.engine, f'database/error/{PRODUCTCATEGORY}.sql')
+        assert self.engine.pool.checkedout() == 0
+
+    def test_execute_from_file_error_should_close_connection(self):
+        with self.engine.connect() as connection:
+            with pytest.raises(Exception):
+                ahjo.execute_from_file(connection, f'database/error/{PRODUCTCATEGORY}.sql')
+            assert connection.closed
+
+    def test_execute_from_file_error_should_close_connection_with_transaction_scope(self):
+        with self.engine.begin() as connection:
+            with pytest.raises(Exception):
+                ahjo.execute_from_file(connection, f'database/error/{PRODUCTCATEGORY}.sql', file_transaction=True, commit_transaction=True)
+            assert connection.closed
+
     def test_execute_from_file_should_insert_data_with_connection_and_batch_transaction_scope_without_commit(self):
         with self.engine.begin() as connection:
             result = connection.execute(text(PRODUCT_COUNT)).fetchall()
