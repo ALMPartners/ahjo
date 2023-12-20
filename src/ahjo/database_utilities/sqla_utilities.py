@@ -294,6 +294,7 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
             raise Exception(error_msg)
     except:
         connection_obj.rollback()
+        connection_obj.close()
         raise
     if commit_transaction is True or connectable_type == Engine:
         connection_obj.commit()
@@ -321,6 +322,7 @@ def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> Lis
             script_output.append(results)
     except:
         connection.rollback()
+        connection.close()
         raise
     return script_output
 
@@ -376,6 +378,7 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
             script_output = _execute_batches(connection_obj, batches, include_headers=include_headers, commit_transaction=False)
         except:
             connection_obj.rollback()
+            connection_obj.close()
             raise
         if commit_transaction or connectable_type == Engine:
             connection_obj.commit()
@@ -421,6 +424,7 @@ def _execute_batches(connectable: Union[Connection, Session], batches: list, inc
             except:
                 if rollback_on_error: 
                     connectable.rollback()
+                    connectable.close()
                 raise
             if commit_transaction:
                 connectable.commit()

@@ -96,9 +96,9 @@ class TestWithSQLServer():
                 assert result[0] == (0,)
                 with pytest.raises(Exception):
                     ahjo.execute_from_file(connection, f'database/error/{PRODUCTCATEGORY}.sql', file_transaction=True, commit_transaction=True)
-            with connection.begin():
-                result = connection.execute(text(PRODUCT_COUNT)).fetchall()
-                assert result[0] == (0,)
+        with self.engine.begin() as connection:
+            result = connection.execute(text(PRODUCT_COUNT)).fetchall()
+            assert result[0] == (0,)
 
     def test_execute_from_file_should_insert_data_with_connection_and_batch_transaction_scope_without_commit(self):
         with self.engine.begin() as connection:
