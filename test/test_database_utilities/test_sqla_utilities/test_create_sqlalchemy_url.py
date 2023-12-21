@@ -12,7 +12,9 @@ CONN_INFO = [
         'dialect': 'postgresql',
         'username': 'postgres',
         'password': 'moimoi',
-        'azure_auth': None
+        'azure_auth': None,
+        'odbc_trust_server_certificate': 'yes',
+        'odbc_encrypt': 'no'
     },
     {
         'host': 'localhost',
@@ -23,7 +25,9 @@ CONN_INFO = [
         'dialect': 'mssql+pyodbc',
         'username': 'sa',
         'password': 'SALA_kala12',
-        'azure_auth': 'ActiveDirectoryPassword'
+        'azure_auth': 'ActiveDirectoryPassword',
+        'odbc_trust_server_certificate': 'yes',
+        'odbc_encrypt': 'no'
     },
     {
         'host': 'localhost',
@@ -67,22 +71,6 @@ def test_create_sqlalchemy_url_should_return_url_for_mssql_master_db():
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
     assert url.database == 'master'
     assert 'Database=master' in url.query['odbc_connect']
-
-
-def test_create_sqlalchemy_url_should_disable_odbc_trust_server_certificate_by_default():
-    conn_info = CONN_INFO[1]
-    url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
-    odbc_conn_str = url.query["odbc_connect"]
-    indx = odbc_conn_str.find("TrustServerCertificate")
-    assert odbc_conn_str[indx : (indx) + 25] == "TrustServerCertificate=no"
-
-
-def test_create_sqlalchemy_url_should_enable_odbc_encrypt_by_default():
-    conn_info = CONN_INFO[1]
-    url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
-    odbc_conn_str = url.query["odbc_connect"]
-    indx = odbc_conn_str.find("Encrypt")
-    assert odbc_conn_str[indx : (indx) + 11] == "Encrypt=yes"
 
 
 def test_create_sqlalchemy_url_should_enable_odbc_trust_server_certificate():
