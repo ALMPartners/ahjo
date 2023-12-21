@@ -37,16 +37,12 @@ def create_conn_info(conf: dict) -> dict:
     token = None
     username = None
     password = None
-    azure_auth_lower = azure_auth.lower() if azure_auth is not None else None
-    driver_lower = driver.lower()
+    odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate", "no")
     odbc_encrypt = conf.get(
         "odbc_encrypt", 
-        "yes" if driver_lower == "odbc driver 18 for sql server" else "no"
+        "yes" if driver.lower() == "odbc driver 18 for sql server" else "no"
     )
-    odbc_trust_server_certificate = conf.get(
-        "odbc_trust_server_certificate", 
-        "yes" if driver_lower == "odbc driver 17 for sql server" else "no"
-    )
+    azure_auth_lower = azure_auth.lower() if azure_auth is not None else None
     
     if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
         username, password = get_credentials(
