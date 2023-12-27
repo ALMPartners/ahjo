@@ -43,7 +43,6 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     """
     azure_auth = conn_info.get('azure_auth')
     driver = conn_info.get('driver')
-    server = conn_info.get('server')
     username = conn_info.get('username')
     password = conn_info.get('password')
     dialect = conn_info.get('dialect')
@@ -51,54 +50,27 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     port = conn_info.get('port')
     odbc_encrypt = conn_info.get("odbc_encrypt")
     odbc_trust_server_certificate = conn_info.get("odbc_trust_server_certificate")
-
-    if use_master_db is True:
-        database = MASTER_DB.get(dialect)
-    else:
-        database = conn_info.get('database')
-    query = {}
-    # Add optional driver to query-dictionary
-    if driver is not None:
-        query['driver'] = driver
+    database = MASTER_DB.get(dialect) if use_master_db is True else conn_info.get('database')
+    odbc_connect = conn_info.get("odbc_connect")
     
-    # sqlalchemy does not have full url support for different Azure authentications
-    # ODBC connection string must be added to query
+    # Pass through exact pyodbc string
+    if odbc_connect is not None:
+        if use_master_db is True: # If use_master_db is True, replace database name with 'master'
+            odbc_connect = odbc_connect.replace(conn_info.get('database'), MASTER_DB.get(dialect))
+        return URL.create(dialect, query={"odbc_connect": odbc_connect})
+
+    query = {}
+    if driver is not None:
+        query["driver"] = driver
+    
+    # ODBC Driver specific connection parameters
+    if driver.lower() in ["odbc driver 17 for sql server", "odbc driver 18 for sql server"]:
+        query["TrustServerCertificate"] = odbc_trust_server_certificate
+        query["Encrypt"] = odbc_encrypt
+
     if azure_auth is not None:
-
-        odbc = ''
-        azure_auth_lower = azure_auth.lower()
-        
-        if azure_auth_lower == 'activedirectorypassword':
-            authentication = 'ActiveDirectoryPassword'
-            odbc = f"Pwd{{{password}}};"
-        elif azure_auth_lower == 'activedirectoryintegrated':
-            authentication = 'ActiveDirectoryIntegrated'
-        elif azure_auth_lower == 'activedirectoryinteractive':
-            authentication = 'ActiveDirectoryInteractive'
-        elif azure_auth_lower == 'azureidentity':
-            authentication = 'AzureIdentity'
-        else:
-            raise Exception(
-                "Unknown Azure authentication type! Check variable 'azure_authentication'.")
-
-        if azure_auth_lower != 'azureidentity':
-            query['odbc_connect'] = odbc + "Driver={{{driver}}};Server={server};Database={database};Uid={{{uid}}};Encrypt={odbc_encrypt};TrustServerCertificate={odbc_trust_server_certificate};Authentication={auth}".format(
-                driver = driver,
-                server = server,
-                database = database,
-                uid = username,
-                odbc_encrypt = odbc_encrypt,
-                odbc_trust_server_certificate = odbc_trust_server_certificate,
-                auth = authentication
-            )
-        else:
-            query['odbc_connect'] = "Driver={{{driver}}};Server={server};Database={database};Encrypt={odbc_encrypt};TrustServerCertificate={odbc_trust_server_certificate};".format(
-                driver = driver,
-                server = server,
-                database = database,
-                odbc_encrypt = odbc_encrypt,
-                odbc_trust_server_certificate = odbc_trust_server_certificate
-            )
+         # Azure Identity authentication
+        if azure_auth.lower() == "azureidentity":
             return URL.create(
                 drivername = dialect,
                 host = host,
@@ -106,10 +78,7 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
                 database = database,
                 query = query
             )
-
-    if driver.lower() in ["odbc driver 17 for sql server", "odbc driver 18 for sql server"]:
-        query["TrustServerCertificate"] = odbc_trust_server_certificate
-        query["Encrypt"] = odbc_encrypt
+        query["authentication"] = azure_auth
 
     return URL.create(
         drivername = dialect,
@@ -118,9 +87,8 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
         host = host,
         port = port,
         database = database,
-        query=query
+        query = query
     )
-    
 
 
 def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs) -> Engine:

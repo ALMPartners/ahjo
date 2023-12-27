@@ -56,8 +56,6 @@ def test_create_sqlalchemy_url_should_return_url_instance(conn_info):
 def test_create_sqlalchemy_url_should_return_url_for_given_db(conn_info):
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=False)
     assert url.database == conn_info['database']
-    if conn_info['azure_auth']:
-        assert f"Database={conn_info['database']}" in url.query['odbc_connect']
 
 
 def test_create_sqlalchemy_url_should_return_url_for_postgresql_postgres_db():
@@ -70,20 +68,16 @@ def test_create_sqlalchemy_url_should_return_url_for_mssql_master_db():
     conn_info = CONN_INFO[1]
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
     assert url.database == 'master'
-    assert 'Database=master' in url.query['odbc_connect']
 
 
 def test_create_sqlalchemy_url_should_enable_odbc_trust_server_certificate():
     conn_info = CONN_INFO[2]
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
-    odbc_conn_str = url.query["odbc_connect"]
-    indx = odbc_conn_str.find("TrustServerCertificate")
-    assert odbc_conn_str[indx : (indx) + 26] == "TrustServerCertificate=yes"
+    trust_cert = url.query["TrustServerCertificate"]
+    assert trust_cert == "yes"
 
 
 def test_create_sqlalchemy_url_should_disable_odbc_encrypt():
     conn_info = CONN_INFO[2]
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
-    odbc_conn_str = url.query["odbc_connect"]
-    indx = odbc_conn_str.find("Encrypt")
-    assert odbc_conn_str[indx : (indx) + 10] == "Encrypt=no"
+    assert url.query["Encrypt"] == "no"
