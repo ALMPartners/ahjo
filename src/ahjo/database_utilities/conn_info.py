@@ -45,13 +45,7 @@ def create_conn_info(conf: dict) -> dict:
     )
     azure_auth_lower = azure_auth.lower() if azure_auth is not None else None
     
-    if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
-        username, password = get_credentials(
-            usrn_file_path=username_file,
-            pw_file_path=password_file,
-            pw_prompt=None    # do not ask for password
-        )
-    elif azure_auth_lower == "azureidentity":
+    if azure_auth_lower == "azureidentity":
         azure = importlib.import_module('.identity', 'azure')
         struct = importlib.import_module("struct")
         azure_identity_settings = conf.get("azure_identity_settings")
@@ -63,10 +57,19 @@ def create_conn_info(conf: dict) -> dict:
         raw_token_len = len(raw_token)
         token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
     else:
-        username, password = get_credentials(
-            usrn_file_path = username_file,
-            pw_file_path = password_file
-        )
+        if odbc_connect is None:
+            if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
+                username, password = get_credentials(
+                    usrn_file_path=username_file,
+                    pw_file_path=password_file,
+                    pw_prompt=None    # do not ask for password
+                )
+            else:
+                username, password = get_credentials(
+                    usrn_file_path = username_file,
+                    pw_file_path = password_file
+                )
+
     return {
         'host': host,
         'port': port,
