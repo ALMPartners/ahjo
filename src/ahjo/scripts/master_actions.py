@@ -39,7 +39,7 @@ def init(context):
     else:
         master_engine = context.get_master_engine()
     try:
-        db_name = context.configuration.get('target_database_name')
+        db_name = context.get_conn_info().get('database')
         db_path = context.configuration.get('database_data_path')
         log_path = context.configuration.get('database_log_path')
         init_size = context.configuration.get('database_init_size', 100)
@@ -60,11 +60,11 @@ def init(context):
 @action(affects_database=True, dependencies=['init'])
 def create_db_login(context):
     """(MSSQL) Create login to the database."""
-    login_name = context.configuration.get('target_database_name') + '_LOGIN'
+    db_name = context.get_conn_info().get('database')
+    login_name = db_name + '_LOGIN'
     default_password = 'SALASANA'
-    default_db = context.configuration.get('target_database_name')
-    op.create_db_login(context.get_connectable(),
-                       login_name, default_password, default_db)
+    default_db = db_name
+    op.create_db_login(context.get_connectable(), login_name, default_password, default_db)
 
 
 @action(affects_database=True, dependencies=['init'])

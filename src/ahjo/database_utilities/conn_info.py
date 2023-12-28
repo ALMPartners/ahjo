@@ -6,8 +6,10 @@
 """Utily for extracting connection info from configuration json.
 """
 import importlib
+import re
 from typing import Union
 from ahjo.credential_handler import get_credentials
+from re import search
 
 
 def create_conn_info(conf: dict) -> dict:
@@ -41,10 +43,22 @@ def create_conn_info(conf: dict) -> dict:
     odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate", "no")
     odbc_encrypt = conf.get(
         "odbc_encrypt", 
-        "yes" if driver.lower() == "odbc driver 18 for sql server" else "no"
+        "yes" if isinstance(driver, str) and driver.lower() == "odbc driver 18 for sql server" else "no"
     )
     azure_auth_lower = azure_auth.lower() if azure_auth is not None else None
     
+    # Get driver, server, database, username and password from odbc_connect string
+    if odbc_connect is not None:
+        server = search(r"server=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
+        database = search(r"database=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
+        driver = search(r"driver=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
+        username = search(r"uid=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
+        password = search(r"pwd=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
+        # Get port from server string
+        port = search(r",(\d+)$", server, flags=re.IGNORECASE).group(1)
+        # Remove port from server string
+        host = server.replace(f",{port}", "")
+
     if azure_auth_lower == "azureidentity":
         azure = importlib.import_module('.identity', 'azure')
         struct = importlib.import_module("struct")

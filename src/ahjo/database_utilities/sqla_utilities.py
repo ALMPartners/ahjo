@@ -52,21 +52,23 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     odbc_trust_server_certificate = conn_info.get("odbc_trust_server_certificate")
     database = MASTER_DB.get(dialect) if use_master_db is True else conn_info.get('database')
     odbc_connect = conn_info.get("odbc_connect")
-    
+    query = {}
+
     # Pass through exact pyodbc string
     if odbc_connect is not None:
         if use_master_db is True: # If use_master_db is True, replace database name with 'master'
-            odbc_connect = odbc_connect.replace(conn_info.get('database'), MASTER_DB.get(dialect))
-        return URL.create(dialect, query={"odbc_connect": odbc_connect})
+            odbc_connect = sub(r"(?i)DATABASE=[^;]+", "DATABASE=master", odbc_connect)
+        query["odbc_connect"] = odbc_connect
+        return URL.create(dialect, query = query)
 
-    query = {}
-    if driver is not None:
+    if isinstance(driver, str):
+
         query["driver"] = driver
-    
-    # ODBC Driver specific connection parameters
-    if driver.lower() in ["odbc driver 17 for sql server", "odbc driver 18 for sql server"]:
-        query["TrustServerCertificate"] = odbc_trust_server_certificate
-        query["Encrypt"] = odbc_encrypt
+
+        # ODBC Driver specific connection parameters
+        if driver.lower().startswith("odbc driver"):
+            query["TrustServerCertificate"] = odbc_trust_server_certificate
+            query["Encrypt"] = odbc_encrypt
 
     if azure_auth is not None:
          # Azure Identity authentication

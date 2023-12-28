@@ -81,3 +81,13 @@ def test_create_sqlalchemy_url_should_disable_odbc_encrypt():
     conn_info = CONN_INFO[2]
     url = ahjo.create_sqlalchemy_url(conn_info, use_master_db=True)
     assert url.query["Encrypt"] == "no"
+
+
+def test_create_sqlalchemy_url_should_support_exact_odbc_connect_string():
+    conn_info = {
+        "dialect": "mssql+pyodbc",
+        "odbc_connect": "DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost,1433;DATABASE=DB_NAME;UID=sa;PWD=SALA_kala12;TrustServerCertificate=no;Encrypt=yes"
+    }
+    url = ahjo.create_sqlalchemy_url(conn_info)
+    assert url.drivername == "mssql+pyodbc"
+    assert url.render_as_string() == "mssql+pyodbc://?odbc_connect=DRIVER%3D%7BODBC+Driver+18+for+SQL+Server%7D%3BSERVER%3Dlocalhost%2C1433%3BDATABASE%3DDB_NAME%3BUID%3Dsa%3BPWD%3DSALA_kala12%3BTrustServerCertificate%3Dno%3BEncrypt%3Dyes"
