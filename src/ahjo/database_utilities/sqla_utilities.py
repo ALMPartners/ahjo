@@ -5,6 +5,7 @@
 
 """Utility functions for sqlalchemy
 """
+import importlib
 from ahjo.interface_methods import rearrange_params
 from logging import getLogger
 from os import path
@@ -20,6 +21,8 @@ from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 from sqlalchemy import event
 from sqlalchemy.orm import Session
+
+pyodbc = importlib.import_module("pyodbc") if importlib.util.find_spec("pyodbc") is not None else None
 
 logger = getLogger('ahjo')
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
@@ -107,6 +110,9 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
         SQL Alchemy engine.
     """
     if sqlalchemy_url.get_dialect().name == "mssql" and sqlalchemy_url.get_driver_name() == "pyodbc":
+        if pyodbc is None: raise Exception("pyodbc is not installed.")
+        # Disable pyodbc pooling (https://docs.sqlalchemy.org/en/20/dialects/mssql.html#pyodbc-pooling-connection-close-behavior)
+        pyodbc.pooling = False
         engine = create_engine(
             sqlalchemy_url, 
             use_insertmanyvalues=False, 
