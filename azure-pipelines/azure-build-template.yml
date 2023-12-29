@@ -1,0 +1,34 @@
+parameters:
+- name: pythonVersion
+  type: string
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '${{parameters.pythonVersion}}'
+    displayName: 'Use Python ${{parameters.pythonVersion}}'     
+  - bash: |
+      set -ex
+      python -m venv venv_msi_build
+      source .venv/scripts/activate
+      python -m pip install --upgrade pip
+      pip install artifacts-keyring --no-input
+      set ARTIFACTS_KEYRING_NONINTERACTIVE_MODE=true
+      pip config set global.index-url $(AhjoArtifactsIndexURL) 
+      pip install cx_freeze wxpython
+      pip install -r ./msi_build_requirements.txt
+      python ./msi_build.py bdist_msi
+    displayName: "Build release artefacts"
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: 'custom'
+      custom: 'tool'
+      arguments: 'install --global azuresigntool'
+    displayName: Install AzureSignTool
+  - bash: |
+      AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc cert-ALMP-CS -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/lib/*/*.msi
+    displayName: Sign all msi-files in artefacts-directory
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: 'dist'
+    displayName: Publish msi-file as a pipeline artifact

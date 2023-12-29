@@ -1,19 +1,25 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
+# Only trigger pipeline when a merge happens to master branch
 trigger:
-- master
+  branches:
+    include:
+      - master
 
-pool:
-  vmImage: ubuntu-latest
+# Do not trigger on any pull requests
+pr: none
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+# Fetch variables from Azure DevOps variable-group via a YAML-file
+variables:
+  - template: azure-pipelines/azure-variables-template.yml
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+# List of jobs for the pipeline to execute
+jobs:
+  - job: Build # System name for job
+    displayName: Build artefacts # Display name for job
+    pool: # Which DevOps Agent the job uses, for msi-builds windows OS is required. If access to ALMP Azure resources is needed, the pool must be self-hosted
+      name: Azure Pipelines # Pool name
+      vmImage: 'windows-latest' # virtual machine image/OS
+    timeoutInMinutes: 30 # Timeout
+    steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
+    - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
+      parameters: # Parameters the job needs
+        pythonVersion: "3.11" 
