@@ -389,7 +389,7 @@ BACKEND:
 | git_version_info_path | No | Path to git version info file. Retrieve git commit information from this file if git repository is not available. JSON file format: {"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"} | str | |
 | windows_event_log | No | Log Ahjo events to Windows Event Log. | boolean | false |
 | ahjo_action_files | No | Defines the location and name of project-specific Ahjo actions files. | list of dict | |
-| odbc_connect | No | ODBC connection string. Create connection with exact pyodbc connection string. If this is defined, other connection parameters are ignored. | str | |
+| sqlalchemy.url | No | ODBC connection string. Create connection with exact pyodbc connection string. If this is defined, other connection parameters are ignored. | str | |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 

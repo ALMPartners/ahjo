@@ -36,7 +36,7 @@ def create_conn_info(conf: dict) -> dict:
     azure_auth = conf.get('azure_authentication')
     username_file = conf.get("username_file")
     password_file = conf.get("password_file")
-    odbc_connect = conf.get("odbc_connect")
+    sqlalchemy_url = conf.get("sqlalchemy.url")
     token = None
     username = None
     password = None
@@ -47,13 +47,13 @@ def create_conn_info(conf: dict) -> dict:
     )
     azure_auth_lower = azure_auth.lower() if azure_auth is not None else None
     
-    # Get driver, server, database, username and password from odbc_connect string
-    if odbc_connect is not None:
-        server = search(r"server=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
-        database = search(r"database=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
-        driver = search(r"driver=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
-        username = search(r"uid=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
-        password = search(r"pwd=(.*?);", odbc_connect, flags=re.IGNORECASE).group(1)
+    # Get driver, server, database, username and password from sqlalchemy_url string
+    if sqlalchemy_url is not None:
+        server = search(r"server=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
+        database = search(r"database=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
+        driver = search(r"driver=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
+        username = search(r"uid=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
+        password = search(r"pwd=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
         # Get port from server string
         port = search(r",(\d+)$", server, flags=re.IGNORECASE).group(1)
         # Remove port from server string
@@ -71,7 +71,7 @@ def create_conn_info(conf: dict) -> dict:
         raw_token_len = len(raw_token)
         token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
     else:
-        if odbc_connect is None:
+        if sqlalchemy_url is None:
             if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
                 username, password = get_credentials(
                     usrn_file_path=username_file,
@@ -97,7 +97,7 @@ def create_conn_info(conf: dict) -> dict:
         'token': token,
         'odbc_trust_server_certificate': odbc_trust_server_certificate,
         'odbc_encrypt': odbc_encrypt,
-        'odbc_connect': odbc_connect
+        'odbc_connect': sqlalchemy_url
     }
 
 
