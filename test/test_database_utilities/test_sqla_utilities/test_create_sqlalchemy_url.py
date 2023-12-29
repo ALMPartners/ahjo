@@ -13,8 +13,10 @@ CONN_INFO = [
         'username': 'postgres',
         'password': 'moimoi',
         'azure_auth': None,
-        'odbc_trust_server_certificate': 'yes',
-        'odbc_encrypt': 'no'
+        'sqla_url_query_map': {
+            'TrustServerCertificate': 'yes',
+            'Encrypt': 'no'
+        }
     },
     {
         'host': 'localhost',
@@ -26,8 +28,10 @@ CONN_INFO = [
         'username': 'sa',
         'password': 'SALA_kala12',
         'azure_auth': 'ActiveDirectoryPassword',
-        'odbc_trust_server_certificate': 'yes',
-        'odbc_encrypt': 'no'
+        'sqla_url_query_map': {
+            'TrustServerCertificate': 'yes',
+            'Encrypt': 'no'
+        }
     },
     {
         'host': 'localhost',
@@ -39,8 +43,10 @@ CONN_INFO = [
         'username': 'sa',
         'password': 'SALA_kala12',
         'azure_auth': 'ActiveDirectoryPassword',
-        'odbc_trust_server_certificate': 'yes',
-        'odbc_encrypt': 'no'
+        'sqla_url_query_map': {
+            'TrustServerCertificate': 'yes',
+            'Encrypt': 'no'
+        }
     }
 ]
 

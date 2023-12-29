@@ -14,7 +14,9 @@
         ,"alembic_version_table": "alembic_version"
         ,"alembic_version_table_schema": "dbo"
         ,"metadata_allowed_schemas": ["store", "report"]
-        ,"odbc_trust_server_certificate": "yes"
-        ,"odbc_encrypt": "yes"
+        ,"sqla_url_query_map": {
+            "Encrypt": "yes",
+            "TrustServerCertificate": "yes"
+        }
     }
 }

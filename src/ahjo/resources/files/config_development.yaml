@@ -46,9 +46,6 @@ BACKEND:
   #db_permissions: []
   ## Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy".
   #db_permission_invoke_method: sqlcmd
-  ## ODBC connection string settings
-  #odbc_encrypt: 'yes'
-  #odbc_trust_server_certificate: 'no'
   ## List of actions that are skipped
   #skipped_actions: []
   ## Configuration file for upgrade actions

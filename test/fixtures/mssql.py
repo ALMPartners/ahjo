@@ -34,8 +34,8 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
     query["driver"] = driver
 
     if driver.lower() == "odbc driver 18 for sql server":
-        query["TrustServerCertificate"] = config['odbc_trust_server_certificate']
-        query["Encrypt"] = config['odbc_encrypt']
+        query["TrustServerCertificate"] = config["sqla_url_query_map"]["TrustServerCertificate"]
+        query["Encrypt"] = config["sqla_url_query_map"]["Encrypt"]
 
     connection_url = URL.create(
         drivername="mssql+pyodbc",
@@ -59,8 +59,8 @@ def mssql_engine(request, ahjo_config, mssql_sample):
     query["driver"] = driver
 
     if driver.lower() == "odbc driver 18 for sql server":
-        query["TrustServerCertificate"] = config['odbc_trust_server_certificate']
-        query["Encrypt"] = config['odbc_encrypt']
+        query["TrustServerCertificate"] = config["sqla_url_query_map"]["TrustServerCertificate"]
+        query["Encrypt"] = config["sqla_url_query_map"]["Encrypt"]
 
     connection_url = URL.create(
         drivername="mssql+pyodbc",

@@ -390,6 +390,7 @@ BACKEND:
 | windows_event_log | No | Log Ahjo events to Windows Event Log. | boolean | false |
 | ahjo_action_files | No | Defines the location and name of project-specific Ahjo actions files. | list of dict | |
 | sqlalchemy.url | No | SQLAlchemy database URL. If defined, overrides the values of dialect, sql_port, sql_driver, target_server_hostname and target_database_name. | str | |
+| sqla_url_query_map | No | A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query). Example: {"TrustServerCertificate" : "yes", "Encrypt": "yes"} | dict | {} |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 

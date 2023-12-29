@@ -48,10 +48,9 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     dialect = conn_info.get('dialect')
     host = conn_info.get('host')
     port = conn_info.get('port')
-    odbc_encrypt = conn_info.get("odbc_encrypt")
-    odbc_trust_server_certificate = conn_info.get("odbc_trust_server_certificate")
     database = MASTER_DB.get(dialect) if use_master_db is True else conn_info.get('database')
     sqlalchemy_url = conn_info.get("sqlalchemy_url")
+    sqla_url_query_map = conn_info.get("sqla_url_query_map")
     query = {}
 
     if sqlalchemy_url is not None:
@@ -61,13 +60,7 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
         return sqlalchemy_url_obj
 
     if isinstance(driver, str):
-
         query["driver"] = driver
-
-        # ODBC Driver specific connection parameters
-        if driver.lower().startswith("odbc driver"):
-            query["TrustServerCertificate"] = odbc_trust_server_certificate
-            query["Encrypt"] = odbc_encrypt
 
     if azure_auth is not None:
          # Azure Identity authentication
@@ -80,6 +73,10 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
                 query = query
             )
         query["authentication"] = azure_auth
+
+    # Bring connection attributes from sqla_url_query_map
+    if bool(sqla_url_query_map): 
+        query.update(sqla_url_query_map)
 
     return URL.create(
         drivername = dialect,

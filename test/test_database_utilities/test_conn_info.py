@@ -34,8 +34,8 @@ def test_create_conn_info_should_return_dict_with_keys(read_config):
     assert 'password' in conn_info
     assert 'azure_auth' in conn_info
     assert 'token' in conn_info
-    assert 'odbc_trust_server_certificate' in conn_info
-    assert 'odbc_encrypt' in conn_info
+    assert 'odbc_connect' in conn_info
+    assert 'sqla_url_query_map' in conn_info
 
 
 def test_conn_info_should_partially_match_config(read_config):
@@ -76,3 +76,9 @@ def test_conn_info_should_store_credentials(read_config):
         pw = pw + ('=' * (4 - extra))
     assert conn_info['username'] == username.split('=')[1]
     assert conn_info['password'] == b64decode(pw.encode()).decode()
+
+
+def test_conn_info_should_set_longasmax_to_yes_for_odbc_driver_18(read_config):
+    read_config['sql_driver'] = 'ODBC Driver 18 for SQL Server'
+    conn_info = ahjo.create_conn_info(read_config)
+    assert conn_info['sqla_url_query_map']['LongAsMax'] == 'Yes'

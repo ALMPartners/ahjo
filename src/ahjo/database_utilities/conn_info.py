@@ -6,10 +6,12 @@
 """Utily for extracting connection info from configuration json.
 """
 import importlib
+from logging import getLogger
 from typing import Union
 from ahjo.credential_handler import get_credentials
 from sqlalchemy.engine import make_url
 
+logger = getLogger('ahjo')
 
 def create_conn_info(conf: dict) -> dict:
     """Create a dictionary holding all important items for creating a connection to database.
@@ -36,17 +38,38 @@ def create_conn_info(conf: dict) -> dict:
     username_file = conf.get("username_file")
     password_file = conf.get("password_file")
     sqlalchemy_url = conf.get("sqlalchemy.url")
+    sqla_url_query_map = conf.get("sqla_url_query_map", {})
     token = None
     username = None
     password = None
-    odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate", "no")
-    odbc_encrypt = conf.get(
-        "odbc_encrypt", 
-        "yes" if isinstance(driver, str) and driver.lower() == "odbc driver 18 for sql server" else "no"
-    )
+    odbc_trust_server_certificate = conf.get("odbc_trust_server_certificate") # deprecated
+    odbc_encrypt = conf.get("odbc_encrypt") # deprecated
     azure_auth_lower = azure_auth.lower() if azure_auth is not None else None
     
-    # Get driver, server, database, username and password from sqlalchemy_url string
+    if odbc_trust_server_certificate is not None:
+        logger.debug(
+            "The config key 'odbc_trust_server_certificate' is deprecated. Set odbc connection parameters with 'sqla_url_query_map' or 'odbc_connect' instead."
+        )
+        sqla_url_query_map["TrustServerCertificate"] = odbc_trust_server_certificate
+    
+    if odbc_encrypt is not None:
+        logger.debug(
+            "The config key 'odbc_encrypt' is deprecated. Set odbc connection parameters with 'sqla_url_query_map' or 'odbc_connect instead'."
+        )
+        sqla_url_query_map["Encrypt"] = odbc_encrypt
+
+    # Driver specific settings
+    if isinstance(driver, str):
+        driver_lower = driver.lower()
+        if driver_lower.startswith("odbc driver"): # ODBC specific default connection parameters
+
+            if "Encrypt" not in sqla_url_query_map:
+                sqla_url_query_map["Encrypt"] = "yes" if driver_lower == "odbc driver 18 for sql server" else "no"
+
+            if driver_lower == "odbc driver 18 for sql server":
+                sqla_url_query_map["LongAsMax"] = "Yes"
+            
+    # Get driver, server, database, username and password from odbc_connect string
     if sqlalchemy_url is not None:
         sqlalchemy_url_obj = make_url(sqlalchemy_url)
         dialect = sqlalchemy_url_obj.drivername
@@ -96,7 +119,8 @@ def create_conn_info(conf: dict) -> dict:
         'token': token,
         'odbc_trust_server_certificate': odbc_trust_server_certificate,
         'odbc_encrypt': odbc_encrypt,
-        'sqlalchemy_url': sqlalchemy_url
+        'sqlalchemy_url': sqlalchemy_url,
+        'sqla_url_query_map': sqla_url_query_map
     }
 
 
