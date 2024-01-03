@@ -10,7 +10,7 @@ steps:
   - bash: |
       set -ex
       python -m venv venv_msi_build
-      source .venv/scripts/activate
+      source venv_msi_build/scripts/activate
       python -m pip install --upgrade pip
       pip install artifacts-keyring --no-input
       set ARTIFACTS_KEYRING_NONINTERACTIVE_MODE=true
