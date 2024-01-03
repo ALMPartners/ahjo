@@ -45,9 +45,10 @@
         //,"db_permissions": []
         // Invoke method for setting up database permissions. Available options: "sqlcmd" or "sqlalchemy" (default).
         //,"db_permission_invoke_method": "sqlalchemy"
-        // ODBC connection string settings
-        //,"odbc_trust_server_certificate": "no"
-        //,"odbc_encrypt": "yes"
+        // A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query).
+        //,"sqla_url_query_map": {"TrustServerCertificate": "no", "Encrypt": "yes"}
+        // SQLAlchemy database URL. If defined, overrides the values of dialect, sql_port, sql_driver, target_server_hostname and target_database_name.
+        //,"sqlalchemy.url": "mssql+pyodbc://user:password@localhost:14330/DB_NAME?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=no&TrustServerCertificate=yes"
         // List of actions that are skipped
         //,"skipped_actions": []
         // Configuration file for upgrade actions

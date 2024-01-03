@@ -61,3 +61,9 @@ BACKEND:
   ## Path to git version info file. Retrieve git commit information from this file if git repository is not available.
   ## JSON file format: {"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"}
   #git_version_info_path: git_version.json
+  ## A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query).
+  #sqla_url_query_map:
+  #  TrustServerCertificate: no
+  #  Encrypt: yes
+  ## SQLAlchemy database URL. If defined, overrides the values of dialect, sql_port, sql_driver, target_server_hostname and target_database_name.
+  #sqlalchemy.url: mssql+pyodbc://user:password@localhost:14330/DB_NAME?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=no&TrustServerCertificate=yes
