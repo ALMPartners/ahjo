@@ -34,7 +34,7 @@ def test_create_conn_info_should_return_dict_with_keys(read_config):
     assert 'password' in conn_info
     assert 'azure_auth' in conn_info
     assert 'token' in conn_info
-    assert 'odbc_connect' in conn_info
+    assert 'sqlalchemy_url' in conn_info
     assert 'sqla_url_query_map' in conn_info
 
 
