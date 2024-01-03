@@ -1,4 +1,4 @@
-cx-Freeze==6.15.10
+cx-Freeze==6.15.11
 # Don't use editable installs here!
  # see setup.cfg for other available options
 .[mssql, azure]
