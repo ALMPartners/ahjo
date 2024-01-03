@@ -43,8 +43,8 @@
         //,"metadata_allowed_schemas": []
         // File locations & scripting variables for setting up database permissions from sql file(s).
         //,"db_permissions": []
-        // Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy".
-        //,"db_permission_invoke_method": "sqlcmd"
+        // Invoke method for setting up database permissions. Available options: "sqlcmd" or "sqlalchemy" (default).
+        //,"db_permission_invoke_method": "sqlalchemy"
         // ODBC connection string settings
         //,"odbc_trust_server_certificate": "no"
         //,"odbc_encrypt": "yes"

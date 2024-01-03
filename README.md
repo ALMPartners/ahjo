@@ -378,7 +378,7 @@ BACKEND:
 | url_of_remote_git_repository | No | URL of project's remote repository. | str | |
 | username_file | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
 | db_permissions | No | List of dictionaries containing file locations & scripting variables for setting up database permissions from sql file(s). Dictionary holds keys: "source" (str) and "variables" (dict). | list of dict | |
-| db_permission_invoke_method | No | Invoke method for setting up database permissions. Available options: "sqlcmd" (default) or "sqlalchemy". | str | |
+| db_permission_invoke_method | No | Invoke method for setting up database permissions. Available options: "sqlcmd" or "sqlalchemy" (default). | str | "sqlalchemy" |
 | odbc_trust_server_certificate | No | Value of TrustServerCertificate in ODBC connection string. | str | "no" |
 | odbc_encrypt | No | Value of Encrypt in ODBC connection string. | str | "yes" |
 | upgrade_actions_file | No | Configuration file for upgrade actions. | str | "./upgrade_actions.jsonc" |
@@ -389,7 +389,7 @@ BACKEND:
 | git_version_info_path | No | Path to git version info file. Retrieve git commit information from this file if git repository is not available. JSON file format: {"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"} | str | |
 | windows_event_log | No | Log Ahjo events to Windows Event Log. | boolean | false |
 | ahjo_action_files | No | Defines the location and name of project-specific Ahjo actions files. | list of dict | |
-| sqlalchemy.url | No | ODBC connection string. Create connection with exact pyodbc connection string. If this is defined, other connection parameters are ignored. | str | |
+| sqlalchemy.url | No | SQLAlchemy database URL. If defined, overrides the values of dialect, sql_port, sql_driver, target_server_hostname and target_database_name. | str | |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 

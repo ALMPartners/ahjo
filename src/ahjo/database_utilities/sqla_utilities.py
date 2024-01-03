@@ -15,7 +15,7 @@ from traceback import format_exc
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
                        restOfLine, CaselessKeyword, Word, nums)
 from sqlalchemy import create_engine, inspect
-from sqlalchemy.engine import Engine, Connection
+from sqlalchemy.engine import Engine, Connection, make_url
 from sqlalchemy.engine.url import URL
 from sqlalchemy.sql import text
 from sqlalchemy import event
@@ -51,15 +51,14 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     odbc_encrypt = conn_info.get("odbc_encrypt")
     odbc_trust_server_certificate = conn_info.get("odbc_trust_server_certificate")
     database = MASTER_DB.get(dialect) if use_master_db is True else conn_info.get('database')
-    odbc_connect = conn_info.get("odbc_connect")
+    sqlalchemy_url = conn_info.get("sqlalchemy_url")
     query = {}
 
-    # Pass through exact pyodbc string
-    if odbc_connect is not None:
-        if use_master_db is True: # If use_master_db is True, replace database name with 'master'
-            odbc_connect = sub(r"(?i)DATABASE=[^;]+", "DATABASE=master", odbc_connect)
-        query["odbc_connect"] = odbc_connect
-        return URL.create(dialect, query = query)
+    if sqlalchemy_url is not None:
+        sqlalchemy_url_obj = make_url(sqlalchemy_url)
+        if use_master_db is True:
+            sqlalchemy_url_obj = sqlalchemy_url_obj.set(database = database)
+        return sqlalchemy_url_obj
 
     if isinstance(driver, str):
 

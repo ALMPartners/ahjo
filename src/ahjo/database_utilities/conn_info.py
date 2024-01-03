@@ -6,10 +6,9 @@
 """Utily for extracting connection info from configuration json.
 """
 import importlib
-import re
 from typing import Union
 from ahjo.credential_handler import get_credentials
-from re import search
+from sqlalchemy.engine import make_url
 
 
 def create_conn_info(conf: dict) -> dict:
@@ -49,15 +48,15 @@ def create_conn_info(conf: dict) -> dict:
     
     # Get driver, server, database, username and password from sqlalchemy_url string
     if sqlalchemy_url is not None:
-        server = search(r"server=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
-        database = search(r"database=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
-        driver = search(r"driver=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
-        username = search(r"uid=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
-        password = search(r"pwd=(.*?);", sqlalchemy_url, flags=re.IGNORECASE).group(1)
-        # Get port from server string
-        port = search(r",(\d+)$", server, flags=re.IGNORECASE).group(1)
-        # Remove port from server string
-        host = server.replace(f",{port}", "")
+        sqlalchemy_url_obj = make_url(sqlalchemy_url)
+        dialect = sqlalchemy_url_obj.drivername
+        server = sqlalchemy_url_obj.host
+        database = sqlalchemy_url_obj.database
+        driver = sqlalchemy_url_obj.query.get("driver")
+        username = sqlalchemy_url_obj.username
+        password = sqlalchemy_url_obj.password
+        port = sqlalchemy_url_obj.port
+        host = server.split(",")[0]
 
     if azure_auth_lower == "azureidentity":
         azure = importlib.import_module('.identity', 'azure')
@@ -97,7 +96,7 @@ def create_conn_info(conf: dict) -> dict:
         'token': token,
         'odbc_trust_server_certificate': odbc_trust_server_certificate,
         'odbc_encrypt': odbc_encrypt,
-        'odbc_connect': sqlalchemy_url
+        'sqlalchemy_url': sqlalchemy_url
     }
 
 
