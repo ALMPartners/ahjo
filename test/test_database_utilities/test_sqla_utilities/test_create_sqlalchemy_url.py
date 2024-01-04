@@ -89,7 +89,7 @@ def test_create_sqlalchemy_url_should_disable_odbc_encrypt():
     assert url.query["Encrypt"] == "no"
 
 
-def test_create_sqlalchemy_url_should_support_exact_odbc_connect_string():
+def test_create_sqlalchemy_url_should_support_sqla_url():
     conn_info = {
         "sqlalchemy_url": "mssql+pyodbc://sa:SALA_kala12@localhost:14330/CRDM?driver=ODBC+Driver+17+for+SQL+Server&Encrypt=no&TrustServerCertificate=yes"
     }

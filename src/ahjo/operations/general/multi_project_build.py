@@ -50,7 +50,8 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
             conn_info, 
             use_master_db=True
         ), 
-        token = conn_info.get("token")
+        token = conn_info.get("token"),
+        **conn_info.get("sqla_engine_params")
     )
 
     for ahjo_project in ahjo_projects:

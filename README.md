@@ -390,6 +390,7 @@ BACKEND:
 | windows_event_log | No | Log Ahjo events to Windows Event Log. | boolean | false |
 | ahjo_action_files | No | Defines the location and name of project-specific Ahjo actions files. | list of dict | |
 | sqlalchemy.url | No | SQLAlchemy database URL. If defined, overrides the values of dialect, sql_port, sql_driver, target_server_hostname and target_database_name. | str | |
+| sqlalchemy.* | No | Items under sqlalchemy.* are passed as parameters to SQLAlchemy's [create_engine](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine) function. For example sqlalchemy.pool_size: 10 is passed as pool_size=10 to create_engine function. | dict | |
 | sqla_url_query_map | No | A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query). Example: {"TrustServerCertificate" : "yes", "Encrypt": "yes"} | dict | {} |
 
 ## Config conversion

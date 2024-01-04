@@ -39,6 +39,7 @@ def create_conn_info(conf: dict) -> dict:
     password_file = conf.get("password_file")
     sqlalchemy_url = conf.get("sqlalchemy.url")
     sqla_url_query_map = conf.get("sqla_url_query_map", {})
+    sqla_engine_params = {}
     token = None
     username = None
     password = None
@@ -58,18 +59,7 @@ def create_conn_info(conf: dict) -> dict:
         )
         sqla_url_query_map["Encrypt"] = odbc_encrypt
 
-    # Driver specific settings
-    if isinstance(driver, str):
-        driver_lower = driver.lower()
-        if driver_lower.startswith("odbc driver"): # ODBC specific default connection parameters
-
-            if "Encrypt" not in sqla_url_query_map:
-                sqla_url_query_map["Encrypt"] = "yes" if driver_lower == "odbc driver 18 for sql server" else "no"
-
-            if driver_lower == "odbc driver 18 for sql server":
-                sqla_url_query_map["LongAsMax"] = "Yes"
-            
-    # Get driver, server, database, username and password from odbc_connect string
+    # Get driver, server, database, username and password from sqlalchemy url     
     if sqlalchemy_url is not None:
         sqlalchemy_url_obj = make_url(sqlalchemy_url)
         dialect = sqlalchemy_url_obj.drivername
@@ -80,6 +70,28 @@ def create_conn_info(conf: dict) -> dict:
         password = sqlalchemy_url_obj.password
         port = sqlalchemy_url_obj.port
         host = server.split(",")[0]
+
+    # Driver specific default settings
+    if isinstance(driver, str):
+        driver_lower = driver.lower()
+        if driver_lower.startswith("odbc driver"): # ODBC specific default connection parameters
+
+            if "Encrypt" not in sqla_url_query_map:
+                sqla_url_query_map["Encrypt"] = "yes" if driver_lower == "odbc driver 18 for sql server" else "no"
+
+            if driver_lower == "odbc driver 18 for sql server":
+                sqla_url_query_map["LongAsMax"] = "Yes"
+
+    # Dialect specific default settings
+    if dialect == "mssql+pyodbc":
+        sqla_engine_params["use_insertmanyvalues"] = False
+        sqla_engine_params["use_setinputsizes"] = False
+
+    # Parameters for sqlalchemy engine
+    for key, value in conf.items():
+        if key == "sqlalchemy.url": continue
+        if key.startswith("sqlalchemy."):
+            sqla_engine_params[key[11:]] = value
 
     if azure_auth_lower == "azureidentity":
         azure = importlib.import_module('.identity', 'azure')
@@ -120,7 +132,8 @@ def create_conn_info(conf: dict) -> dict:
         'odbc_trust_server_certificate': odbc_trust_server_certificate,
         'odbc_encrypt': odbc_encrypt,
         'sqlalchemy_url': sqlalchemy_url,
-        'sqla_url_query_map': sqla_url_query_map
+        'sqla_url_query_map': sqla_url_query_map,
+        'sqla_engine_params': sqla_engine_params
     }
 
 
