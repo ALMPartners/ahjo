@@ -153,6 +153,7 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
     """
     with OperationManager(message):
    
+        error_msg = None
         connectable_type = type(connectable)
         check_connectable_type(connectable, "drop_sqlfile_objects")
 
