@@ -32,7 +32,7 @@ include_files = ["src/ahjo/resources"]
 build_exe_options = {
     "packages": ["ahjo"],
     "excludes": ["tkinter", "pip", "setuptools"],
-    "includes": ["distutils.version", "pyodbc"],
+    "includes": ["distutils.version", "pyodbc", "azure.identity"],
     "include_msvcr": True,  # Include the Microsoft Visual C runtime files without needing the redistributable package installed
     "include_files": include_files
 }
