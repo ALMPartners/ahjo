@@ -483,25 +483,9 @@ Below is an example of upgrade actions file:
 
 ```json
 {
-	"v3.0.0": [
-		"deploy",
-        "data"
-	],
-    "v3.1.0": [ 
-		"deploy",
-		[
-			"deploy-files",
-			{
-				"files": [
-					"./database/procedures/dbo.procedure_1.sql", 
-					"./database/procedures/dbo.procedure_2.sql"
-				]
-			}
-		]
-	],
-	"v3.1.1": [
-        "deploy"
-	]
+	"v3.0.0": ["deploy", "data"],
+	"v3.1.0": ["deploy", ["deploy-files", {"files": ["./database/procedures/dbo.procedure_1.sql", "./database/procedures/dbo.procedure_2.sql"]}]],
+	"v3.1.1": ["deploy"]
 }
 ```
 
