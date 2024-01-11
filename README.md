@@ -353,43 +353,43 @@ BACKEND:
 ## Config file cheat sheet
 | Parameter  | Required | Description | Type | Default Value |
 | --- | --- | --- | --- | --- |
-| alembic_version_table | No | Name of Alembic version table. Table holds the current revision number. | str | `"alembic_version"` |
-| alembic_version_table_schema | No | Schema of Alembic version table. | str | `"dbo"` |
-| allowed_actions | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use "ALL". | str or list of str | |
-| skipped_actions | No | List of actions that are skipped. | list of str | [] |
-| azure_authentication | No | Authentication type to Azure AD. Possible values are `"ActiveDirectoryPassword"`, `"ActiveDirectoryInteractive"`, `"ActiveDirectoryIntegrated"` and `"AzureIdentity"`. | str | |
-| azure_identity_settings | No | A dictionary containing parameters for azure-identity library (used only if azure_authentication is "AzureIdentity"). Dictionary holds a key: `"token_url"` (str). Note: currently ahjo supports only AzureCliCredential authentication method. | dict | |
-| database_collation | No | Collation of database. If the defined collation is different from the database collation, a warning is logged. | str | `"Latin1_General_CS_AS"` |
-| database_compatibility_level | No | Compatibility level of database. | int | Depends on server. SQL Server 2017 default is 140. |
-| database_data_path | No | Path of database data file. | str | |
-| database_file_growth | No | The size (MB) of how much database data file will grow when it runs out of space. | int | `500` |
-| database_init_size | No | Initial size (MB) of database data file. | int | `100` |
-| database_log_path | No | Path of database log file. | str | |
-| database_max_size | No | Maximum size (MB) of database data file. | int | `10000` |
-| git_table | No | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | str | `"git_version"` |
-| git_table_schema | No | Schema of git hash table. | str | `"dbo"` |
-| metadata_allowed_schemas | No | List of schemas that extended properties will be written to JSON files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
-| password_file | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
-| sql_dialect | No | Dialect used by SQL Alchemy. | str | `"mssql+pyodbc"` |
-| sql_driver | No | Name of ODBC driver. | str | |
-| sql_port | Yes | Port number of target database server. | int | |
-| target_database_name | Yes | Name of target database. | str | |
-| target_server_hostname | Yes | Host name of target database server. | str | |
-| url_of_remote_git_repository | No | URL of project's remote repository. | str | |
-| username_file | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | str | |
-| db_permissions | No | List of dictionaries containing file locations & scripting variables for setting up database permissions from sql file(s). Dictionary holds keys: "source" (str) and "variables" (dict). | list of dict | |
-| db_permission_invoke_method | No | Invoke method for setting up database permissions. Available options: "sqlcmd" or "sqlalchemy" (default). | str | `"sqlalchemy"` |
-| upgrade_actions_file | No | Configuration file for upgrade actions. | str | `"./upgrade_actions.jsonc"` |
-| catalog_collation_type_desc | No | Catalog collation setting of database. If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database | str | `"DATABASE_DEFAULT"` |
-| display_db_info | No | Print database collation information to console before running actions. | boolean | `true` |
-| context_connectable_type | No | Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection". | str | `"engine"` |
-| transaction_mode | No | Transaction management style for ahjo actions. Applied only if context_connectable_type is `"connection"`. Possible values are `"begin_once"` and `"commit_as_you_go"`. If `"begin_once"`, a transaction is started before running actions and committed after all actions are run. If `"commit_as_you_go"`, a transaction is started before running actions but not committed automatically. | str | `"begin_once"` |
-| git_version_info_path | No | Path to git version info file. Retrieve git commit information from this file if git repository is not available. JSON file format: `{"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"}` | str | |
-| windows_event_log | No | Log Ahjo events to Windows Event Log. | boolean | `false` |
-| ahjo_action_files | No | Defines the location and name of project-specific Ahjo actions files. | list of dict | |
-| sqlalchemy.url | No | SQLAlchemy database URL. If defined, overrides the values of `dialect`, `sql_port`, `sql_driver`, `target_server_hostname` and `target_database_name`. | str | |
-| sqlalchemy.* | No | Items under sqlalchemy.* are passed as parameters to SQLAlchemy's [create_engine](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine) function. For example sqlalchemy.pool_size: 10 is passed as pool_size=10 to create_engine function. | dict | |
-| sqla_url_query_map | No | A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query). | dict | If ODBC Driver 18: `{"Encrypt" : "yes", "LongAsMax": "Yes"}`. If ODBC Driver 17 or older: `{"Encrypt" : "no"}`. Else: `{}` |
+| `alembic_version_table` | No | Name of Alembic version table. Table holds the current revision number. | `str` | `"alembic_version"` |
+| `alembic_version_table_schema` | No | Schema of Alembic version table. | `str` | `"dbo"` |
+| `allowed_actions` | Yes | List of actions Ahjo is allowed to execute. If all actions are allowed, use `"ALL"`. | `str` or `list` of `str` | |
+| `skipped_actions` | No | List of actions that are skipped. | `list` of `str` | [] |
+| `azure_authentication` | No | Authentication type to Azure AD. Possible values are `"ActiveDirectoryPassword"`, `"ActiveDirectoryInteractive"`, `"ActiveDirectoryIntegrated"` and `"AzureIdentity"`. | `str` | |
+| `azure_identity_settings` | No | A dictionary containing parameters for azure-identity library (used only if azure_authentication is "AzureIdentity"). Dictionary holds a key: `"token_url"` (str). Note: currently ahjo supports only AzureCliCredential authentication method. | `dict` | |
+| `database_collation` | No | Collation of database. If the defined collation is different from the database collation, a warning is logged. | `str` | `"Latin1_General_CS_AS"` |
+| `database_compatibility_level` | No | Compatibility level of database. | `int` | Depends on server. SQL Server 2017 default is `140`. |
+| `database_data_path` | No | Path of database data file. | `str` | |
+| `database_file_growth` | No | The size (MB) of how much database data file will grow when it runs out of space. | `int` | `500` |
+| `database_init_size` | No | Initial size (MB) of database data file. | `int` | `100` |
+| `database_log_path` | No | Path of database log file. | `str` | |
+| `database_max_size` | No | Maximum size (MB) of database data file. | `int` | `10000` |
+| `git_table` | No | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | `str` | `"git_version"` |
+| `git_table_schema` | No | Schema of git hash table. | `str` | `"dbo"` |
+| `metadata_allowed_schemas` | No | List of schemas that extended properties will be written to JSON files and updated to database. If list left empty, nothing is documented or updated. | `list` of `str` | |
+| `password_file` | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | `str` | |
+| `sql_dialect` | No | Dialect used by SQL Alchemy. | `str` | `"mssql+pyodbc"` |
+| `sql_driver` | No | Name of ODBC driver. | `str` | |
+| `sql_port` | Yes | Port number of target database server. | `int` | |
+| `target_database_name` | Yes | Name of target database. | `str` | |
+| `target_server_hostname` | Yes | Host name of target database server. | `str` | |
+| `url_of_remote_git_repository` | No | URL of project's remote repository. | `str` | |
+| `username_file` | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | `str` | |
+| `db_permissions` | No | List of dictionaries containing file locations & scripting variables for setting up database permissions from sql file(s). Dictionary holds keys: "source" (`str`) and "variables" (`dict`). | `list` of `dict` | |
+| `db_permission_invoke_method` | No | Invoke method for setting up database permissions. Available options: `"sqlcmd"` or `"sqlalchemy"` (default). | `str` | `"sqlalchemy"` |
+| `upgrade_actions_file` | No | Configuration file for upgrade actions. | `str` | `"./upgrade_actions.jsonc"` |
+| `catalog_collation_type_desc` | No | Catalog collation setting of database. If the defined setting is different from the database setting, a warning is logged. Applies only to Azure SQL Database | `str` | `"DATABASE_DEFAULT"` |
+| `display_db_info` | No | Print database collation information to console before running actions. | `boolean` | `true` |
+| `context_connectable_type` | No | Type of SQLAlchmey object returned by Context.get_connectable(). Possible values are "engine" and "connection". | `str` | `"engine"` |
+| `transaction_mode` | No | Transaction management style for ahjo actions. Applied only if context_connectable_type is `"connection"`. Possible values are `"begin_once"` and `"commit_as_you_go"`. If `"begin_once"`, a transaction is started before running actions and committed after all actions are run. If `"commit_as_you_go"`, a transaction is started before running actions but not committed automatically. | `str` | `"begin_once"` |
+| `git_version_info_path` | No | Path to git version info file. Retrieve git commit information from this file if git repository is not available. JSON file format: `{"repository": "<url>", "commit": "<commit hash>", "branch": "<branch name>"}` | `str` | |
+| `windows_event_log` | No | Log Ahjo events to Windows Event Log. | `boolean` | `false` |
+| `ahjo_action_files` | No | Defines the location and name of project-specific Ahjo actions files. | `list` of `dict` | |
+| `sqlalchemy.url` | No | SQLAlchemy database URL. If defined, overrides the values of `dialect`, `sql_port`, `sql_driver`, `target_server_hostname` and `target_database_name`. | `str` | |
+| `sqlalchemy.*` | No | Items under sqlalchemy.* are passed as parameters to SQLAlchemy's [create_engine](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine) function. For example `sqlalchemy.pool_size: 10` is passed as pool_size=10 to `create_engine` function. | `dict` | If dialect is `mssql+pyodbc`: `"sqlalchemy.use_insertmanyvalues": false`, `"sqlalchemy.use_setinputsizes": false` |
+| `sqla_url_query_map` | No | A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query). | `dict` | If ODBC Driver 18: `{"Encrypt" : "yes", "LongAsMax": "Yes"}`. If ODBC Driver 17 or older: `{"Encrypt" : "no"}`. Else: `{}` |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 
