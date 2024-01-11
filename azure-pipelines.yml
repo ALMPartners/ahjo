@@ -1,8 +1,12 @@
 # Only trigger pipeline when a merge happens to master branch
 trigger:
-  branches:
+  tags:
     include:
-      - master
+    - '*'
+  branches:
+    exclude:
+    - master
+    - dev
 
 # Do not trigger on any pull requests
 pr: none
