@@ -11,7 +11,8 @@ import ahjo.scripts.master_actions
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
-from ahjo.context import get_config_path, config_is_valid, Context
+from ahjo.context import config_is_valid, Context
+from ahjo.interface_methods import get_config_path
 from ahjo.operations.general.db_info import print_db_collation
 
 try:

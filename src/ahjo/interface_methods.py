@@ -5,6 +5,7 @@
 
 import ahjo.util.jsonc as json
 import yaml
+import os
 from logging import getLogger
 from pathlib import Path
 from re import sub
@@ -59,6 +60,13 @@ def load_yaml_conf(conf_file: str, key: str = 'BACKEND') -> dict:
     if key_value:
         return key_value
     return data
+
+
+def get_config_path(config_filename: str) -> str:
+    '''Get configuration filename from environment variable if not given as argument.'''
+    if config_filename is None and 'AHJO_CONFIG_PATH' in os.environ:
+        return os.environ.get('AHJO_CONFIG_PATH')
+    return config_filename
 
 
 def are_you_sure(message: Union[str, list], use_logger: bool = True) -> bool:

@@ -115,14 +115,18 @@ def _checkout_tag(tag: str):
         raise Exception(f"Failed to checkout git version: {tag}")
 
 
-def _get_all_files_in_staging_area():
-    """ Retrieve all files in staging area with 'git diff' command. """
+def _get_files_in_staging_area(paths: list = None) -> list:
+    """ Retrieve files in staging area with 'git diff' command. """
+    if isinstance(paths, list) and len(paths) > 0:
+        return check_output(["git", "diff", "--cached", "--name-only", *paths]).decode("utf-8").strip().split("\n")
     return check_output(["git", "diff", "--cached", "--name-only"]).decode("utf-8").strip().split("\n")
 
 
-def _get_all_files_in_working_directory():
+def _get_files_in_working_directory(path: list = None) -> list:
     """ Retrieve all files in working directory with 'git ls-tree' command. """
     _, commit = _get_git_commit_info()
+    if isinstance(path, list) and len(path) > 0:
+        return check_output(["git", "ls-tree", "-r", "--name-only", commit, *path]).decode("utf-8").strip().split("\n")
     return check_output(["git", "ls-tree", "-r", "--name-only", commit]).decode("utf-8").strip().split("\n")
 
 

@@ -10,25 +10,28 @@ import yaml
 from datetime import datetime
 from typing import Union
 from logging import getLogger
-from ahjo.operations.general.git_version import _get_all_files_in_staging_area, _get_all_files_in_working_directory
+from ahjo.operations.general.git_version import _get_files_in_staging_area, _get_files_in_working_directory
 
 logger = getLogger("ahjo")
 
-SCAN_RULES_WHITELIST = {"hetu"}
-RULE_DESCRIPTIONS = {"hetu": "Finnish Personal Identity Number"}
+DEFAULT_SCAN_RULES = [{"name": "hetu", "filepath": "^.*"}]
+SCAN_RULES_WHITELIST = {"hetu", "email"}
+RULE_DESCRIPTIONS = {
+    "hetu": "Finnish Personal Identity Number",
+    "email": "Email address"
+}
 SEARCH_PATTERNS = {
-    "hetu": r"(0[1-9]|[1-2]\d|3[01])(0[1-9]|1[0-2])(\d\d)([-+A-FU-Y])(\d\d\d)([0-9A-FHJ-NPR-Y])"
+    "hetu": r"(0[1-9]|[1-2]\d|3[01])(0[1-9]|1[0-2])(\d\d)([-+A-FU-Y])(\d\d\d)([0-9A-FHJ-NPR-Y])",
+    "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 }
 
 
-def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bool = False, 
-    search_rules: Union[list, set] = SCAN_RULES_WHITELIST, log_additional_info: bool = True) -> dict:
+def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_SCAN_RULES, 
+    log_additional_info: bool = True, custom_rules: dict = None) -> dict:
     ''' Scan ahjo project git files using search rules. 
     
     Parameters
     ----------
-    filepaths_to_scan
-        List of file paths to scan. File paths are regular expressions.
     scan_staging_area   
         Scan files in git staging area instead of working directory.
     search_rules
@@ -52,6 +55,102 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
         }
     '''
     
+    # Start time
+    #start_time = datetime.now()
+
+    # Validate parameters
+    if not valid_search_rules(search_rules):
+        logger.warning("Scan aborted.")
+        return None
+
+    filepaths = []
+    for rule in search_rules:
+        rule_filepath = rule.get("filepath")
+        if isinstance(rule_filepath, str):
+            filepaths.append(rule_filepath)
+        elif isinstance(rule_filepath, list):
+            filepaths.extend(rule_filepath)
+        else:
+            filepaths.append(".") # scan all files if no file path is specified
+
+    #filepaths = [rule.get("filepath") for rule in search_rules if rule.get("filepath")]
+
+    if scan_staging_area:
+        git_files = _get_files_in_staging_area(filepaths) if len(filepaths) > 0 else _get_files_in_staging_area()
+    else:
+        git_files = _get_files_in_working_directory(filepaths) if len(filepaths) > 0 else _get_files_in_working_directory()
+
+    # Remove possible empty strings from git_files
+    git_files = [git_file for git_file in git_files if git_file]
+    ignored_matches = load_ignored_matches() # load ignored matches from file
+    matches = {} # dictionary containing matches for each file and search rule
+    n_matches = 0 # number of matches
+
+    # Scan each file
+    for git_file in git_files:
+
+        try: # Load file content
+            with open(git_file, "r") as f:
+                file_content = f.read()
+        except:
+            logger.debug(f"Failed to load file: {git_file}")
+            continue  
+
+        # Iterate through search rules
+        for search_rule in search_rules:
+            
+            # Check if git_file is in search rule file path
+            rule_filepaths = search_rule.get("filepath", ".")
+            if isinstance(rule_filepaths, str): rule_filepaths = [rule_filepaths]
+            if not any([re.search(rule_filepath, git_file) for rule_filepath in rule_filepaths]):
+                continue
+
+            # Get search rule pattern
+            search_rule_name = search_rule.get("name")
+            search_rule_pattern = search_rule.get("pattern")
+            if not search_rule_pattern:
+                search_rule_pattern = SEARCH_PATTERNS.get(search_rule_name)
+            if not search_rule_pattern:
+                logger.warning(f"Invalid search rule: {search_rule_name}. Search rule pattern not found.")
+                continue
+
+            # Check for matches in file content using search rule pattern
+            file_content_matches = [(m.start(0), m.end(0)) for m in re.finditer(search_rule_pattern, file_content)]
+            if len(file_content_matches) == 0:
+                continue    
+
+            # Iterate through matches
+            for file_content_match in file_content_matches: 
+
+                match = file_content[file_content_match[0]:file_content_match[1]]
+
+                # Check if file match string is in ignored matches
+                if file_in_ignored_list(git_file, ignored_matches, match):
+                    continue
+                            
+                # Validate match
+                if search_rule_name == "hetu" and not is_hetu(match):
+                    continue
+
+                # Add match to results
+                if git_file not in matches:
+                    matches[git_file] = {}
+                if search_rule_name not in matches[git_file]:
+                    matches[git_file][search_rule_name] = []
+                matches[git_file][search_rule_name].append(match)
+                n_matches += 1
+
+    # End time
+    #end_time = datetime.now()
+    #logger.info(f"Scan took {end_time - start_time} seconds.")
+    log_scan_results(matches, n_matches)
+    if log_additional_info: 
+        log_scan_status_info(n_matches > 0)
+        
+
+    return matches
+
+    '''
     # Validate parameters
     if not valid_search_rules(search_rules) or not valid_filepaths_to_scan(filepaths_to_scan):
         logger.warning("Scan aborted.")
@@ -60,10 +159,16 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
     # Setup search patterns, load ignored matches, get files to scan and initialize result dictionary
     search_patterns = {key: SEARCH_PATTERNS[key] for key in search_rules} # select search patterns for search rules
     ignored_matches = load_ignored_matches() # load ignored matches from file
-    git_files = _get_all_files_in_staging_area() if scan_staging_area else _get_all_files_in_working_directory()
+    git_files = _get_files_in_staging_area() if scan_staging_area else _get_files_in_working_directory()
     git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
     matches = {} # dictionary containing matches for each file and search rule
     n_matches = 0 # number of matches
+    custom_rule_files = {}
+
+    if custom_rules and isinstance(custom_rules, dict):
+        for custom_rule in custom_rules:
+            search_patterns[custom_rule.get("name")] = custom_rule.get("pattern")
+            custom_rule_files[custom_rule.get("name")] = custom_rule.get("files")
 
     # Scan each file
     for git_file in git_files:
@@ -112,9 +217,10 @@ def scan_project(filepaths_to_scan: list = ["^database/"], scan_staging_area: bo
     if log_additional_info: log_scan_status_info(n_matches > 0)
 
     return matches
+    '''
 
 
-def valid_search_rules(search_rules: Union[list, set]) -> list:
+def valid_search_rules(search_rules: list) -> list:
     """ Check if search rules are valid.
 
     Parameters
@@ -127,42 +233,12 @@ def valid_search_rules(search_rules: Union[list, set]) -> list:
     bool
         Are search rules valid or not?
     """
-    if not isinstance(search_rules, (list, set)):
+    if not isinstance(search_rules, list):
         logger.warning(f"Invalid type for search_rules: {type(search_rules)}")
         return False
     if len(search_rules) == 0:
         logger.warning("No search rules specified.")
         return False
-    for search_rule in search_rules:
-        if search_rule not in SCAN_RULES_WHITELIST:
-            logger.warning("Invalid search rule: " + search_rule + ". Use one of the following search rules: " + ','.join(SCAN_RULES_WHITELIST) + ".")
-            return False
-    return True
-
-
-def valid_filepaths_to_scan(filepaths_to_scan):
-    """ Check if file paths to scan are valid.
-
-    Parameters
-    ----------
-    filepaths_to_scan
-        List of file paths to scan. File paths are regular expressions.
-    
-    Returns
-    -------
-    bool
-        Are file paths to scan valid or not?
-    """
-    if not isinstance(filepaths_to_scan, list): 
-        logger.warning(f"Invalid type for filepaths_to_scan: {type(filepaths_to_scan)}")
-        return False
-    if len(filepaths_to_scan) == 0:
-        logger.warning("No file paths specified.")
-        return False
-    for f_path in filepaths_to_scan:
-        if not isinstance(f_path, str):
-            logger.warning(f"Invalid type for file path: {type(f_path)}")
-            return False
     return True
 
 
@@ -282,7 +358,8 @@ def log_scan_results(matches: dict, n_matches: int) -> None:
         for file in matches:
             logger.info(f"  File: {file}")
             for search_rule in matches[file]:
-                logger.info(f"  Search rule: {RULE_DESCRIPTIONS[search_rule]}")
+                search_rule_str = search_rule if search_rule not in RULE_DESCRIPTIONS else RULE_DESCRIPTIONS[search_rule]
+                logger.info(f"  Search rule: {search_rule_str}")
                 logger.info(f"  Matches:")
                 for match in matches[file][search_rule]:
                     logger.info(f"      {match}")

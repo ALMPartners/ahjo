@@ -14,7 +14,8 @@ import sys
 from logging import getLogger
 from logging.config import fileConfig
 from ahjo.operations.general.upgrade import upgrade
-from ahjo.context import get_config_path, config_is_valid
+from ahjo.context import config_is_valid
+from ahjo.interface_methods import get_config_path
 
 
 # load logging config

@@ -186,13 +186,6 @@ def merge_config_files(config_filename: str) -> dict:
     return config_data
 
 
-def get_config_path(config_filename: str) -> str:
-    '''Get configuration filename from environment variable if not given as argument.'''
-    if config_filename is None and 'AHJO_CONFIG_PATH' in os.environ:
-        return os.environ.get('AHJO_CONFIG_PATH')
-    return config_filename
-
-
 def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
     '''Validate configuration file.'''
 
