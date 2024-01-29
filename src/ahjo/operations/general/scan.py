@@ -8,26 +8,31 @@ import os
 import re
 import yaml
 from datetime import datetime
-from typing import Union
 from logging import getLogger
 from ahjo.operations.general.git_version import _get_files_in_staging_area, _get_files_in_working_directory
 
 logger = getLogger("ahjo")
 
-DEFAULT_SCAN_RULES = [{"name": "hetu", "filepath": "^.*"}]
-SCAN_RULES_WHITELIST = {"hetu", "email"}
+DEFAULT_SCAN_RULES = [{"name": "hetu", "filepath": "."}]
+SCAN_RULES_WHITELIST = {"hetu", "email", "illegal_db_insert", "illegal_db_object_modification"}
 RULE_DESCRIPTIONS = {
     "hetu": "Finnish Personal Identity Number",
-    "email": "Email address"
+    "email": "Email address",
+    "illegal_db_insert": "Illegal database table insert",
+    "illegal_db_object_modification": "Illegal database object modification",
+    "illegal_alembic_migration": "Illegal Alembic migration"
 }
 SEARCH_PATTERNS = {
     "hetu": r"(0[1-9]|[1-2]\d|3[01])(0[1-9]|1[0-2])(\d\d)([-+A-FU-Y])(\d\d\d)([0-9A-FHJ-NPR-Y])",
-    "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b',
+    "illegal_db_insert": r'(?i:INSERT((\s)+INTO)?)(\s)+(\[)?(SCHEMAS_PLACEHOLDER)(\])?(\s)*[.](\s)*(\[)?(TABLES_PLACEHOLDER)(\])?(\s)*\(.+\)',
+    "illegal_db_object_modification": r'(?i:(DROP|CREATE|ALTER)(\s)+(OBJECT_TYPES_PLACEHOLDER))(\s)+(\[)?(SCHEMAS_PLACEHOLDER)(\])?(\s)*[.](\s)*(\[)?(OBJECTS_PLACEHOLDER)(\]|\s)',
+    "illegal_alembic_migration": r'(add_column|alter_column|create_primary_key|create_table|create_unique_constraint|drop_column|drop_constraint|drop_table|rename_table)\(.*schema(\s)*=(\s)*[\'"](SCHEMAS_PLACEHOLDER)[\'"].*\)'
 }
 
 
 def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_SCAN_RULES, 
-    log_additional_info: bool = True, custom_rules: dict = None) -> dict:
+    log_additional_info: bool = True) -> dict:
     ''' Scan ahjo project git files using search rules. 
     
     Parameters
@@ -55,14 +60,14 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
         }
     '''
     
-    # Start time
-    #start_time = datetime.now()
+    start_time = datetime.now()
 
     # Validate parameters
     if not valid_search_rules(search_rules):
         logger.warning("Scan aborted.")
         return None
 
+    # Collect filepaths to scan
     filepaths = []
     for rule in search_rules:
         rule_filepath = rule.get("filepath")
@@ -73,18 +78,16 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
         else:
             filepaths.append(".") # scan all files if no file path is specified
 
-    #filepaths = [rule.get("filepath") for rule in search_rules if rule.get("filepath")]
-
     if scan_staging_area:
         git_files = _get_files_in_staging_area(filepaths) if len(filepaths) > 0 else _get_files_in_staging_area()
     else:
         git_files = _get_files_in_working_directory(filepaths) if len(filepaths) > 0 else _get_files_in_working_directory()
 
-    # Remove possible empty strings from git_files
-    git_files = [git_file for git_file in git_files if git_file]
-    ignored_matches = load_ignored_matches() # load ignored matches from file
+    git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
+    ignored_matches = load_ignored_matches()
     matches = {} # dictionary containing matches for each file and search rule
     n_matches = 0 # number of matches
+    search_rules = add_placeholders_to_patterns(search_rules)
 
     # Scan each file
     for git_file in git_files:
@@ -107,7 +110,7 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
 
             # Get search rule pattern
             search_rule_name = search_rule.get("name")
-            search_rule_pattern = search_rule.get("pattern")
+            search_rule_pattern = search_rule.get("pattern") # Custom search
             if not search_rule_pattern:
                 search_rule_pattern = SEARCH_PATTERNS.get(search_rule_name)
             if not search_rule_pattern:
@@ -140,84 +143,11 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
                 matches[git_file][search_rule_name].append(match)
                 n_matches += 1
 
-    # End time
-    #end_time = datetime.now()
-    #logger.info(f"Scan took {end_time - start_time} seconds.")
-    log_scan_results(matches, n_matches)
+    log_scan_results(matches, n_matches, str(datetime.now() - start_time))
     if log_additional_info: 
         log_scan_status_info(n_matches > 0)
-        
 
     return matches
-
-    '''
-    # Validate parameters
-    if not valid_search_rules(search_rules) or not valid_filepaths_to_scan(filepaths_to_scan):
-        logger.warning("Scan aborted.")
-        return None
-    
-    # Setup search patterns, load ignored matches, get files to scan and initialize result dictionary
-    search_patterns = {key: SEARCH_PATTERNS[key] for key in search_rules} # select search patterns for search rules
-    ignored_matches = load_ignored_matches() # load ignored matches from file
-    git_files = _get_files_in_staging_area() if scan_staging_area else _get_files_in_working_directory()
-    git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
-    matches = {} # dictionary containing matches for each file and search rule
-    n_matches = 0 # number of matches
-    custom_rule_files = {}
-
-    if custom_rules and isinstance(custom_rules, dict):
-        for custom_rule in custom_rules:
-            search_patterns[custom_rule.get("name")] = custom_rule.get("pattern")
-            custom_rule_files[custom_rule.get("name")] = custom_rule.get("files")
-
-    # Scan each file
-    for git_file in git_files:
-
-        # Check if file path is in allowed file paths
-        if not file_path_is_valid(git_file, filepaths_to_scan):
-            continue
-
-        try: # Load file content
-            with open(git_file, "r") as f:
-                file_content = f.read()
-        except:
-            logger.debug(f"Failed to load file: {git_file}")
-            continue
-
-        # Iterate through search rule patterns
-        for search_rule_name, file_content_pattern in search_patterns.items():
-
-            # Check for matches in file content using search rule pattern
-            file_content_matches = [(m.start(0), m.end(0)) for m in re.finditer(file_content_pattern, file_content)]
-            if len(file_content_matches) == 0:
-                continue
-                
-            # Iterate through matches
-            for file_content_match in file_content_matches: 
-
-                match = file_content[file_content_match[0]:file_content_match[1]]
-
-                # Check if file match string is in ignored matches
-                if file_in_ignored_list(git_file, ignored_matches, match):
-                    continue
-                            
-                # Validate match
-                if search_rule_name == "hetu" and not is_hetu(match):
-                    continue
-
-                # Add match to results
-                if git_file not in matches:
-                    matches[git_file] = {}
-                if search_rule_name not in matches[git_file]:
-                    matches[git_file][search_rule_name] = []
-                matches[git_file][search_rule_name].append(match)
-                n_matches += 1
-
-    log_scan_results(matches, n_matches)
-    if log_additional_info: log_scan_status_info(n_matches > 0)
-
-    return matches
-    '''
 
 
 def valid_search_rules(search_rules: list) -> list:
@@ -242,26 +172,62 @@ def valid_search_rules(search_rules: list) -> list:
     return True
 
 
-def file_path_is_valid(file_path: str, allowed_filepaths: list) -> bool:
-    """ Check if file path is in allowed file paths. 
-    
+def add_placeholders_to_patterns(search_rules: list):
+    """ Add placeholders to search rule patterns.
+
     Parameters
     ----------
-    file_path
-        File path to check.
-    allowed_filepaths
-        List of allowed file paths. File paths are regular expressions.
+    search_rules
+        List of search rules to use in scan.
 
     Returns
     -------
-    bool
-        Is file path in allowed file paths or not?
+    search_rules
+        List of search rules with placeholders added to patterns.
     """
-    if len(file_path) == 0: return False
-    for scan_filepath_pattern in allowed_filepaths:
-        if re.search(scan_filepath_pattern, file_path):
-            return True
-    return False
+
+    for rule_indx, search_rule in enumerate(search_rules):
+
+        search_rule_name = search_rule.get("name")
+        if search_rule_name not in ["illegal_db_insert", "illegal_db_object_modification", "illegal_alembic_migration"]: 
+            continue
+
+        schemas_placeholder = search_rule.get("forbidden_schemas", r".\S+")
+        schemas_placeholder = "|".join(schemas_placeholder) if isinstance(schemas_placeholder, list) else schemas_placeholder
+        
+        if search_rule_name == "illegal_db_insert":
+            tables_placeholder = search_rule.get("forbidden_tables", r".\S+")
+            search_pattern = SEARCH_PATTERNS.get(search_rule_name).replace(
+                "SCHEMAS_PLACEHOLDER",
+                schemas_placeholder
+            ).replace(
+                "TABLES_PLACEHOLDER",
+                "|".join(tables_placeholder) if isinstance(tables_placeholder, list) else tables_placeholder
+            )
+
+        if search_rule_name == "illegal_db_object_modification":
+            object_types_placeholder = search_rule.get("forbidden_object_types", ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"])
+            objects_placeholder = search_rule.get("objects", r".\S+")
+            search_pattern = SEARCH_PATTERNS.get(search_rule_name).replace(
+                "OBJECT_TYPES_PLACEHOLDER",
+                "|".join(object_types_placeholder) if isinstance(object_types_placeholder, list) else object_types_placeholder
+            ).replace(
+                "SCHEMAS_PLACEHOLDER",
+                schemas_placeholder
+            ).replace(
+                "OBJECTS_PLACEHOLDER",
+                "|".join(objects_placeholder) if isinstance(objects_placeholder, list) else objects_placeholder
+            )
+
+        if search_rule_name == "illegal_alembic_migration":
+            search_pattern = SEARCH_PATTERNS.get(search_rule_name).replace(
+                "SCHEMAS_PLACEHOLDER",
+                schemas_placeholder
+            )
+
+        search_rules[rule_indx]["pattern"] = search_pattern
+
+    return search_rules
 
 
 def is_hetu(match: str) -> bool:
@@ -341,7 +307,7 @@ def file_in_ignored_list(file: str, ignored_matches: dict, match: str) -> bool:
     return False           
 
 
-def log_scan_results(matches: dict, n_matches: int) -> None:
+def log_scan_results(matches: dict, n_matches: int, scan_time: str) -> None:
     """ Log scan results. 
     
     Parameters
@@ -350,12 +316,14 @@ def log_scan_results(matches: dict, n_matches: int) -> None:
         Dictionary containing matches for each file and search rule.
     n_matches
         Number of matches.
+    scan_time
+        Scan time ("HH:MM:SS.ms")
     """
     len_matches = len(matches)
     if len_matches > 0:
-        logger.info("Scan completed. Found " + str(n_matches) + " match" + ("es" if n_matches > 1 else "") + ":")
+        logger.info("Scan completed. Elapsed time: " + scan_time + ". Found " + str(n_matches) + " match" + ("es" if n_matches > 1 else "") + ":")
         logger.info("")
-        for file in matches:
+        for match_i, file in enumerate(matches):
             logger.info(f"  File: {file}")
             for search_rule in matches[file]:
                 search_rule_str = search_rule if search_rule not in RULE_DESCRIPTIONS else RULE_DESCRIPTIONS[search_rule]
@@ -363,7 +331,8 @@ def log_scan_results(matches: dict, n_matches: int) -> None:
                 logger.info(f"  Matches:")
                 for match in matches[file][search_rule]:
                     logger.info(f"      {match}")
-                logger.info("")
+                if match_i < len_matches - 1:
+                    logger.info("")
 
 
 def log_scan_status_info(matches_found: bool) -> None:

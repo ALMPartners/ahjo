@@ -56,9 +56,10 @@ def load_yaml_conf(conf_file: str, key: str = 'BACKEND') -> dict:
         return None
     with open(f_path, encoding='utf-8') as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
-    key_value = data.get(key, None)
-    if key_value:
-        return key_value
+    if isinstance(data, dict):
+        key_value = data.get(key, None)
+        if key_value:
+            return key_value
     return data
 
 

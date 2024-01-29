@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-# A Git pre-commit hook for scanning sensitive data in files.
+# A Git pre-commit hook that runs ahjo-scan.exe and prevents commit if scan fails.
 
 green='\033[0;32m'
 red='\033[0;31m'
 no_color='\033[0m'
 
-echo "Scanning for sensitive data..."
-ahjo-scan.exe --stage --files "^.*" --quiet
+echo "Scan check started..."
+ahjo-scan.exe --stage --quiet
 exit_status=$?
 
 if [ $exit_status -eq 1 ]; then

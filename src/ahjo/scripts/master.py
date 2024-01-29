@@ -41,8 +41,6 @@ def main():
     parser.add_argument('--files', nargs='*', default=[], help='Files')
     parser.add_argument('--object_type', nargs=1, default=[], help='Object type', choices=['view', 'procedure', 'function', 'assembly'])
     parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
-    parser.add_argument("-st", "--stage", action="store_true", required=False, help="Scan files in git staging area instead of working directory")
-    parser.add_argument("-sr", "--search-rules", help="Search rules for ahjo scan action", nargs="*")
 
     args = parser.parse_args()
     ahjo_action = args.action
@@ -78,8 +76,6 @@ def main():
         if len(args.files) > 0 : kwargs['files'] = args.files
         if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
         if non_interactive : kwargs['skip_confirmation'] = True
-        if args.stage : kwargs['scan_staging_area'] = True
-        if args.search_rules: kwargs['search_rules'] = args.search_rules
         execute_action(
             *[ahjo_action, config_path],
             **kwargs

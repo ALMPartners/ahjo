@@ -244,52 +244,6 @@ Updated schemas are listed in *metadata_allowed_schemas*.
 Runs tests and returns the results.
 Runs all SQL scripts under *./database/tests*.
 
-##  scan
-Scans files in the working directory or git staging area and searches for matches with search rules. Search results are printed to the console and logged to a file.
-
-| Argument  | Shorthand | Description | Required | Default Value |
-| --- | --- | --- | --- | --- |
-| `--search-rules`  | `-sr` | List of rules used to search for matches. Currently it is only possible to search for Finnish Personal Identity Numbers (hetu) from files. | No | `hetu` |
-| `--files` | | List of file paths to scan. File paths are regular expressions. | No | `^database/` |
-| `--stage` | `-st` | Scan files in git staging area instead of working directory. | No | |
-
-### Examples
-
-Scan all files under database directory and git staging area:
-
-`ahjo scan --files "^database/" --stage`
-
-Scan all files under project root:
-
-`ahjo scan --files "^.*"`
-
-Scan only employee.sql file under database/data directory:
-
-`ahjo scan --files "^database/data/employee.sql$"`
-
-Scan all .sql files under database/data and database/procedures directories:
-
-`ahjo scan --files "^database/(data|procedures)/.*\.sql"`
-
-Scan all files starting with dm. in database/data directory:
-
-`ahjo scan --files "^database/data/dm\..*"`
-
-### Ignoring scan results
-To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
-The file is created automatically when the scan command is run for the first time.
-The file should be in the following format: 
-```yaml
-files:
-  - file_path: database/data/example_1.sql
-    matches:
-      - match_pattern_1
-      - match_pattern_2
-  - file_path: database/data/example_2.sql
-    matches:
-      - match_pattern_3
-```
-
 ## List
 You can view all available actions and their descriptions with command `ahjo list`.
 ```
@@ -494,13 +448,77 @@ To upgrade specific version, use `-v` or `--version` flag:
 ahjo-upgrade -v v3.1.0
 ```
 
-# <u>Scan pre-commit hook</u>
-Ahjo scan command can be used as a pre-commit hook to prevent committing files that contain sensitive information (e.g. personal identity numbers) to the repository.
-This can be accomplished by utilizing a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules.
-Currently the scan pre-commit hook searches for Finnish Personal Identity Numbers (hetu) from staged files under the project root directory. Later on, the search rules can be extended to cover other use cases as well.
-To use the hook, you need to have the `ahjo-scan.exe` accessible as a shell command. (e.g. the tool is installed from an MSI package, see Installation Guide 3).
+# <u>Ahjo scan</u>
+`ahjo-scan` command can be used to search for matches with defined search rules from files in the working directory or git staging area. The search results are printed to the console and logged to a file. The command can be used to search e.g. illegal database object modifications, sensitive information or custom regex patterns defined by the user. 
 
-## Setting up the hook
+| Argument  | Shorthand | Description | Required | Default Value |
+| --- | --- | --- | --- | --- |
+| `--search-rules`  | `-r` | Path to YAML file that defines the search rules. | No | `ahjo_scan_rules.yaml` |
+| `--stage` | `-st` | Scan files in git staging area instead of working directory. | No | `False` |
+
+The search rules are defined as a list of dictionaries. Each dictionary contains a search rule name, a list of file paths to be searched and parameters for the search rule. It is also possible to define a custom regex pattern for the search rule instead of using predefined search rules. The regex pattern is defined as a string in the `pattern` parameter.
+
+Pre-defined search rules & parameters:
+
+- `hetu` (Finnish Personal Identity Number)
+- `email` (Email address)
+- `illegal_db_object_modification` (Illegal database object modification)
+    - `forbidden_object_types` (optional)
+        - List of forbidden database object types (e.g. `VIEW`, `PROCEDURE`, `FUNCTION`)
+    - `forbidden_schemas` (optional)
+        - List of forbidden database object schemas
+    - `forbidden_objects` (optional)
+        - List of forbidden database object names (e.g. table names)
+- `illegal_alembic_migration` (Illegal alembic migration)
+    - `forbidden_schemas` (optional)
+        - List of forbidden database object schemas
+- `illegal_db_insert` (Illegal database insert)
+    - `forbidden_schemas` (optional)
+        - List of forbidden database object schemas
+    - `forbidden_tables` (optional)
+        - List of forbidden database table names
+
+Below is an example of `ahjo_scan_config.yaml` file:
+
+```yaml
+- name: illegal_db_object_modification
+  filepath: 
+    - database/
+  forbidden_object_types:
+    - PROCEDURE
+  forbidden_schemas:
+    - dummy
+    - utils
+- name: hetu
+  filepath: 
+    - database/
+    - alembic/versions/
+- name: select_star
+  filepath: 
+    - database/
+  pattern: SELECT \* # This is a regular expression
+```
+
+## Ignoring scan results
+To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
+The file is created automatically when the scan command is run for the first time.
+The file should be in the following format: 
+```yaml
+files:
+  - file_path: database/data/example_1.sql
+    matches:
+      - match_pattern_1
+      - match_pattern_2
+  - file_path: database/data/example_2.sql
+    matches:
+      - match_pattern_3
+```
+
+## Scan as a pre-commit hook
+Ahjo scan command can be used as a pre-commit hook to prevent committing files that contain e.g. sensitive information or illegal database object modifications.
+This can be accomplished by utilizing a Git pre-commit hook script that automatically executes ahjo-scan command on each commit and prevents the commit if the scan finds matches with the defined search rules. To use the hook, you need to have the `ahjo-scan.exe` accessible as a shell command. (e.g. the tool is installed from an MSI package, see Installation Guide 3).
+
+### Setting up the hook
 To install the hook, run the following command in the project root directory:
 ```
 ahjo-install-git-hook

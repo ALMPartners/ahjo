@@ -1,4 +1,4 @@
-from ahjo.operations.general.scan import is_hetu, valid_search_rules, file_path_is_valid, valid_filepaths_to_scan, SCAN_RULES_WHITELIST
+from ahjo.operations.general.scan import is_hetu, valid_search_rules, DEFAULT_SCAN_RULES
 
 VALID_HETUS = [
     "010105A991P","140892-944N","140892-9296","151188-983Y",
@@ -40,16 +40,13 @@ def test_is_hetu_should_return_false_for_invalid_hetu():
         assert is_hetu(hetu) is False
 
 def test_valid_search_rules_should_return_true_for_valid_search_rules():
-    assert valid_search_rules(SCAN_RULES_WHITELIST) is True
+    assert valid_search_rules(DEFAULT_SCAN_RULES) is True
 
 def test_valid_search_rules_should_raise_error_if_input_not_list():
     try:
         valid_search_rules("not a list")
     except Exception as err:
         assert type(err) == TypeError
-
-def test_valid_search_rules_should_return_false_for_invalid_search_rules():
-    assert valid_search_rules(["not a valid search rule"]) is False
 
 def test_valid_search_rules_should_return_false_for_empty_search_rules():
     assert valid_search_rules([]) is False
@@ -59,20 +56,3 @@ def test_valid_search_rules_should_return_false_for_none_search_rules():
 
 def test_valid_search_rules_should_return_false_for_invalid_type():
     assert	valid_search_rules(123) is False
-
-def test_file_path_is_valid_should_return_true_for_valid_file_path():
-    for file_path, allowed_path in VALID_FILEPATHS:
-        assert file_path_is_valid(file_path, allowed_path) is True
-
-def test_file_path_is_valid_should_return_false_for_invalid_file_path():
-    for file_path, allowed_path in INVALID_FILEPATHS:
-        assert file_path_is_valid(file_path, allowed_path) is False
-
-def test_valid_filepaths_to_scan_should_return_true_for_valid_filepaths():
-    assert valid_filepaths_to_scan(["^database/"]) is True
-
-def test_valid_filepaths_to_scan_should_return_false_for_empty_list():
-    assert valid_filepaths_to_scan([]) is False
-
-def test_valid_filepaths_to_scan_should_return_false_for_invalid_type():
-    assert valid_filepaths_to_scan(123) is False

@@ -12,44 +12,40 @@ import sys
 import ahjo
 from logging import getLogger
 from logging.config import fileConfig
-from ahjo.operations.general.scan import scan_project, DEFAULT_SCAN_RULES
-from ahjo.interface_methods import get_config_path, load_yaml_conf
+from ahjo.operations.general.scan import scan_project
+from ahjo.interface_methods import load_yaml_conf
 
 fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
 logger = getLogger('ahjo')
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", required=False, help="Path to project config file")
+    parser.add_argument("-r", "--search-rules", required=False, help="Path to ahjo scan rules config file.")
+    parser.add_argument("-st", "--stage", action="store_true", required=False, help="Scan files in git staging area instead of working directory.")
+    parser.add_argument("-q", "--quiet", action="store_true", required=False, 
+        help="Hide additional status messages and show only the scan matches (if found). This option is used by the pre-commit hook."
+    )
     args = parser.parse_args()
-    scan_config = load_yaml_conf(args.config if args.config else "ahjo_scan_config.yaml")
+
+    quiet_mode = args.quiet
+    scan_config = load_yaml_conf(args.search_rules if args.search_rules else "ahjo_scan_rules.yaml")
 
     if not scan_config:
-        logger.error("Failed to load scan config file.")
+        logger.error("Failed to load scan rules.")
         sys.exit(1)
-
-    quiet_mode = scan_config.get("quiet_mode") if scan_config.get("quiet_mode") else True
-    search_rules = scan_config.get("search_rules") if scan_config.get("search_rules") else DEFAULT_SCAN_RULES
-    scan_stage_only = scan_config.get("scan_stage_only") if scan_config.get("scan_stage_only") else False
 
     if not quiet_mode:
         logger.info("Scanning files...")
 
-    matches = scan_project(
-        scan_staging_area = scan_stage_only,
-        search_rules = search_rules,
-        log_additional_info = False if quiet_mode else True
-    )
+    matches = scan_project(**{
+        "scan_staging_area": True if args.stage else False,
+        "search_rules": scan_config,
+        "log_additional_info": False if quiet_mode else True
+    })
+
     matches_found = len(matches) > 0 if matches else False
 
-    if not quiet_mode:
-        if matches_found:
-            logger.info("If you want to ignore a match, add it to the ahjo_scan_ignore.yaml file.")
-            logger.info("")
-        else:
-            logger.info("Scan completed. No matches found.")
-
-    if matches_found: 
+    if matches_found:
         sys.exit(1)
     sys.exit(0)
 
