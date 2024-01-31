@@ -485,10 +485,7 @@ Database insert (SQL Server). The search rule searches for database inserts from
 | `objects` | List of database objects. | `list` |
 | `tables` | List of database tables. | `list` |
 
-## Example search rules
-
-Below is an example of `ahjo_scan_config.yaml` file:
-
+## Example search rules file
 ```yaml
 - name: sql_object_modification
   filepath: 
