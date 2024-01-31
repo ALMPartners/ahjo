@@ -460,20 +460,13 @@ The search rules are defined as a list of dictionaries. Each dictionary contains
 
 ## Built-in search rules
 
-### `hetu`
-Finnish Personal Identity Number. Acceptable optional parameter is `filepath`.
-
-### `email`
-Email address. Acceptable optional parameter is `filepath`.
-
-### `sql_object_modification` 
-Database object modification (SQL Server). The search rule searches for database object modifications from SQL files. The search rule can be configured to search for modifications of specific database object types (e.g. `VIEW`, `PROCEDURE`, `FUNCTION`) and/or specific database object schemas and/or specific database objects (e.g. table names). If no parameters are defined, the search rule searches for modifications of all database object types, all schemas and all objects. Acceptable parameters are `object_types`, `schemas`, `objects` and `filepath`.
-
-### `alembic_table_modification`
-Database table modification (Alembic). The search rule searches for database table modifications from alembic migrations. If no parameters are defined, the search rule searches for modifications of all schemas and all tables. Acceptable parameter are `schemas` and `filepath`.
-
-### `sql_insert`
-Database insert (SQL Server). The search rule searches for database inserts from SQL files. The search rule can be configured to search for inserts to specific database object schemas and/or specific database tables. If no parameters are defined, the search rule searches for inserts to all schemas and all tables. Acceptable parameters are `schemas`, `tables` and `filepath`.
+| Rule name | Description | Acceptable parameters |
+| --- | --- | --- |
+| `hetu` | Finnish Personal Identity Number | `filepath` |
+| `email` | Email address | `filepath` |
+| `sql_object_modification` | Database object modification (SQL Server). The search rule searches for database object modifications from SQL files. The search rule can be configured to search for modifications of specific database object types (e.g. `PROCEDURE`) and/or specific database object schemas and/or specific database objects (e.g. table names). If no parameters are defined, the search rule searches for modifications of all database object types, all schemas and all objects. | `object_types`, `schemas`, `objects`, `filepath` |
+| `alembic_table_modification` | Database table modification (Alembic). The search rule searches for database table modifications from alembic migrations. If no parameters are defined, the search rule searches for modifications of all schemas and all tables. | `schemas`, `filepath` |
+| `sql_insert` | Database insert (SQL Server). The search rule searches for database inserts from SQL files. The search rule can be configured to search for inserts to specific database object schemas and/or specific database tables. If no parameters are defined, the search rule searches for inserts to all schemas and all tables. | `schemas`, `tables`, `filepath` |
 
 ## Rule parameters
 | Parameter  | Description | Type |
