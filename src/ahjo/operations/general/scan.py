@@ -14,20 +14,20 @@ from ahjo.operations.general.git_version import _get_files_in_staging_area, _get
 logger = getLogger("ahjo")
 
 DEFAULT_SCAN_RULES = [{"name": "hetu", "filepath": "."}]
-SCAN_RULES_WHITELIST = {"hetu", "email", "illegal_db_insert", "illegal_db_object_modification"}
+SCAN_RULES_WHITELIST = {"hetu", "email", "sql_insert", "sql_object_modification"}
 RULE_DESCRIPTIONS = {
     "hetu": "Finnish Personal Identity Number",
     "email": "Email address",
-    "illegal_db_insert": "Illegal database table insert",
-    "illegal_db_object_modification": "Illegal database object modification",
-    "illegal_alembic_migration": "Illegal Alembic migration"
+    "sql_insert": "Database insert (SQL Server)",
+    "sql_object_modification": "Database object modification (SQL Server)",
+    "alembic_table_modification": "Database table modification (Alembic)",
 }
 SEARCH_PATTERNS = {
     "hetu": r"(0[1-9]|[1-2]\d|3[01])(0[1-9]|1[0-2])(\d\d)([-+A-FU-Y])(\d\d\d)([0-9A-FHJ-NPR-Y])",
     "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b',
-    "illegal_db_insert": r'(?i:INSERT((\s)+INTO)?)(\s)+(\[)?(SCHEMAS_PLACEHOLDER)(\])?(\s)*[.](\s)*(\[)?(TABLES_PLACEHOLDER)(\])?(\s)*\(.+\)',
-    "illegal_db_object_modification": r'(?i:(DROP|CREATE|ALTER)(\s)+(OBJECT_TYPES_PLACEHOLDER))(\s)+(\[)?(SCHEMAS_PLACEHOLDER)(\])?(\s)*[.](\s)*(\[)?(OBJECTS_PLACEHOLDER)(\]|\s)',
-    "illegal_alembic_migration": r'(add_column|alter_column|create_primary_key|create_table|create_unique_constraint|drop_column|drop_constraint|drop_table|rename_table)\(.*schema(\s)*=(\s)*[\'"](SCHEMAS_PLACEHOLDER)[\'"].*\)'
+    "sql_insert": r'(?i:INSERT((\s)+INTO)?)(\s)+(\[)?(SCHEMAS_PLACEHOLDER)(\])?(\s)*[.](\s)*(\[)?(TABLES_PLACEHOLDER)(\])?(\s)*\(.+\)',
+    "sql_object_modification": r'(?i:(DROP|CREATE|ALTER)(\s)+(OBJECT_TYPES_PLACEHOLDER))(\s)+(\[)?(SCHEMAS_PLACEHOLDER)(\])?(\s)*[.](\s)*(\[)?(OBJECTS_PLACEHOLDER)(\]|\s)',
+    "alembic_table_modification": r'(add_column|alter_column|create_primary_key|create_table|create_unique_constraint|drop_column|drop_constraint|drop_table|rename_table)\(.*schema(\s)*=(\s)*[\'"](SCHEMAS_PLACEHOLDER)[\'"].*\)'
 }
 
 
@@ -189,14 +189,14 @@ def add_placeholders_to_patterns(search_rules: list):
     for rule_indx, search_rule in enumerate(search_rules):
 
         search_rule_name = search_rule.get("name")
-        if search_rule_name not in ["illegal_db_insert", "illegal_db_object_modification", "illegal_alembic_migration"]: 
+        if search_rule_name not in ["sql_insert", "sql_object_modification", "alembic_table_modification"]: 
             continue
 
-        schemas_placeholder = search_rule.get("forbidden_schemas", r".\S+")
+        schemas_placeholder = search_rule.get("schemas", r".\S+")
         schemas_placeholder = "|".join(schemas_placeholder) if isinstance(schemas_placeholder, list) else schemas_placeholder
         
-        if search_rule_name == "illegal_db_insert":
-            tables_placeholder = search_rule.get("forbidden_tables", r".\S+")
+        if search_rule_name == "sql_insert":
+            tables_placeholder = search_rule.get("tables", r".\S+")
             search_pattern = SEARCH_PATTERNS.get(search_rule_name).replace(
                 "SCHEMAS_PLACEHOLDER",
                 schemas_placeholder
@@ -205,8 +205,8 @@ def add_placeholders_to_patterns(search_rules: list):
                 "|".join(tables_placeholder) if isinstance(tables_placeholder, list) else tables_placeholder
             )
 
-        if search_rule_name == "illegal_db_object_modification":
-            object_types_placeholder = search_rule.get("forbidden_object_types", ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"])
+        if search_rule_name == "sql_object_modification":
+            object_types_placeholder = search_rule.get("object_types", ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"])
             objects_placeholder = search_rule.get("objects", r".\S+")
             search_pattern = SEARCH_PATTERNS.get(search_rule_name).replace(
                 "OBJECT_TYPES_PLACEHOLDER",
@@ -219,7 +219,7 @@ def add_placeholders_to_patterns(search_rules: list):
                 "|".join(objects_placeholder) if isinstance(objects_placeholder, list) else objects_placeholder
             )
 
-        if search_rule_name == "illegal_alembic_migration":
+        if search_rule_name == "alembic_table_modification":
             search_pattern = SEARCH_PATTERNS.get(search_rule_name).replace(
                 "SCHEMAS_PLACEHOLDER",
                 schemas_placeholder

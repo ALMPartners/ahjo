@@ -458,42 +458,51 @@ ahjo-upgrade -v v3.1.0
 
 The search rules are defined as a list of dictionaries. Each dictionary contains a search rule name, a list of file paths to be searched and parameters for the search rule. It is also possible to define a custom regex pattern for the search rule instead of using predefined search rules. The regex pattern is defined as a string in the `pattern` parameter.
 
-Pre-defined search rules & parameters:
+## Built-in search rules
 
-- `hetu` (Finnish Personal Identity Number)
-- `email` (Email address)
-- `illegal_db_object_modification` (Illegal database object modification)
-    - `forbidden_object_types` (optional)
-        - List of forbidden database object types (e.g. `VIEW`, `PROCEDURE`, `FUNCTION`)
-    - `forbidden_schemas` (optional)
-        - List of forbidden database object schemas
-    - `forbidden_objects` (optional)
-        - List of forbidden database object names (e.g. table names)
-- `illegal_alembic_migration` (Illegal alembic migration)
-    - `forbidden_schemas` (optional)
-        - List of forbidden database object schemas
-- `illegal_db_insert` (Illegal database insert)
-    - `forbidden_schemas` (optional)
-        - List of forbidden database object schemas
-    - `forbidden_tables` (optional)
-        - List of forbidden database table names
+### `hetu`
+Finnish Personal Identity Number. Acceptable optional parameter is `filepath`.
+
+### `email`
+Email address. Acceptable optional parameter is `filepath`.
+
+### `sql_object_modification` 
+Database object modification (SQL Server). The search rule searches for database object modifications from SQL files. The search rule can be configured to search for modifications of specific database object types (e.g. `VIEW`, `PROCEDURE`, `FUNCTION`) and/or specific database object schemas and/or specific database objects (e.g. table names). If no parameters are defined, the search rule searches for modifications of all database object types, all schemas and all objects. Acceptable parameters are `object_types`, `schemas`, `objects` and `filepath`.
+
+### `alembic_table_modification`
+Database table modification (Alembic). The search rule searches for database table modifications from alembic migrations. If no parameters are defined, the search rule searches for modifications of all schemas and all tables. Acceptable parameter are `schemas` and `filepath`.
+
+### `sql_insert`
+Database insert (SQL Server). The search rule searches for database inserts from SQL files. The search rule can be configured to search for inserts to specific database object schemas and/or specific database tables. If no parameters are defined, the search rule searches for inserts to all schemas and all tables. Acceptable parameters are `schemas`, `tables` and `filepath`.
+
+## Rule parameters
+| Parameter  | Description | Type |
+| --- | --- | --- |
+| `filepath` | List of file paths. | `list` |
+| `pattern` | Custom regex pattern. | `str` |
+| `schemas` | List of database object schemas. | `list` |
+| `object_types` | List of database object types. | `list` |
+| `objects` | List of database objects. | `list` |
+| `tables` | List of database tables. | `list` |
+
+## Example search rules
 
 Below is an example of `ahjo_scan_config.yaml` file:
 
 ```yaml
-- name: illegal_db_object_modification
+- name: sql_object_modification
   filepath: 
     - database/
-  forbidden_object_types:
+  object_types:
     - PROCEDURE
-  forbidden_schemas:
+  schemas:
     - dummy
     - utils
 - name: hetu
   filepath: 
     - database/
     - alembic/versions/
-- name: select_star
+- name: select_star # Custom rule
   filepath: 
     - database/
   pattern: SELECT \* # This is a regular expression
