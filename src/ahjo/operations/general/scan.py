@@ -128,7 +128,7 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
                 match = file_content[file_content_match[0]:file_content_match[1]]
 
                 # Check if file match string is in ignored matches
-                if file_in_ignored_list(git_file, ignored_matches, match):
+                if file_in_ignored_list(git_file, ignored_matches, match.strip()):
                     continue
                             
                 # Validate match
