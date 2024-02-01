@@ -325,13 +325,14 @@ def log_scan_results(matches: dict, n_matches: int, scan_time: str) -> None:
         logger.info("")
         for match_i, file in enumerate(matches):
             logger.info(f"  File: {file}")
+            last_i = len_matches - 1
             for search_rule in matches[file]:
                 search_rule_str = search_rule if search_rule not in RULE_DESCRIPTIONS else RULE_DESCRIPTIONS[search_rule]
                 logger.info(f"  Search rule: {search_rule_str}")
                 logger.info(f"  Matches:")
                 for match in matches[file][search_rule]:
                     logger.info(f"      {match}")
-                if match_i < len_matches - 1:
+                if (match_i < last_i) or (match_i == last_i == 0):
                     logger.info("")
 
 
