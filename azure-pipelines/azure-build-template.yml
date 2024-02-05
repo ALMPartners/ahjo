@@ -17,6 +17,8 @@ steps:
       pip config set global.index-url $(AhjoArtifactsIndexURL) 
       pip install -r ./msi_build_requirements.txt
       python ./msi_build.py bdist_msi
+      export AHJO_MSI_TARGET_TYPE="system"
+      python ./msi_build.py bdist_msi  
     displayName: "Build release artefacts"
   - task: DotNetCoreCLI@2
     inputs:

@@ -1,11 +1,19 @@
 """ Ahjo MSI installer builder"""
 
 import sys
+import os
 from sysconfig import get_platform
 
 from cx_Freeze import Executable, setup
+from sysconfig import get_platform
 
 from ahjo.version import version as ahjo_version
+
+# If the value in the named env var is set to "system" (case-insensitive),
+# a system ("all users") MSI installer will be created.
+# Any other or missing value creates a user installer ("single user").
+# The final installer name will be suffixed with "-SYSTEM" or "-USER" respectively.
+MSI_TARGET_TYPE_ENV_VAR = "AHJO_MSI_TARGET_TYPE"
 
 # Application information
 name = "Ahjo"
@@ -38,8 +46,16 @@ build_exe_options = {
 }
 
 # Installable distribution options
+installer_type = os.getenv(MSI_TARGET_TYPE_ENV_VAR, "user").strip().lower()
+installer_type_suffix = "system" if installer_type == "system" else "user"
+target_name = "AHJO-%s-%s-%s.msi" % (
+    version,
+    get_platform(),
+    installer_type_suffix.upper(),
+)
 bdist_msi_options = {
-    "all_users": True,
+    "all_users": installer_type == "system",
+    "target_name": target_name,
     "upgrade_code": upgrade_code,
     "add_to_path": True,
     "initial_target_dir": "[%s]\%s\%s" % (programfiles_dir, author, name),
