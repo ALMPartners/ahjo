@@ -40,3 +40,4 @@ steps:
       Destination: 'AzureBlob'
       storage: 'stalmbanksystestdev001'
       ContainerName: 'msi-releases'
+    displayName: Copy msi-files to Azure Storage
