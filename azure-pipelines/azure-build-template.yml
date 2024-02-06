@@ -33,11 +33,10 @@ steps:
     inputs:
       targetPath: 'dist'
     displayName: Publish msi-file as a pipeline artifact
-  - task: AzureFileCopy@4
+  - task: AzureCLI@2
     inputs:
-      SourcePath: 'D:/a/1/s/dist/*.msi'
-      azureSubscription: 'Azure-systest'
-      Destination: 'AzureBlob'
-      storage: 'stalmbanksystestdev001'
-      ContainerName: 'msi-releases'
+      azureSubscription: Azure-Systest
+      scriptType: 'ps' 
+      scriptLocation: 'inlineScript'
+      inlineScript: az storage file upload --account-name stalmbanksystestdev001 --account-key <account-key> --share-name $(SA-key) --path ahjo/ahjo.msi --source D:/a/1/s/dist/*.msi
     displayName: Copy msi-files to Azure Storage
