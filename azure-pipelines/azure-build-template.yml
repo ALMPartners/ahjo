@@ -33,3 +33,10 @@ steps:
     inputs:
       targetPath: 'dist'
     displayName: Publish msi-file as a pipeline artifact
+  - task: AzureFileCopy@4
+    inputs:
+      SourcePath: 'D:/a/1/s/dist/*.msi'
+      azureSubscription: 'CSP-ALMBANK-SYSTEST-DEV-001_TA_1930'
+      Destination: 'AzureBlob'
+      storage: 'stalmbanksystestdev001'
+      ContainerName: 'msi-releases'
