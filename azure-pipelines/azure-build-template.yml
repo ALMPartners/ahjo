@@ -36,7 +36,7 @@ steps:
   - task: AzureFileCopy@4
     inputs:
       SourcePath: 'D:/a/1/s/dist/*.msi'
-      azureSubscription: 'CSP-ALMBANK-SYSTEST-DEV-001_TA_1930'
+      azureSubscription: 'Azure-systest'
       Destination: 'AzureBlob'
       storage: 'stalmbanksystestdev001'
       ContainerName: 'msi-releases'
