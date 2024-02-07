@@ -7,6 +7,7 @@ steps:
     inputs:
       versionSpec: '${{parameters.pythonVersion}}'
     displayName: 'Use Python ${{parameters.pythonVersion}}'     
+
   - bash: |
       set -ex
       python -m venv venv_msi_build
@@ -20,23 +21,38 @@ steps:
       export AHJO_MSI_TARGET_TYPE="system"
       python ./msi_build.py bdist_msi  
     displayName: "Build release artefacts"
+
   - task: DotNetCoreCLI@2
     inputs:
       command: 'custom'
       custom: 'tool'
       arguments: 'install --global azuresigntool'
     displayName: Install AzureSignTool
+
   - bash: |
       AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
     displayName: Sign all msi-files in artefacts-directory
+
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: 'dist'
     displayName: Publish msi-file as a pipeline artifact
+
+  - task: Bash@3
+    inputs:
+      targetType: 'inline'
+      script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        mkdir $(Agent.ToolsDirectory)/azcopy
+        wget -O $(Agent.ToolsDirectory)/azcopy/azcopy_v10.tar.gz https://aka.ms/downloadazcopy-v10-linux
+        tar -xf $(Agent.ToolsDirectory)/azcopy/azcopy_v10.tar.gz -C $(Agent.ToolsDirectory)/azcopy --strip-components=1
+    displayName: Install azcopy
+
   - task: AzureCLI@2
     inputs:
       azureSubscription: Azure-Systest
-      scriptType: 'ps' 
+      scriptType: 'bash' 
       scriptLocation: 'inlineScript'
-      inlineScript: az storage file upload --account-name stalmbanksystestdev001 --account-key $(SA-key) --share-name systestfs001 --path releases/ahjo/ahjo.msi --source D:/a/1/s/dist/*.msi
+      inlineScript: |
+        $(Agent.ToolsDirectory)/azcopy/azcopy  copy 'D:\a\1\s\dist\' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
     displayName: Copy msi-files to Azure Storage
