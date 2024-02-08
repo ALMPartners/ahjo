@@ -40,8 +40,8 @@ steps:
 
   - powershell: |
       Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
-      Expand-Archive azcopy.zip -DestinationPath $(Agent.ToolsDirectory)/azcopy
-      Move-Item -Path $(Agent.ToolsDirectory)/azcopy/azcopy*/*.exe -Destination $(Agent.ToolsDirectory)/azcopy/azcopy.exe
+      Expand-Archive azcopy.zip -DestinationPath D:a/1/s/temp/azcopy
+      Move-Item -Path D:a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:a/1/s/temp/azcopy/azcopy.exe
     displayName: Install azcopy
 
   - task: AzureCLI@2
@@ -50,5 +50,5 @@ steps:
       scriptType: 'bash' 
       scriptLocation: 'inlineScript'
       inlineScript: |
-        $(Agent.ToolsDirectory)/azcopy/azcopy.exe  copy 'D:\a\1\s\dist\' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
+        D:a/1/s/temp/azcopy/azcopy.exe  copy 'D:\a\1\s\dist\' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
     displayName: Copy msi-files to Azure Storage
