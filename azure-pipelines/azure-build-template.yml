@@ -42,6 +42,7 @@ steps:
       Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
       Expand-Archive azcopy.zip -DestinationPath D:/a/1/s/temp/azcopy
       Move-Item -Path D:/a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:/a/1/s/temp/azcopy/azcopy.exe
+      $Env:AZCOPY_SPA_CLIENT_SECRET = "$(ClientSecret)"
     displayName: Install azcopy
 
   - task: AzureCLI@2
@@ -50,7 +51,7 @@ steps:
       scriptType: 'ps' 
       scriptLocation: 'inlineScript'
       inlineScript: |
-        D:/a/1/s/temp/azcopy/azcopy.exe login --service-principal --application-id $(ApplicationId) --tenant-id $(TenantId) --client-secret $(ClientSecret)
+        D:/a/1/s/temp/azcopy/azcopy.exe login --service-principal --application-id $(ApplicationId) --tenant-id $(TenantId)
         D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
     displayName: Copy msi-files to Azure Storage
 
