@@ -30,7 +30,7 @@ steps:
     displayName: Install AzureSignTool
 
   - bash: |
-      AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
+      AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D://a/1/s/dist/*.msi
     displayName: Sign all msi-files in artefacts-directory
 
   - task: PublishPipelineArtifact@1
@@ -40,10 +40,8 @@ steps:
 
   - powershell: |
       Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
-      Expand-Archive azcopy.zip -DestinationPath D:a/1/s/temp/azcopy
-      ls D:a/1/s/temp/azcopy/
-      Move-Item -Path D:a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:a/1/s/temp/azcopy/azcopy.exe
-      ls D:a/1/s/temp/azcopy/
+      Expand-Archive azcopy.zip -DestinationPath D:/a/1/s/temp/azcopy
+      Move-Item -Path D:/a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:/a/1/s/temp/azcopy/azcopy.exe
     displayName: Install azcopy
 
   - task: AzureCLI@2
@@ -52,8 +50,8 @@ steps:
       scriptType: 'ps' 
       scriptLocation: 'inlineScript'
       inlineScript: |
-        D:a/1/s/temp/azcopy/azcopy.exe login --service-principal --application-id $(ApplicationId) --tenant-id $(TenantId) --client-secret $(ClientSecret)
-        D:a/1/s/temp/azcopy/azcopy.exe copy 'D:\a\1\s\dist\*' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
+        D:/a/1/s/temp/azcopy/azcopy.exe login --service-principal --application-id $(ApplicationId) --tenant-id $(TenantId) --client-secret $(ClientSecret)
+        D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
     displayName: Copy msi-files to Azure Storage
 
   - powershell: |
