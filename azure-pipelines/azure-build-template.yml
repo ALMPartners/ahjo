@@ -41,13 +41,15 @@ steps:
   - powershell: |
       Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
       Expand-Archive azcopy.zip -DestinationPath D:a/1/s/temp/azcopy
+      ls D:a/1/s/temp/azcopy/
       Move-Item -Path D:a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:a/1/s/temp/azcopy/azcopy.exe
+      ls D:a/1/s/temp/azcopy/
     displayName: Install azcopy
 
   - task: AzureCLI@2
     inputs:
       azureSubscription: Azure-Systest
-      scriptType: 'bash' 
+      scriptType: 'ps' 
       scriptLocation: 'inlineScript'
       inlineScript: |
         D:a/1/s/temp/azcopy/azcopy.exe  copy 'D:\a\1\s\dist\' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
