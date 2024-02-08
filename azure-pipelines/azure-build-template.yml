@@ -52,5 +52,5 @@ steps:
       scriptType: 'ps' 
       scriptLocation: 'inlineScript'
       inlineScript: |
-        D:a/1/s/temp/azcopy/azcopy.exe  copy 'D:\a\1\s\dist\' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
+        D:a/1/s/temp/azcopy/azcopy.exe  copy 'D:\a\1\s\dist\*' 'https://stalmbanksystestdev001.blob.core.windows.net/msi-releases/ahjo'
     displayName: Copy msi-files to Azure Storage
