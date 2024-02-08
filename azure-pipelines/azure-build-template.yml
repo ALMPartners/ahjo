@@ -38,14 +38,10 @@ steps:
       targetPath: 'dist'
     displayName: Publish msi-file as a pipeline artifact
 
-  - task: Bash@3
-    inputs:
-      targetType: 'inline'
-      script: |
-        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-        mkdir $(Agent.ToolsDirectory)/azcopy
-        wget -O $(Agent.ToolsDirectory)/azcopy/azcopy_v10.tar.gz https://aka.ms/downloadazcopy-v10-linux
-        tar -xf $(Agent.ToolsDirectory)/azcopy/azcopy_v10.tar.gz -C $(Agent.ToolsDirectory)/azcopy --strip-components=1
+  - powershell: |
+      Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
+      Expand-Archive azcopy.zip -DestinationPath $(Agent.ToolsDirectory)/azcopy
+      Move-Item -Path $(Agent.ToolsDirectory)/azcopy/azcopy*/*.exe -Destination $(Agent.ToolsDirectory)/azcopy/azcopy.exe
     displayName: Install azcopy
 
   - task: AzureCLI@2
