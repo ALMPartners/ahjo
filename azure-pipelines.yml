@@ -5,8 +5,6 @@ trigger:
     - '*'
   branches:
     exclude:
-    - master
-    - dev
     - '*'
 
 # Do not trigger on any pull requests
