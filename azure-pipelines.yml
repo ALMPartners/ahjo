@@ -7,8 +7,7 @@ trigger:
     exclude:
     - master
     - dev
-    - AHJO-*
-    - DODI-*
+    - '*'
 
 # Do not trigger on any pull requests
 pr: none
