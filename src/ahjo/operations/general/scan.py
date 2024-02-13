@@ -359,7 +359,7 @@ def log_scan_results(matches: dict, n_matches: int, scan_time: str, n_ignored: i
                 logger.info(f"  Search rule: {search_rule_str}")
                 logger.info(f"  Matches:")
                 for match in matches[file][search_rule]:
-                    logger.info(f"      {match.replace("\n", "")}")
+                    logger.info(f"      {match.rstrip()}")
                 logger.info("")
 
 
