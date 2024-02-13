@@ -500,17 +500,17 @@ The search rules are defined as a list of dictionaries. Each dictionary contains
 
 ## Ignoring scan results
 To filter out false positives, scan results can be ignored by adding them to the `ahjo_scan_ignore.yaml` file (in the project root directory).
-The file is created automatically when the scan command is run for the first time.
-The file should be in the following format: 
+The file is created automatically when the scan command is run for the first time. It is possible to ignore matches or scan rules on specific files.
+Below is an example of `ahjo_scan_ignore.yaml` file:
 ```yaml
 files:
-  - file_path: database/data/example_1.sql
+  - file_path: database/data/persons.sql
     matches:
-      - match_pattern_1
-      - match_pattern_2
-  - file_path: database/data/example_2.sql
-    matches:
-      - match_pattern_3
+      - 010106A921P
+      - 130202A904N
+  - file_path: database/data/addresses.sql
+    rules:
+      - sql_object_modification
 ```
 
 ## Scan as a pre-commit hook
