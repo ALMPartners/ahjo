@@ -32,7 +32,7 @@ SEARCH_PATTERNS = {
 
 
 def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_SCAN_RULES, 
-    log_additional_info: bool = True) -> dict:
+    log_additional_info: bool = True, ignore_config_path: str = "ahjo_scan_ignore.yaml") -> dict:
     ''' Scan ahjo project git files using search rules. 
     
     Parameters
@@ -45,6 +45,8 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
             - hetu (Finnish Personal Identity Number)
     log_additional_info
         Log scan status info. This is disabled when running in quiet mode (e.g. pre-commit hook).
+    ignore_config_path
+        Path to the file containing ignored results.
     
     Returns
     -------
@@ -84,7 +86,7 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
         git_files = _get_files_in_working_directory(filepaths) if len(filepaths) > 0 else _get_files_in_working_directory()
 
     git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
-    ignored_items = load_ignored_items()
+    ignored_items = load_ignored_items(file_path = ignore_config_path)
     matches = {} # dictionary containing matches for each file and search rule
     n_matches = 0 # number of matches
     n_ignored = 0 # number of ignored matches/rules
@@ -388,26 +390,13 @@ def load_ignored_items(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
 
     file_path
         Path to the file containing ignored matches.
-        The file should be in the following format: 
-
-        files:
-            - file_path: <file_path>
-              matches:
-                - <match>
-                - <match>
-            - file_path: <file_path>
-              rules:
-                - <rule_id>
-
-
     """
     ignored_items = {}
     if os.path.exists(file_path) and os.path.isfile(file_path):
         try:
-
             with open(file_path, 'r') as stream:
-                ignored_items_yaml = yaml.load(stream, Loader=yaml.CLoader)["files"]
-
+                ignored_items_yaml = yaml.load(stream, Loader=yaml.CLoader)
+                
             if ignored_items_yaml is not None and len(ignored_items_yaml) > 0:
                 for ignored_item in ignored_items_yaml:
 
@@ -427,24 +416,64 @@ def load_ignored_items(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
             logger.warning(f"Failed to load ignored matches from {file_path}.")
             logger.warning(e)
             pass
-    else: # Create example ignore yaml file if it does not exist
-        with open(file_path, 'w') as stream:
-            yaml.dump({
-                "files": [
-                    {
-                        "file_path": "database/data/example.sql",
-                        "matches": [
-                            "example_pattern_1",
-                            "example_pattern_2"
-                        ]
-                    },
-                    {
-                        "file_path": "database/data/example_2.sql",
-                        "rules": [
-                            "example_rule_id",
-                        ]
-                    }
-                ]
-            }, stream, default_flow_style=False)
 
     return ignored_items
+
+
+def initialize_scan_config(scan_ignore_file: str = "ahjo_scan_ignore.yaml", scan_rules_file: str = "ahjo_scan_rules.yaml"):
+    """ Initialize config files for scan rules and ignored scan results. Overwrites existing files.
+    
+    Parameters
+    ----------
+    scan_ignore_file
+        Path to the file containing ignored matches.
+    scan_rules_file
+        Path to the file containing scan rules.
+    """
+    with open(scan_rules_file, 'w') as stream:
+        yaml.dump([
+            {
+                "name": "hetu",
+                "filepath": ["database/", "alembic/versions/"],
+            },
+            {
+                "name": "email",
+                "filepath": ["database/"],
+            },
+            {
+                "name": "sql_object_modification",
+                "filepath": ["database/"],
+                "object_types": ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"],
+                "schemas": [""],
+                "objects": [""]
+            },
+            {
+                "name": "sql_insert",
+                "filepath": ["database/"],
+                "schemas": [""],
+                "tables": [""]
+            },
+            {
+                "name": "alembic_table_modification",
+                "filepath": ["alembic/versions/"],
+                "schemas": [""]
+            }
+        ], stream, default_flow_style=False, sort_keys=False)
+
+    with open(scan_ignore_file, 'w') as stream:
+        yaml.dump([
+            {
+                "file_path": "database/data/example.sql",
+                "matches": [
+                    "",
+                    ""
+                ]
+            },
+            {
+                "file_path": "database/data/example_2.sql",
+                "rules": [
+                    "",
+                ]
+            }
+        ], stream, default_flow_style=False, sort_keys=False)
+    logger.info(f"Config files for scan rules and ignored scan results initialized: {scan_rules_file}, {scan_ignore_file}")
