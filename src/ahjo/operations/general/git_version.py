@@ -171,7 +171,7 @@ def _update_git_db_record(connectable: Union[Engine, Connection], git_table_sche
         try:
             git_version_table = _recreate_git_version_table(connectable, metadata, git_table_schema, git_table)
         except Exception as error:
-            logger.error("Failed to re-create Git version table with Timestamp column. See log for detailed error message. Check permissions or update the table manually.")
+            logger.error("Failed to re-create Git version table with Timestamp column. See log for detailed error message. Check permissions or add Timestamp column manually.")
             logger.info("Updating table without Timestamp column.")
 
     logger.info(f"Repository: {repository}")
