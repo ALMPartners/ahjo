@@ -1,0 +1,66 @@
+# Only trigger pipeline when a merge happens to dev branch
+trigger:
+  branches:
+    include:
+    - dev
+    exclude:
+    - master
+
+# Do not trigger on any pull requests
+pr: none
+
+# Fetch variables from Azure DevOps variable-group via a YAML-file
+variables:
+  - template: azure-pipelines/azure-variables-template.yml
+
+resources:
+  containers:
+  - container: mssql
+    image: mcr.microsoft.com/mssql/server:latest
+    env:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: SALA_kala12
+      MSSQL_PID: Express
+    ports:
+      - 1433:1433
+
+# List of jobs for the pipeline to execute
+jobs:
+  - job: test # System name for job
+    displayName: Run SQL self-tests # Display name for job
+    pool: # Which DevOps Agent the job uses, for msi-builds windows OS is required. If access to ALMP Azure resources is needed, the pool must be self-hosted
+      name: Azure Pipelines # Pool name
+      vmImage: "ubuntu-latest" # virtual machine image/OS
+    services:
+      localhostsqlserver: mssql
+    timeoutInMinutes: 15 # Timeout
+    steps: # What steps the job includes. These are defined on to the main file here (not recommended)
+    - script: |
+        echo "Waiting for SQL Server to start..."
+        sleep 15
+      displayName: Wait for SQL Server
+
+    - bash: |
+        pgrep -fl sql
+      displayName: Check if SQL server is running
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "$(pythonVersion)"
+      displayName: Install python "$(pythonVersion)"
+
+    - bash: |
+        set -ex
+        python -m venv ahjovenv
+        source ahjovenv/bin/activate
+        python -m pip install --upgrade pip
+        pip install .
+        pip install pyodbc pytest
+      displayName: Install ahjo pip-package
+
+    - bash: |
+        set -ex
+        source ahjovenv/bin/activate
+        cd /home/vsts/work/1/s
+        pytest --mssql_host localhost --mssql_port 1433 --mssql_username SA --mssql_password SALA_kala12 -m "not nopipeline"
+      displayName: Run ahjo

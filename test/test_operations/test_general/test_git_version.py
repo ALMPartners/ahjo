@@ -171,6 +171,7 @@ class TestWithSQLServer():
         assert f"Version: {git_commit}" in log_output
 
     @pytest.mark.git
+    @pytest.mark.nopipeline
     def test_previous_git_tag_should_be_correct(self):
         assert git._get_previous_tag("v3.1.5") == "v3.1.4"
 
