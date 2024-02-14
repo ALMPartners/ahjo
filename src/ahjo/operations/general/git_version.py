@@ -14,7 +14,7 @@ from ahjo.interface_methods import rearrange_params
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from ahjo.interface_methods import load_conf
-from sqlalchemy import Column, MetaData, String, Table
+from sqlalchemy import Column, MetaData, String, Table, DateTime, func
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.exc import NoSuchTableError
 from pathlib import PurePath, Path
@@ -29,9 +29,18 @@ def _sqla_git_table(metadata: MetaData, git_table_schema: str, git_table: str) -
         Column('Repository', String(255), primary_key=True),
         Column('Branch', String(255), primary_key=True),
         Column('Commit', String(50)),
+        Column('Timestamp', DateTime, server_default=func.now(), onupdate=func.now()),
         schema=git_table_schema
     )
 
+
+def _recreate_git_version_table(connectable: Union[Engine, Connection], metadata: MetaData, git_table_schema: str, git_table: str) -> Table:
+    """Recreate the Git version table."""
+    metadata.drop_all(connectable)
+    new_metadata = MetaData()
+    git_version_table = _sqla_git_table(new_metadata, git_table_schema, git_table)
+    new_metadata.create_all(connectable)
+    return git_version_table
 
 @rearrange_params({"engine": "connectable"})
 def update_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str, repository: str = None, git_version_info_path: str = None):
@@ -133,6 +142,7 @@ def _get_files_in_working_directory(path: list = None) -> list:
 @rearrange_params({"engine": "connectable"})
 def _update_git_db_record(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str, repository: str, branch: str, commit: str):
     """Update or create a Git version table."""
+
     metadata = MetaData()
     try:
         git_version_table = Table(git_table, metadata, autoload_with=connectable, schema=git_table_schema)
@@ -145,17 +155,25 @@ def _update_git_db_record(connectable: Union[Engine, Connection], git_table_sche
         except Exception as error:
             raise Exception(
                 'Git version table creation failed. See log for detailed error message.') from error
+        
     git_version_table_columns = [col.name for col in git_version_table.c]
+
     if 'Commit_hash' in git_version_table_columns:
         logger.info(f'Re-creating table {git_table_schema + "." + git_table}.')
         try:
-            metadata.drop_all(connectable)
-            new_metadata = MetaData()
-            git_version_table = _sqla_git_table(new_metadata, git_table_schema, git_table)
-            new_metadata.create_all(connectable)
+            git_version_table = _recreate_git_version_table(connectable, metadata, git_table_schema, git_table)
         except Exception as error:
             raise Exception(
                 'Failed to re-create Git version table. See log for detailed error message.') from error
+
+    if "Timestamp" not in git_version_table_columns:
+        logger.info(f'Re-creating table {git_table_schema + "." + git_table}.')
+        try:
+            git_version_table = _recreate_git_version_table(connectable, metadata, git_table_schema, git_table)
+        except Exception as error:
+            logger.error("Failed to re-create Git version table with Timestamp column. See log for detailed error message. Check permissions or update the table manually.")
+            logger.info("Updating table without Timestamp column.")
+
     logger.info(f"Repository: {repository}")
     logger.info(f"Branch: {branch}")
     logger.info(f"Version: {commit}")
@@ -186,7 +204,7 @@ def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: s
     except Exception as error:
         logger.error('Failed to read GIT version table. See log for detailed error message.')
         logger.debug(error)
-    return result
+    return (result[0], result[1], result[2])
 
 
 @rearrange_params({"engine": "connectable"})

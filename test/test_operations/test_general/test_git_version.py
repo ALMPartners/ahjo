@@ -65,7 +65,8 @@ class TestWithSQLServer():
         git_version_table_columns = [col.name for col in git_version_table.c]
         assert 'Repository' in git_version_table_columns
         assert 'Branch' in git_version_table_columns
-        assert 'Commit' in git_version_table_columns        
+        assert 'Commit' in git_version_table_columns
+        assert 'Timestamp' in git_version_table_columns     
 
     def get_commit_info_from_git_table(self):
         git_version_table = self.reflected_git_table()
@@ -74,7 +75,8 @@ class TestWithSQLServer():
                 select(
                     git_version_table.c.Repository,
                     git_version_table.c.Branch,
-                    git_version_table.c.Commit
+                    git_version_table.c.Commit,
+                    git_version_table.c.Timestamp
                 ))
             return result.fetchall()[0]
 
@@ -82,6 +84,7 @@ class TestWithSQLServer():
         assert row.Repository == repository
         assert row.Branch == branch
         assert row.Commit == commit
+        assert row.Timestamp is not None
 
     @pytest.mark.git
     def test_git_version_table_should_exist_after_update(self):
@@ -154,6 +157,29 @@ class TestWithSQLServer():
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]
         assert 'Commit' in git_version_table_columns
+
+    @pytest.mark.git
+    def test_git_version_table_should_add_timestamp_column_if_not_previously_existed(self):
+        metadata = MetaData()
+        existing_git_version_table = Table(
+            self.git_table, metadata,
+            Column('Repository', String(50), primary_key=True),
+            Column('Branch', String(50), primary_key=True),
+            Column('Commit', String(50)),
+            schema=self.git_table_schema
+        )
+        metadata.create_all(self.engine)
+        insert = existing_git_version_table.insert().values(
+            Repository="ahjo",
+            Branch="dev",
+            Commit="commit"
+        )
+        with self.engine.begin() as connection:
+            connection.execute(insert)
+        git.update_git_version(self.engine, self.git_table_schema, self.git_table)
+        git_version_table = self.reflected_git_table()
+        git_version_table_columns = [col.name for col in git_version_table.c]
+        assert 'Timestamp' in git_version_table_columns
 
     @pytest.mark.git
     def test_correct_git_version_should_be_printed(self, caplog):
