@@ -480,14 +480,14 @@ def initialize_scan_config(scan_ignore_file: str = "ahjo_scan_ignore.yaml", scan
                 {
                     "file_path": "database/data/example.sql",
                     "matches": [
-                        "",
-                        ""
+                        "example_match_1",
+                        "example_match_2"
                     ]
                 },
                 {
                     "file_path": "database/data/example_2.sql",
                     "rules": [
-                        "",
+                        "example_rule_id_1",
                     ]
                 }
             ], stream, default_flow_style=False, sort_keys=False)
