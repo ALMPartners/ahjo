@@ -421,7 +421,7 @@ def load_ignored_items(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
 
 
 def initialize_scan_config(scan_ignore_file: str = "ahjo_scan_ignore.yaml", scan_rules_file: str = "ahjo_scan_rules.yaml"):
-    """ Initialize config files for scan rules and ignored scan results. Overwrites existing files.
+    """ Initialize config files for scan rules and ignored scan results.
     
     Parameters
     ----------
@@ -430,50 +430,65 @@ def initialize_scan_config(scan_ignore_file: str = "ahjo_scan_ignore.yaml", scan
     scan_rules_file
         Path to the file containing scan rules.
     """
-    with open(scan_rules_file, 'w') as stream:
-        yaml.dump([
-            {
-                "name": "hetu",
-                "filepath": ["database/", "alembic/versions/"],
-            },
-            {
-                "name": "email",
-                "filepath": ["database/"],
-            },
-            {
-                "name": "sql_object_modification",
-                "filepath": ["database/"],
-                "object_types": ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"],
-                "schemas": [""],
-                "objects": [""]
-            },
-            {
-                "name": "sql_insert",
-                "filepath": ["database/"],
-                "schemas": [""],
-                "tables": [""]
-            },
-            {
-                "name": "alembic_table_modification",
-                "filepath": ["alembic/versions/"],
-                "schemas": [""]
-            }
-        ], stream, default_flow_style=False, sort_keys=False)
 
-    with open(scan_ignore_file, 'w') as stream:
-        yaml.dump([
-            {
-                "file_path": "database/data/example.sql",
-                "matches": [
-                    "",
-                    ""
-                ]
-            },
-            {
-                "file_path": "database/data/example_2.sql",
-                "rules": [
-                    "",
-                ]
-            }
-        ], stream, default_flow_style=False, sort_keys=False)
-    logger.info(f"Config files for scan rules and ignored scan results initialized: {scan_rules_file}, {scan_ignore_file}")
+    scan_ignore_file_exists = os.path.exists(scan_ignore_file)
+    scan_rules_file_exists = os.path.exists(scan_rules_file)
+
+    if scan_ignore_file_exists:
+        logger.warning(f"Config file for ignored scan results already exist: {scan_ignore_file}. Remove this file if you want to initialize a new one.")
+    if scan_rules_file_exists:
+        logger.warning(f"Config file for scan rules already exist: {scan_rules_file}. Remove this file if you want to initialize a new one.")
+    if scan_ignore_file_exists and scan_rules_file_exists:
+        logger.warning("Initialization aborted.")
+        return
+
+    if not scan_rules_file_exists:
+        with open(scan_rules_file, 'w') as stream:
+            yaml.dump([
+                {
+                    "name": "hetu",
+                    "filepath": ["database/", "alembic/versions/"],
+                },
+                {
+                    "name": "email",
+                    "filepath": ["database/"],
+                },
+                {
+                    "name": "sql_object_modification",
+                    "filepath": ["database/"],
+                    "object_types": ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"],
+                    "schemas": [""],
+                    "objects": [""]
+                },
+                {
+                    "name": "sql_insert",
+                    "filepath": ["database/"],
+                    "schemas": [""],
+                    "tables": [""]
+                },
+                {
+                    "name": "alembic_table_modification",
+                    "filepath": ["alembic/versions/"],
+                    "schemas": [""]
+                }
+            ], stream, default_flow_style=False, sort_keys=False)
+        logger.info(f"Config file for scan rules initialized: {scan_rules_file}")
+
+    if not scan_ignore_file_exists:
+        with open(scan_ignore_file, 'w') as stream:
+            yaml.dump([
+                {
+                    "file_path": "database/data/example.sql",
+                    "matches": [
+                        "",
+                        ""
+                    ]
+                },
+                {
+                    "file_path": "database/data/example_2.sql",
+                    "rules": [
+                        "",
+                    ]
+                }
+            ], stream, default_flow_style=False, sort_keys=False)
+        logger.info(f"Config file for ignored scan results initialized: {scan_ignore_file}")
