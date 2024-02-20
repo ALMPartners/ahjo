@@ -30,7 +30,7 @@ steps:
     displayName: Install AzureSignTool
 
   - bash: |
-      AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D://a/1/s/dist/*.msi
+      AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
     displayName: Sign all msi-files in artefacts-directory
 
   - task: PublishPipelineArtifact@1
