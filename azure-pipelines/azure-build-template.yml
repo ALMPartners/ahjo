@@ -38,13 +38,18 @@ steps:
       targetPath: 'dist'
     displayName: Publish msi-file as a pipeline artifact
 
-  - powershell: |
-      Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
-      Expand-Archive azcopy.zip -DestinationPath D:/a/1/s/temp/azcopy
-      Move-Item -Path D:/a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:/a/1/s/temp/azcopy/azcopy.exe
-    displayName: Install azcopy
+  - task: powershell@2
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+    inputs:
+      targetType: 'inline'
+      script: |
+        Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
+        Expand-Archive azcopy.zip -DestinationPath D:/a/1/s/temp/azcopy
+        Move-Item -Path D:/a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:/a/1/s/temp/azcopy/azcopy.exe
+    displayName: Install az copy
 
   - task: AzureCLI@2
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
     inputs:
       azureSubscription: Azure-Systest
       scriptType: 'ps' 
@@ -54,3 +59,11 @@ steps:
         D:/a/1/s/temp/azcopy/azcopy.exe login --service-principal --application-id "$(ApplicationId)" --tenant-id "$(TenantId)"
         D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' 'https://stalmbanksystestdev001.file.core.windows.net/msi-releases/' --recursive --preserve-smb-permissions=true --preserve-smb-info=true
     displayName: Copy msi-files to Azure Storage
+
+  - task: powershell@2
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+    inputs:
+      targetType: 'inline'
+      script: |
+        Invoke-WebRequest -Method POST -Uri "https://prod-90.westeurope.logic.azure.com:443/workflows/e66fd92a9c344cc089f461140f4aa8f5/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oWi7gdwFLBQQhiGNAvIonkyPpp7E_088iqtlCKiX5kY"
+    displayName: Trigger MPA-release pipeline
