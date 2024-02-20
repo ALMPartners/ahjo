@@ -32,7 +32,7 @@ SEARCH_PATTERNS = {
 
 
 def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_SCAN_RULES, 
-    log_additional_info: bool = True) -> dict:
+    log_additional_info: bool = True, ignore_config_path: str = "ahjo_scan_ignore.yaml") -> dict:
     ''' Scan ahjo project git files using search rules. 
     
     Parameters
@@ -45,6 +45,8 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
             - hetu (Finnish Personal Identity Number)
     log_additional_info
         Log scan status info. This is disabled when running in quiet mode (e.g. pre-commit hook).
+    ignore_config_path
+        Path to the file containing ignored results.
     
     Returns
     -------
@@ -84,9 +86,10 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
         git_files = _get_files_in_working_directory(filepaths) if len(filepaths) > 0 else _get_files_in_working_directory()
 
     git_files = [git_file for git_file in git_files if git_file] # Remove possible empty strings from git_files
-    ignored_matches = load_ignored_matches()
+    ignored_items = load_ignored_items(file_path = ignore_config_path)
     matches = {} # dictionary containing matches for each file and search rule
     n_matches = 0 # number of matches
+    n_ignored = 0 # number of ignored matches/rules
     search_rules = add_placeholders_to_patterns(search_rules)
 
     # Scan each file
@@ -102,6 +105,13 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
         # Iterate through search rules
         for search_rule in search_rules:
             
+            search_rule_name = search_rule.get("name")
+
+            # Check if file is in ignored rules
+            if file_in_ignored_list(git_file, ignored_items, ignore_type = "rules", rule_name = search_rule_name):
+                n_ignored += 1
+                continue
+
             # Check if git_file is in search rule file path
             rule_filepaths = search_rule.get("filepath", ".")
             if isinstance(rule_filepaths, str): rule_filepaths = [rule_filepaths]
@@ -109,7 +119,6 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
                 continue
 
             # Get search rule pattern
-            search_rule_name = search_rule.get("name")
             search_rule_pattern = search_rule.get("pattern") # Custom search
             if not search_rule_pattern:
                 search_rule_pattern = SEARCH_PATTERNS.get(search_rule_name)
@@ -128,7 +137,8 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
                 match = file_content[file_content_match[0]:file_content_match[1]]
 
                 # Check if file match string is in ignored matches
-                if file_in_ignored_list(git_file, ignored_matches, match.strip()):
+                if file_in_ignored_list(git_file, ignored_items, ignore_type = "matches", match = match.strip()):
+                    n_ignored += 1
                     continue
                             
                 # Validate match
@@ -143,8 +153,8 @@ def scan_project(scan_staging_area: bool = False, search_rules: list = DEFAULT_S
                 matches[git_file][search_rule_name].append(match)
                 n_matches += 1
 
-    log_scan_results(matches, n_matches, str(datetime.now() - start_time))
-    if log_additional_info: 
+    log_scan_results(matches, n_matches, str(datetime.now() - start_time), n_ignored)
+    if log_additional_info:
         log_scan_status_info(n_matches > 0)
 
     return matches
@@ -283,31 +293,40 @@ def is_hetu(match: str) -> bool:
     return True
 
 
-def file_in_ignored_list(file: str, ignored_matches: dict, match: str) -> bool:
+def file_in_ignored_list(file: str, ignored_items: dict, ignore_type = None, match: str = None, rule_name = None) -> bool:
     """ Check if file content match is in ignored matches. 
     
     Parameters
     ----------
     file
         File path.
-    ignored_matches
-        Dictionary containing ignored matches for each file. 
+    ignored_items
+        Dictionary containing ignored matches or rules for each file.
+    ignore_type
+        Type of ignored item. Allowed values: "rules", "matches"
     match
         Match to check if it is in ignored matches.
+    rule_name
+        Rule name to check if it is in ignored matches.
     
     Returns
     -------
     bool
-        Is file match in ignored matches or not? 
+        Is file match in ignored items or not? 
     """
-    if file in ignored_matches:
-        for ignored_match in ignored_matches[file]:
-            if ignored_match == match:
-                return True
-    return False           
+    if file in ignored_items:
+        if ignore_type in ignored_items[file]:
+            for ignored_item in ignored_items[file][ignore_type]:
+                if ignore_type == "rules":
+                    if ignored_item == rule_name:
+                        return True
+                if ignore_type == "matches":
+                    if match in ignored_item:
+                        return True
+    return False
 
 
-def log_scan_results(matches: dict, n_matches: int, scan_time: str) -> None:
+def log_scan_results(matches: dict, n_matches: int, scan_time: str, n_ignored: int) -> None:
     """ Log scan results. 
     
     Parameters
@@ -318,22 +337,32 @@ def log_scan_results(matches: dict, n_matches: int, scan_time: str) -> None:
         Number of matches.
     scan_time
         Scan time ("HH:MM:SS.ms")
+    n_ignored
+        Number of ignored matches/rules.
     """
     len_matches = len(matches)
     if len_matches > 0:
-        logger.info("Scan completed. Elapsed time: " + scan_time + ". Found " + str(n_matches) + " match" + ("es" if n_matches > 1 else "") + ":")
         logger.info("")
-        for match_i, file in enumerate(matches):
+        logger.info("Scan completed")
+        logger.info("---------------------------------")
+        logger.info("Matches:           " + str(n_matches))
+        if n_ignored > 0:
+            logger.info(f"Ignored matches:   {n_ignored}")
+        logger.info("Ellapsed time:     " + scan_time)
+        logger.info("---------------------------------")
+        logger.info("")
+        logger.info("Results:")
+        logger.info("")
+
+        for file in matches:
             logger.info(f"  File: {file}")
-            last_i = len_matches - 1
             for search_rule in matches[file]:
                 search_rule_str = search_rule if search_rule not in RULE_DESCRIPTIONS else RULE_DESCRIPTIONS[search_rule]
                 logger.info(f"  Search rule: {search_rule_str}")
                 logger.info(f"  Matches:")
                 for match in matches[file][search_rule]:
-                    logger.info(f"      {match}")
-                if (match_i < last_i) or (match_i == last_i == 0):
-                    logger.info("")
+                    logger.info(f"      {match.rstrip()}")
+                logger.info("")
 
 
 def log_scan_status_info(matches_found: bool) -> None:
@@ -353,59 +382,113 @@ def log_scan_status_info(matches_found: bool) -> None:
         logger.info("")
 
 
-def load_ignored_matches(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
-    """ Load ignored matches from file. Matches in this file are ignored in scan results.
+def load_ignored_items(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
+    """ Load ignored items from file. Matches or rules in this file are ignored in scan results.
     
     Parameters
     ----------
 
     file_path
         Path to the file containing ignored matches.
-        The file should be in the following format: 
-
-        files:
-            - file_path: <file_path>
-              matches:
-                - <match>
-                - <match>
-            - file_path: <file_path>
-              matches:
-                - <match>
-
-
     """
-    ignored_matches = {}
+    ignored_items = {}
     if os.path.exists(file_path) and os.path.isfile(file_path):
         try:
             with open(file_path, 'r') as stream:
-                ignored_matches_yaml = yaml.load(stream, Loader=yaml.CLoader)["files"]
-            for ignored_item in ignored_matches_yaml:
-                file_path = ignored_item["file_path"]
-                ignored_matches[file_path] = []
-                for match in ignored_item["matches"]:
-                    ignored_matches[file_path].append(match)
+                ignored_items_yaml = yaml.load(stream, Loader=yaml.CLoader)
+                
+            if ignored_items_yaml is not None and len(ignored_items_yaml) > 0:
+                for ignored_item in ignored_items_yaml:
+
+                    file_path = ignored_item["file_path"]
+                    ignored_items[file_path] = {}
+                    
+                    if "matches" in ignored_item:
+                        ignored_items[file_path]["matches"] = []
+                        for match in ignored_item["matches"]:
+                            ignored_items[file_path]["matches"].append(match)
+                    if "rules" in ignored_item:
+                        ignored_items[file_path]["rules"] = []
+                        for rule in ignored_item["rules"]:
+                            ignored_items[file_path]["rules"].append(rule)
+
         except Exception as e:
             logger.warning(f"Failed to load ignored matches from {file_path}.")
             logger.warning(e)
             pass
-    else: # Create example ignore yaml file if it does not exist
-        with open(file_path, 'w') as stream:
-            yaml.dump({
-                "files": [
-                    {
-                        "file_path": "database/data/example.sql",
-                        "matches": [
-                            "example_pattern_1",
-                            "example_pattern_2"
-                        ]
-                    },
-                    {
-                        "file_path": "database/data/example_2.sql",
-                        "matches": [
-                            "example_pattern_3",
-                        ]
-                    }
-                ]
-            }, stream, default_flow_style=False)
 
-    return ignored_matches
+    return ignored_items
+
+
+def initialize_scan_config(scan_ignore_file: str = "ahjo_scan_ignore.yaml", scan_rules_file: str = "ahjo_scan_rules.yaml"):
+    """ Initialize config files for scan rules and ignored scan results.
+    
+    Parameters
+    ----------
+    scan_ignore_file
+        Path to the file containing ignored matches.
+    scan_rules_file
+        Path to the file containing scan rules.
+    """
+
+    scan_ignore_file_exists = os.path.exists(scan_ignore_file)
+    scan_rules_file_exists = os.path.exists(scan_rules_file)
+
+    if scan_ignore_file_exists:
+        logger.warning(f"Config file for ignored scan results already exist: {scan_ignore_file}. Remove this file if you want to initialize a new one.")
+    if scan_rules_file_exists:
+        logger.warning(f"Config file for scan rules already exist: {scan_rules_file}. Remove this file if you want to initialize a new one.")
+    if scan_ignore_file_exists and scan_rules_file_exists:
+        logger.warning("Initialization aborted.")
+        return
+
+    if not scan_rules_file_exists:
+        with open(scan_rules_file, 'w') as stream:
+            yaml.dump([
+                {
+                    "name": "hetu",
+                    "filepath": ["database/", "alembic/versions/"],
+                },
+                {
+                    "name": "email",
+                    "filepath": ["database/"],
+                },
+                {
+                    "name": "sql_object_modification",
+                    "filepath": ["database/"],
+                    "object_types": ["PROCEDURE", "FUNCTION", "VIEW", "TRIGGER", "TABLE", "TYPE", "ASSEMBLY"],
+                    "schemas": [""],
+                    "objects": [""]
+                },
+                {
+                    "name": "sql_insert",
+                    "filepath": ["database/"],
+                    "schemas": [""],
+                    "tables": [""]
+                },
+                {
+                    "name": "alembic_table_modification",
+                    "filepath": ["alembic/versions/"],
+                    "schemas": [""]
+                }
+            ], stream, default_flow_style=False, sort_keys=False)
+        logger.info(f"Config file for scan rules initialized: {scan_rules_file}")
+
+    if not scan_ignore_file_exists:
+        with open(scan_ignore_file, 'w') as stream:
+            yaml.dump([
+                {
+                    "file_path": "database/data/example.sql",
+                    "matches": [
+                        "example_match_1",
+                        "example_match_2"
+                    ]
+                },
+                {
+                    "file_path": "database/data/example_2.sql",
+                    "rules": [
+                        "example_rule_id_1",
+                    ]
+                }
+            ], stream, default_flow_style=False, sort_keys=False)
+        logger.info(f"Config file for ignored scan results initialized: {scan_ignore_file}")
