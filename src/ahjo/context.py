@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019 - 2022 ALM Partners Oy
+# Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -34,7 +34,7 @@ AHJO_PATH = _get_app_path()
 class Context:
     """All the default stuff that is passed to actions, like configuration."""
 
-    def __init__(self, config_filename: str, master_engine: Engine = None):
+    def __init__(self, config_filename: str, master_engine: Engine = None, command_line_args: dict = {}):
         self.engine = None
         self.master_engine = master_engine
         self.connection = None
@@ -43,6 +43,7 @@ class Context:
         self.connectivity_type = None
         self.config_filename = config_filename
         self.configuration = load_conf(config_filename)
+        self.command_line_args = command_line_args
         if self.configuration is None:
             raise Exception("No configuration found")
         
@@ -104,6 +105,10 @@ class Context:
 
     def get_enable_transaction(self) -> bool:
         return self.enable_transaction
+
+
+    def get_command_line_args(self) -> dict:
+        return self.command_line_args
 
 
     def set_enable_transaction(self, enable_transaction: bool):
