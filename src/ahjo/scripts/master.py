@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019 - 2023 ALM Partners Oy
+# Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
@@ -38,12 +38,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", help="Action to execute", type=str)
     parser.add_argument("config_filename", help="Configuration filename", type=str, nargs='?')
-    parser.add_argument('--files', nargs='*', default=[], help='Files')
-    parser.add_argument('--object_type', nargs=1, default=[], help='Object type', choices=['view', 'procedure', 'function', 'assembly'])
+    parser.add_argument('--files', nargs='+', default=[], help='Files', required=False)
+    parser.add_argument('--object_type', nargs=1, default=[], help='Object type', choices=['view', 'procedure', 'function', 'assembly'], required=False)
     parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
-
-    args = parser.parse_args()
+    parser.add_argument("--skip-metadata", action="store_true", help="Skip metadata operations", required=False)
+    parser.add_argument("--skip-git-update", action="store_true", help="Skip updating git version", required=False)
+    parser.add_argument("--skip-alembic-update", action="store_true", help="Skip alembic update", required=False)
+    
+    known_args = parser.parse_known_args()
+    args = known_args[0]
+    #rest_args = known_args[1]
     ahjo_action = args.action
+    args_dict = {k: v for k, v in args._get_kwargs()}
 
     logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')
@@ -51,7 +57,7 @@ def main():
     logger.debug(f'Object type:  {args.object_type}')
 
     config_path = get_config_path(args.config_filename)
-    context = Context(config_path)
+    context = Context(config_path, command_line_args = args_dict)
     import_actions(
         ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
     )
