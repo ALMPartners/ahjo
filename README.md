@@ -204,6 +204,7 @@ Ahjo actions are run with `ahjo` command. The command syntax with positional arg
 ahjo <action> <config_filename>
 ```
 where `<action>` is the name of the action to be run and `<config_filename>` is the path to the project-specific config file. The config parameter is optional if the path is defined in environment variable `AHJO_CONFIG_PATH`.
+
 The rest of the optional parameters are listed below.
 
 | Argument  | Shorthand | Description | Default Value |
@@ -217,7 +218,9 @@ The rest of the optional parameters are listed below.
 | `--skip-git-version` | `-sg` | Skip updating current git version to git version table. | `False` |
 
 
+
 It is also possible to pass custom command-line arguments and their values to actions. 
+
 For example, to pass a custom argument `--example-arg` with values `x` and `y` to action `example-action`, use the following command:
 ```bash
 ahjo example-action --example-arg x y
@@ -282,7 +285,7 @@ Updated schemas are listed in *metadata_allowed_schemas*.
 Runs tests and returns the results.
 Runs all SQL scripts under *./database/tests*.
 
-## List
+## list
 You can view all available actions and their descriptions with command `ahjo list`.
 ```
 ahjo list
