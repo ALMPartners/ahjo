@@ -182,15 +182,50 @@ Action downgrade is not permitted, allowed actions: deploy, data
 
 To add your own actions (f.e. for more complex testing), modify ahjo_actions.py.
 
-# <u>Script and arguments</u>
+# <u>Scripts</u>
+
+Below is a list of available scripts and their descriptions.
+
+| Script  | Description |
+| --- | --- |
+| `ahjo` | Main script for running Ahjo actions. |
+| `ahjo-init-project` | Script for initializing new Ahjo project. |
+| `ahjo-multi-project-build` | Script for running actions from multiple projects at once. |
+| `ahjo-upgrade` | Script for running version upgrades. |
+| `ahjo-scan` | Script for searching matches with defined search rules from files in the working directory or git staging area. |
+| `ahjo-install-git-hook` | Script for installing Ahjo scan command as a pre-commit hook. |
+| `ahjo-config` | Script for converting config files between JSON/JSONC and YAML formats. |
+
+# <u>Actions</u>
+
+## Arguments
+Ahjo actions are run with `ahjo` command. The command syntax with positional arguments is:
 ```
 ahjo <action> <config_filename>
 ```
-`<config_filename>` is not mandatory if the config path is defined in environment variable `AHJO_CONFIG_PATH`. 
-By default, confirmation is asked for actions that affect the database. Confirmation can be skipped with `-ni` or `--non-interactive` argument.
-Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The later option is recommended for production environments. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file.
+where `<action>` is the name of the action to be run and `<config_filename>` is the path to the project-specific config file. The config parameter is optional if the path is defined in environment variable `AHJO_CONFIG_PATH`. The rest of the optional parameters are listed below.
 
-Pre-defined actions include:
+| Argument  | Shorthand | Description | Default Value |
+| --- | --- | --- | --- | --- |
+| `list` | | List all available actions and their descriptions. | |
+| `--non-interactive` | `-ni` | Skip confirmation for actions that affect the database. | `False` |
+| `--files` | | List of files to be used in action. | |
+| `--object_type` | | Type of database object. | |
+| `--skip-metadata` | `-sm` | Skip updating documented extended properties to database. | `False` |
+| `--skip-alembic` | `-sa` | Skip running alembic migrations. | `False` |
+| `--skip-git-version` | `-sg` | Skip updating current git version to git version table. | `False` |
+
+It is also possible to pass custom command-line arguments and their values to actions. For example, to pass a custom argument `--example-arg` with values `x` and `y` to action `example-action`, use the following command:
+```bash
+ahjo example-action --example-arg x y
+```
+
+In the action, the values of the custom argument can be accessed from the context object:
+```python
+example_arg_values = context.get_command_line_args().get("example-arg") # Returns a list of strings ["x", "y"]
+```
+
+## Pre-defined actions
 
 ## init-config
 Initializes local configuration file. This file is intended to hold configurations that should not be versioned.
@@ -365,7 +400,13 @@ alembic -x main_config=config_development.jsonc downgrade -1
 The [env.py](./ahjo/resources/files/env.py) is created in initialize-project command.
 
 
-# <u>Authentication with azure-identity</u>
+# <u> Authentication </u>
+Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file. The username and password files can be defined in the config file with the keys `username_file` and `password_file`. If no path is given, credentials are asked every time any database altering action is run. The password and username files are created automatically if they do not exist.
+
+## Microsoft Entra
+Ahjo supports authentication with Microsoft Entra / Azure AD. The authentication type is defined in the config file with the key `azure_authentication`. The possible values are `"ActiveDirectoryPassword"`, `"ActiveDirectoryInteractive"`, `"ActiveDirectoryIntegrated"` and `"AzureIdentity"`. The authentication type `"AzureIdentity"` is used for authentication with azure-identity library.
+
+## Azure-identity
 Instructions for enabling azure identity authentication in ahjo:
 
 1. Install [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) & [azure-identity](https://pypi.org/project/azure-identity/) 

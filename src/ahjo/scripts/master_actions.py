@@ -86,7 +86,9 @@ def structure(context):
 def deploy(context):
     """(MSSQL) Run 'alembic upgrade head'. Deploy functions, views and prodecures. Update extended properties and Git version."""
     connectable = context.get_connectable()
-    if not context.command_line_args.get("skip_alembic_update", False):
+    cl_args = context.get_command_line_args()
+    
+    if not cl_args.get("skip_alembic_update", False):
         op.upgrade_db_to_latest_alembic_version(
             context.config_filename,
             connection = context.get_connection() if type(connectable) == Connection else None
@@ -96,7 +98,7 @@ def deploy(context):
     op.deploy_sqlfiles(context.get_connectable(), "./database/views/", "Deploying views")
     op.deploy_sqlfiles(context.get_connectable(), "./database/procedures/", "Deploying procedures")
 
-    if not context.command_line_args.get("skip_git_update", False):
+    if not cl_args.get("skip_git_update", False):
         op.update_git_version(
             context.get_connectable(),
             context.configuration.get('git_table_schema', 'dbo'),
@@ -105,7 +107,7 @@ def deploy(context):
             git_version_info_path = context.configuration.get('git_version_info_path')
         )
 
-    if not context.command_line_args.get("skip_metadata", False):
+    if not cl_args.get("skip_metadata", False):
         op.update_db_object_properties(
                 context.get_connectable(),
                 context.configuration.get('metadata_allowed_schemas')
@@ -114,17 +116,19 @@ def deploy(context):
 @action(affects_database=True, dependencies=['init'])
 def deploy_files(context, **kwargs):
     """(MSSQL) Run 'alembic upgrade head' Deploy files. Update Git version."""
-    deploy_files = context.command_line_args.get("files", [])
+    cl_args = context.get_command_line_args()
+    deploy_files = cl_args.get("files", [])
+
     if not (isinstance(deploy_files, list) and len(deploy_files) > 0):
         logger.warning('Check argument: "files".')
         return
 
-    if not context.command_line_args.get("skip_alembic_update", False):
+    if not cl_args.get("skip_alembic_update", False):
         op.upgrade_db_to_latest_alembic_version(context.config_filename)
 
     op.deploy_sqlfiles(context.get_connectable(), deploy_files, "Deploying sql files")
 
-    if not context.command_line_args.get("skip_git_update", False):
+    if not cl_args.get("skip_git_update", False):
         op.update_git_version(
             context.get_connectable(),
             context.configuration.get('git_table_schema', 'dbo'),
@@ -145,11 +149,12 @@ def assembly(context):
 @action(affects_database=True, dependencies=['deploy'])
 def data(context):
     """Insert data."""
+    cl_args = context.get_command_line_args()
     engine = context.get_engine()
     connectable = context.get_connectable()
     deploy_args = [connectable, "./database/data/", "Inserting data"]
     deploy_mssql_sqlfiles(*deploy_args) if engine.name == "mssql" else op.deploy_sqlfiles(*deploy_args)
-    if not context.command_line_args.get("skip_git_update", False):
+    if not cl_args.get("skip_git_update", False):
         op.update_git_version(
             connectable,
             context.configuration.get('git_table_schema', 'dbo'),

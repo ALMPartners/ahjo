@@ -36,20 +36,33 @@ print(line)
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", help="Action to execute", type=str)
-    parser.add_argument("config_filename", help="Configuration filename", type=str, nargs='?')
-    parser.add_argument('--files', nargs='+', default=[], help='Files', required=False)
-    parser.add_argument('--object_type', nargs=1, default=[], help='Object type', choices=['view', 'procedure', 'function', 'assembly'], required=False)
-    parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
-    parser.add_argument("--skip-metadata", action="store_true", help="Skip metadata operations", required=False)
-    parser.add_argument("--skip-git-update", action="store_true", help="Skip updating git version", required=False)
-    parser.add_argument("--skip-alembic-update", action="store_true", help="Skip alembic update", required=False)
+    parser.add_argument("action", help="Name of the action to be run.", type=str)
+    parser.add_argument("config_filename", help="Path to the project-specific config file. The parameter is optional if the config path is defined in environment variable AHJO_CONFIG_PATH.", type=str, nargs='?')
+    parser.add_argument('--files', nargs='+', default=[], help='List of files to be used in action.', required=False)
+    parser.add_argument('--object_type', nargs=1, default=[], help='Type of database object.', choices=['view', 'procedure', 'function', 'assembly'], required=False)
+    parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode.', required=False)
+    parser.add_argument("-sm", "--skip-metadata", action="store_true", help="Skip updating documented extended properties to database.", required=False)
+    parser.add_argument("-sg", "--skip-git-update", action="store_true", help="Skip updating current git version to git version table.", required=False)
+    parser.add_argument("-sa", "--skip-alembic-update", action="store_true", help="Skip running alembic migrations.", required=False)
     
     known_args = parser.parse_known_args()
     args = known_args[0]
-    #rest_args = known_args[1]
     ahjo_action = args.action
+    rest_args = known_args[1]
     args_dict = {k: v for k, v in args._get_kwargs()}
+    rest_args_dict = {}
+
+    for i in range(len(rest_args)):
+        curr_arg = rest_args[i]
+        if curr_arg.startswith("--") or curr_arg.startswith("-"):
+            key = curr_arg[2:] if curr_arg.startswith("--") else curr_arg[1:]
+            rest_args_dict[key] = []
+            i += 1
+            while i < len(rest_args) and not rest_args[i].startswith("-") and not rest_args[i].startswith("--"):
+                rest_args_dict[key].append(rest_args[i])
+                i += 1
+
+    args_dict.update(rest_args_dict)
 
     logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')
