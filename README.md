@@ -206,7 +206,7 @@ ahjo <action> <config_filename>
 where `<action>` is the name of the action to be run and `<config_filename>` is the path to the project-specific config file. The config parameter is optional if the path is defined in environment variable `AHJO_CONFIG_PATH`. The rest of the optional parameters are listed below.
 
 | Argument  | Shorthand | Description | Default Value |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- |
 | `list` | | List all available actions and their descriptions. | |
 | `--non-interactive` | `-ni` | Skip confirmation for actions that affect the database. | `False` |
 | `--files` | | List of files to be used in action. | |
