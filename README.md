@@ -228,7 +228,7 @@ ahjo example-action --example-arg x y
 
 In the action, the values of the custom argument can be accessed from the context object:
 ```python
-example_arg_values = context.get_command_line_args().get("example-arg") # Returns a list of strings ["x", "y"]
+example_arg_values = context.get_command_line_arg("example-arg") # Returns a list of strings ["x", "y"]
 ```
 
 ## Pre-defined actions

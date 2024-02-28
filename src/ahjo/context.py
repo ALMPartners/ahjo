@@ -8,7 +8,7 @@ import sys
 import yaml
 import json
 from logging import getLogger
-from typing import Union
+from typing import Union, Any
 from sqlalchemy.engine import Engine, Connection
 from ahjo.database_utilities import (create_conn_info, create_sqlalchemy_engine, create_sqlalchemy_url)
 from ahjo.interface_methods import load_conf, load_json_conf, load_yaml_conf
@@ -109,6 +109,10 @@ class Context:
 
     def get_command_line_args(self) -> dict:
         return self.command_line_args
+
+
+    def get_command_line_arg(self, key: str) -> Any:
+        return self.command_line_args.get(key, None)
 
 
     def set_enable_transaction(self, enable_transaction: bool):
