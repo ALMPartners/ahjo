@@ -55,8 +55,10 @@ steps:
       scriptType: 'ps' 
       scriptLocation: 'inlineScript'
       inlineScript: |
+        $env:AZCOPY_AUTO_LOGIN_TYPE="SPN"
         $env:AZCOPY_SPA_CLIENT_SECRET="$(ClientSecret)"
-        D:/a/1/s/temp/azcopy/azcopy.exe login --service-principal --application-id "$(ApplicationId)" --tenant-id "$(TenantId)"
+        $env:AZCOPY_SPA_CLIENT_ID="$(ApplicationId)"
+        $env:AZCOPY_SPA_TENANT_ID="$(TenantId)"
         D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' 'https://stalmbanksystestdev001.file.core.windows.net/msi-releases/' --recursive --preserve-smb-permissions=true --preserve-smb-info=true
     displayName: Copy msi-files to Azure Storage
 
