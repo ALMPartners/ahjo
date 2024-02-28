@@ -198,12 +198,13 @@ Below is a list of available scripts and their descriptions.
 
 # <u>Actions</u>
 
-## Arguments
+## Running actions
 Ahjo actions are run with `ahjo` command. The command syntax with positional arguments is:
 ```
 ahjo <action> <config_filename>
 ```
-where `<action>` is the name of the action to be run and `<config_filename>` is the path to the project-specific config file. The config parameter is optional if the path is defined in environment variable `AHJO_CONFIG_PATH`. The rest of the optional parameters are listed below.
+where `<action>` is the name of the action to be run and `<config_filename>` is the path to the project-specific config file. The config parameter is optional if the path is defined in environment variable `AHJO_CONFIG_PATH`.
+The rest of the optional parameters are listed below.
 
 | Argument  | Shorthand | Description | Default Value |
 | --- | --- | --- | --- |
@@ -215,7 +216,9 @@ where `<action>` is the name of the action to be run and `<config_filename>` is 
 | `--skip-alembic` | `-sa` | Skip running alembic migrations. | `False` |
 | `--skip-git-version` | `-sg` | Skip updating current git version to git version table. | `False` |
 
-It is also possible to pass custom command-line arguments and their values to actions. For example, to pass a custom argument `--example-arg` with values `x` and `y` to action `example-action`, use the following command:
+
+It is also possible to pass custom command-line arguments and their values to actions. 
+For example, to pass a custom argument `--example-arg` with values `x` and `y` to action `example-action`, use the following command:
 ```bash
 ahjo example-action --example-arg x y
 ```
@@ -404,7 +407,7 @@ The [env.py](./ahjo/resources/files/env.py) is created in initialize-project com
 Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file. The username and password files can be defined in the config file with the keys `username_file` and `password_file`. If no path is given, credentials are asked every time any database altering action is run. The password and username files are created automatically if they do not exist.
 
 ## Microsoft Entra
-Ahjo supports authentication with Microsoft Entra / Azure AD. The authentication type is defined in the config file with the key `azure_authentication`. The possible values are `"ActiveDirectoryPassword"`, `"ActiveDirectoryInteractive"`, `"ActiveDirectoryIntegrated"` and `"AzureIdentity"`. The authentication type `"AzureIdentity"` is used for authentication with azure-identity library.
+Ahjo supports authentication with Microsoft Entra / Azure AD. The authentication type is defined in the config file with the key `azure_authentication`. The possible values are `"ActiveDirectoryPassword"`, `"ActiveDirectoryInteractive"`, `"ActiveDirectoryIntegrated"` and `"AzureIdentity"`. The authentication type `"AzureIdentity"` is used for authentication with azure-identity library (see [Azure-identity](#Azure-identity)).
 
 ## Azure-identity
 Instructions for enabling azure identity authentication in ahjo:
