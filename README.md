@@ -213,7 +213,7 @@ The rest of the optional parameters are listed below.
 | `--non-interactive` | `-ni` | Skip confirmation for actions that affect the database. | `False` |
 | `--files` | | List of files to be used in action. | |
 | `--object_type` | | Type of database object. | |
-| `--skip-metadata` | `-sm` | Skip updating documented extended properties to database. | `False` |
+| `--skip-metadata-update` | `-sm` | Skip updating documented extended properties to database. | `False` |
 | `--skip-alembic-update` | `-sa` | Skip running alembic migrations. | `False` |
 | `--skip-git-update` | `-sg` | Skip updating current git version to git version table. | `False` |
 

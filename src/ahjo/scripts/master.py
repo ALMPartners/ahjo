@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--files', nargs='+', default=[], help='List of files to be used in action.', required=False)
     parser.add_argument('--object_type', nargs=1, default=[], help='Type of database object.', choices=['view', 'procedure', 'function', 'assembly'], required=False)
     parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode.', required=False)
-    parser.add_argument("-sm", "--skip-metadata", action="store_true", help="Skip updating documented extended properties to database.", required=False)
+    parser.add_argument("-sm", "--skip-metadata-update", action="store_true", help="Skip updating documented extended properties to database.", required=False)
     parser.add_argument("-sg", "--skip-git-update", action="store_true", help="Skip updating current git version to git version table.", required=False)
     parser.add_argument("-sa", "--skip-alembic-update", action="store_true", help="Skip running alembic migrations.", required=False)
     

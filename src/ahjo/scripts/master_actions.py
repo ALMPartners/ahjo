@@ -107,7 +107,7 @@ def deploy(context):
             git_version_info_path = context.configuration.get('git_version_info_path')
         )
 
-    if not cl_args.get("skip_metadata", False):
+    if not cl_args.get("skip_metadata_update", False):
         op.update_db_object_properties(
                 context.get_connectable(),
                 context.configuration.get('metadata_allowed_schemas')
