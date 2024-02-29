@@ -214,8 +214,8 @@ The rest of the optional parameters are listed below.
 | `--files` | | List of files to be used in action. | |
 | `--object_type` | | Type of database object. | |
 | `--skip-metadata` | `-sm` | Skip updating documented extended properties to database. | `False` |
-| `--skip-alembic` | `-sa` | Skip running alembic migrations. | `False` |
-| `--skip-git-version` | `-sg` | Skip updating current git version to git version table. | `False` |
+| `--skip-alembic-update` | `-sa` | Skip running alembic migrations. | `False` |
+| `--skip-git-update` | `-sg` | Skip updating current git version to git version table. | `False` |
 
 
 
