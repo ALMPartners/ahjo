@@ -82,11 +82,6 @@ def create_conn_info(conf: dict) -> dict:
             if driver_lower == "odbc driver 18 for sql server":
                 sqla_url_query_map["LongAsMax"] = "Yes"
 
-    # Dialect specific default settings
-    if dialect == "mssql+pyodbc":
-        sqla_engine_params["use_insertmanyvalues"] = False
-        sqla_engine_params["use_setinputsizes"] = False
-
     # Parameters for sqlalchemy engine
     for key, value in conf.items():
         if key == "sqlalchemy.url": continue

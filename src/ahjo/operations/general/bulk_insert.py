@@ -10,7 +10,7 @@ from time import time
 from typing import Generator, Optional
 
 from sqlalchemy import Table, event
-from sqlalchemy.engine import Engine, ExceptionContext, Connection
+from sqlalchemy.engine import Engine, ExceptionContext, Connection, interfaces
 
 logger = getLogger('ahjo')
 
@@ -34,13 +34,13 @@ def bulk_insert_into_database(engine: Engine, reflected_table: Table, records: l
     """
     table_name_with_schema = (
         reflected_table.schema + '.' if reflected_table.schema else "") + reflected_table.name
-    connection_obj = engine.connect() if connection is None else connection
     with BulkInsertContext(engine, table_name_with_schema):
+        connection_obj = engine.connect() if connection is None else connection
         for r in chunks(records, chunk_size):
             connection_obj.execute(reflected_table.insert(), r)
-    if connection is None:
-        connection_obj.commit()
-        connection_obj.close()
+        if connection is None:
+            connection_obj.commit()
+            connection_obj.close()
 
 
 class BulkInsertContext:
@@ -61,6 +61,8 @@ class BulkInsertContext:
     def __enter__(self):
         logger.info(f'Executing bulk insert to table {self.table_name}')
         if self.enable_fast_executemany is True:
+            self.engine.dialect.use_insertmanyvalues = False
+            self.engine.dialect.bind_typing = interfaces.BindTyping.NONE
             logger.debug('Enabling pyodbc fast_executemany')
             event.listen(self.engine, "before_cursor_execute",
                          handler_fast_executemany)
@@ -71,6 +73,8 @@ class BulkInsertContext:
         if self.enable_fast_executemany is True:
             event.remove(self.engine, "before_cursor_execute",
                          handler_fast_executemany)
+            self.engine.dialect.use_insertmanyvalues = True
+            self.engine.dialect.bind_typing = interfaces.BindTyping.SETINPUTSIZES
         if traceback is None:
             duration = time() - self.start_time
             logger.info(
