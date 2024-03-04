@@ -56,9 +56,10 @@ steps:
       scriptLocation: 'inlineScript'
       inlineScript: |
         $env:AZCOPY_AUTO_LOGIN_TYPE="SPN"
-        $env:AZCOPY_SPA_CLIENT_SECRET="$(ClientSecret)"
-        $env:AZCOPY_SPA_APPLICATION_ID="$(ApplicationId)"
-        $env:AZCOPY_SPA_TENANT_ID="$(TenantId)"
+        $env:AZCOPY_SPA_CLIENT_SECRET="$(TFTAClientSecret)"
+        $env:AZCOPY_SPA_APPLICATION_ID="$(TFTAApplicationId)"
+        $env:AZCOPY_TENANT_ID="$(TenantId)"
+        $env:AZCOPY_ACTIVE_DIRECTORY_ENDPOINT="https://login.microsoftonline.com/$(TenantId)/oauth2/v2.0/token"
         D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' 'https://stalmbanksystestdev001.file.core.windows.net/msi-releases/' --recursive --preserve-smb-permissions=true --preserve-smb-info=true
     displayName: Copy msi-files to Azure Storage
 
