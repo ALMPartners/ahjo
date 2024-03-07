@@ -109,6 +109,8 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
                 if schema_name in schema_list:
                     object_metadata = existing_metadata.get(object_name)
                     for property_name, property_value in extended_properties.items():
+                        if object_metadata is not None and property_value == object_metadata.get(property_name):
+                            continue
                         exec_update_extended_properties(
                             connectable,
                             object_name,
