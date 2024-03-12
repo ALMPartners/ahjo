@@ -194,17 +194,23 @@ def _update_git_db_record(connectable: Union[Engine, Connection], git_table_sche
 
 
 @rearrange_params({"engine": "connectable"})
-def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str):
+def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str) -> Tuple[str, str, str]:
     """Return the first row of the Git version table."""
-    result = None
     try:
-        metadata = MetaData()
-        git_version_table = _sqla_git_table(metadata, git_table_schema, git_table)
+        git_version_table = Table(
+            git_table, 
+            MetaData(),
+            Column('Repository', String(255), primary_key = True),
+            Column('Branch', String(255), primary_key = True),
+            Column('Commit', String(50)),
+            schema = git_table_schema
+        )
         result = execute_query(connectable, query=git_version_table.select())[0]
+        return (result[0], result[1], result[2])
     except Exception as error:
         logger.error('Failed to read GIT version table. See log for detailed error message.')
         logger.debug(error)
-    return (result[0], result[1], result[2])
+    return (None, None, None)
 
 
 @rearrange_params({"engine": "connectable"})
