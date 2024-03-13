@@ -60,6 +60,8 @@ def execute_query(cursor: pyodbc.Cursor, query: str, parameters: list = None, co
         List of parameters to be used in the query.
     commit
         If True, commit the transaction.
+    close
+        If True, close the cursor.
 
     Returns
     -------
