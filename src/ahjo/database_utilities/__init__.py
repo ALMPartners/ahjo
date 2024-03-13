@@ -20,3 +20,7 @@ from ahjo.database_utilities.sqla_utilities import (
 from ahjo.database_utilities.sqlcmd import (
     invoke_sqlcmd
 )
+from ahjo.database_utilities.pyodbc_utilities import (
+    execute_query as execute_pyodbc_query,
+    execute_queries as execute_pyodbc_queries
+)

@@ -17,13 +17,14 @@ for listed object types:
 - key_columns = list of columns whose values form an unique object key
 """
 import json
+import time
 from logging import getLogger
 from os import makedirs, path
 from typing import Union
 
 from ahjo.interface_methods import rearrange_params
 from ahjo.context import AHJO_PATH
-from ahjo.database_utilities import execute_query, get_schema_names
+from ahjo.database_utilities import execute_query, get_schema_names, execute_pyodbc_queries
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine, Connection
 
@@ -81,6 +82,14 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
             - Else schemas of schema_list are updated.
     """
     with OperationManager('Updating extended properties'):
+
+        start_time = time.time()
+        batches = []
+        sql_query = ""
+        sql_params = []
+        batch_size = 150
+        batch_indx = 0
+
         if schema_list is None:
             schema_list = [s for s in get_schema_names(connectable)
                            if s not in EXCLUDED_SCHEMAS]
@@ -88,46 +97,86 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
             logger.warning(
                 'No schemas allowed for update. Check variable "metadata_allowed_schemas".')
             return
-        logger.debug(
-            f'Updating extended properties for schemas {", ".join(schema_list)}')
+        
+        logger.debug(f'Updating extended properties for schemas {", ".join(schema_list)}')
+
         for object_type in DB_OBJECTS:
-            existing_metadata = query_metadata(
-                connectable, DB_OBJECTS[object_type], schema_list)
+            existing_metadata = query_metadata(connectable, DB_OBJECTS[object_type], schema_list)
             source_file = DB_OBJECTS[object_type]['file']
+
             if not path.exists(source_file):
                 logger.warning(
                     f"Cannot update extended properties for {object_type}s. File {source_file} does not exist.")
                 continue
+
             try:
                 with open(source_file, 'r', encoding='utf-8') as f:
                     documented_properties = json.load(f)
             except Exception as err:
                 raise Exception(
                     f'Failed to read extended properties for {object_type}') from err
+            
             for object_name, extended_properties in documented_properties.items():
                 schema_name = object_name.split('.')[0]
                 if schema_name in schema_list:
                     object_metadata = existing_metadata.get(object_name)
                     for property_name, property_value in extended_properties.items():
+
                         if isinstance(object_metadata, dict) and property_value == object_metadata.get(property_name):
                             continue
-                        exec_update_extended_properties(
-                            connectable,
-                            object_name,
-                            object_metadata,
-                            property_name,
-                            property_value,
-                            object_type = object_type
-                        )
+
+                        try:
+                            procedure_call, params = get_update_extended_properties_sql_query(
+                                object_name,
+                                object_metadata,
+                                property_name,
+                                property_value,
+                                object_type = object_type
+                            )
+                        except Exception as err: 
+                            logger.debug(err, exc_info=1)
+                            continue
+
+                        sql_query = sql_query + procedure_call + "; "
+                        sql_params.extend(params)
+
+                        # Add batch to list if batch size is reached
+                        if batch_indx > 0 and batch_indx % batch_size == 0:
+                            batches.append((sql_query, sql_params))
+
+                            # Reset sql_query and sql_params
+                            sql_query = ""
+                            sql_params = []
+
+                        batch_indx += 1
+
+        # Add first batch if it's empty 
+        # or remaining procedure calls to last batch
+        if batch_indx < batch_size or batch_indx > len(batches) * batch_size:
+            batches.append((sql_query, sql_params))
+        
+        try:
+            execute_pyodbc_queries(
+                connectable, 
+                batches, 
+                commit = True if isinstance(connectable, Engine) else False
+            )
+        except Exception as err:
+            logger.warning('Failed to update extended properties')
+            logger.debug(err, exc_info=1)
+        finally:
+            end_time = time.time()
+            logger.info(f'Extended properties updated in {end_time - start_time:.2f} seconds')
 
 
-@rearrange_params({"engine": "connectable"})
-def exec_update_extended_properties(connectable: Union[Engine, Connection], object_name: str, object_metadata: dict, 
+def get_update_extended_properties_sql_query(object_name: str, object_metadata: dict, 
         extended_property_name: str, extended_property_value: str, object_type: str = ""):
-    """Update object's extended properties by calling either
-    procedure sp_addextendedproperty or sp_updateextendedproperty.
-    If object_metadata is None, object does not exist in database.
+    """ Return SQL query and parameters for updating or adding extended property 
+        using sp_addextendedproperty or sp_updateextendedproperty.
+        If object_metadata is None, object does not exist in database.
     """
+    procedure_call = ""
+    params = []
     try:
         if object_metadata is None:
             raise Exception('Object not found in database.')
@@ -135,31 +184,33 @@ def exec_update_extended_properties(connectable: Union[Engine, Connection], obje
             procedure_call = 'EXEC sp_addextendedproperty '
         else:
             procedure_call = 'EXEC sp_updateextendedproperty '
-        procedure_call += '@name=:name, @value=:value, @level0type=:level0type, @level0name=:level0name'
-        params = {
-            "name": extended_property_name,
-            "value": extended_property_value,
-            "level0type": 'schema',
-            "level0name": object_metadata.get('schema_name')
-        }
+
+        procedure_call += '@name=?, @value=?, @level0type=?, @level0name=?'
+        params = [extended_property_name, extended_property_value, 'schema', object_metadata.get('schema_name')]
         object_type = object_metadata.get('object_type')
         parent_type = object_metadata.get('parent_type')
+
+        # Add level1type and level1name if object is view, table, function, procedure or column
         if object_type in ('view', 'table', 'function', 'procedure', 'column'):
             level1type = parent_type if parent_type is not None else object_type
-            procedure_call += ', @level1type=:level1type, @level1name=:level1name'
-            params["level1type"] = level1type
-            params["level1name"] = object_metadata.get('object_name')
+            procedure_call += ', @level1type=?, @level1name=?'
+            params.append(level1type)
+            params.append(object_metadata.get('object_name'))
+
+            # Add level2type and level2name if object is column
             if object_type == 'column':
-                procedure_call += ', @level2type=:level2type, @level2name=:level2name'
-                params["level2type"] = 'column'
-                params["level2name"] = object_metadata.get('column_name')
-        execute_query(connectable, procedure_call, params)
+                procedure_call += ', @level2type=?, @level2name=?'
+                params.append('column')
+                params.append(object_metadata.get('column_name'))
+
     except Exception as err:
         logger.warning(
-            f"Failed to update extended property '{extended_property_name}' for {object_type} '{object_name}'."
+            f"Failed to update extended property '{extended_property_name}' for {object_type} '{object_name}': {err}"
         )
         logger.debug(f"Extended property value: {extended_property_value}")
-        logger.debug(err, exc_info=1)
+        raise err
+
+    return procedure_call, params
 
 
 @rearrange_params({"engine": "connectable"})
