@@ -37,7 +37,7 @@ else
 fi
 """
 
-def install_precommit_scan():
+def install_precommit_scan(scan_rules_path: str = None, ignore_file_path: str = None):
     """ Adds pre-commit scan hook to core.hooksPath. Requires git version 2.9 or newer. """
 
     # Get the path to the git hooks directory
@@ -68,17 +68,21 @@ def install_precommit_scan():
             logger.info("Aborting.")
             return
     
-    # Ask path to the scan rules file (default is .ahjo_scan_rules.yaml)
-    logger.info("Enter the path to the scan rules file (default value of .ahjo_scan_rules.yaml will be used if left empty).")
-    scan_rules_path = input("Scan rules file path: ").replace("\\", "/")
-    if not scan_rules_path: 
-        scan_rules_path = "ahjo_scan_rules.yaml"
+    # Set path to the scan rules file (default is .ahjo_scan_rules.yaml)
+    if not scan_rules_path:
+        logger.info("Enter the path to the scan rules file (default value of .ahjo_scan_rules.yaml will be used if left empty).")
+        scan_rules_path = input("Scan rules file path: ")
+        if not scan_rules_path: 
+            scan_rules_path = "ahjo_scan_rules.yaml"
+    scan_rules_path = scan_rules_path.replace("\\", "/")
 
-    # Ask path to the scan ignore file (default is .ahjo_scan_ignore.yaml)
-    logger.info("Enter the path to the scan ignore file (default value of .ahjo_scan_ignore.yaml will be used if left empty).")
-    scan_ignore_path = input("Scan ignore file path: ").replace("\\", "/")
-    if not scan_ignore_path:
-        scan_ignore_path = "ahjo_scan_ignore.yaml"
+    # Set path to the scan ignore file (default is .ahjo_scan_ignore.yaml)
+    if not ignore_file_path:
+        logger.info("Enter the path to the scan ignore file (default value of .ahjo_scan_ignore.yaml will be used if left empty).")
+        scan_ignore_path = input("Scan ignore file path: ")
+        if not scan_ignore_path:
+            scan_ignore_path = "ahjo_scan_ignore.yaml"
+    scan_ignore_path = scan_ignore_path.replace("\\", "/")
 
     # Create the pre-commit hook script
     try:
