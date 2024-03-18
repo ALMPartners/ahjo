@@ -71,6 +71,14 @@ def main():
 
     config_path = get_config_path(args.config_filename)
     context = Context(config_path, command_line_args = args_dict)
+
+    if context.configuration.get("enable_sqlalchemy_logging", False):
+        fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_sqlalchemy.ini'), disable_existing_loggers=False)
+        getLogger('sqlalchemy.engine')
+        getLogger('sqlalchemy.pool')
+        getLogger('sqlalchemy.dialects')
+        getLogger('sqlalchemy.orm')
+
     import_actions(
         ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
     )

@@ -385,6 +385,7 @@ BACKEND:
 | `sqlalchemy.url` | No | SQLAlchemy database URL. If defined, overrides the values of `dialect`, `sql_port`, `sql_driver`, `target_server_hostname` and `target_database_name`. | `str` | |
 | `sqlalchemy.*` | No | Items under sqlalchemy.* are passed as parameters to SQLAlchemy's [create_engine](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine) function. For example `sqlalchemy.pool_size: 10` is passed as pool_size=10 to `create_engine` function. | `dict` | If `dialect` is `mssql+pyodbc`: `"sqlalchemy.use_insertmanyvalues": false`, `"sqlalchemy.use_setinputsizes": false` |
 | `sqla_url_query_map` | No | A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query). | `dict` | If ODBC Driver 18: `{"Encrypt" : "yes", "LongAsMax": "Yes"}`. If ODBC Driver 17 or older: `{"Encrypt" : "no"}`. Else: `{}` |
+| `enable_sqlalchemy_logging` | No | Enable [SQLAlchemy logging](https://docs.sqlalchemy.org/en/20/core/engines.html#configuring-logging). | `boolean` | `false` |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 
@@ -577,7 +578,9 @@ The script creates a file named `pre-commit` to Git hooks directory. By default,
 
 
 # <u>Logging</u>
-Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file ahjo.log. Logging can be done to Windows Event Log by setting `windows_event_log` to `true` in config file. This feature can be utilized for Azure Monitor activities, for example.
+Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file `ahjo.log`. 
+Logging can be done to Windows Event Log by setting `windows_event_log` to `true` in config file. This feature can be utilized for Azure Monitor activities, for example. 
+SQL Alchemy logging can be enabled by setting `enable_sqlalchemy_logging` to `true` in config file. The logging is done to a file named `sqlalchemy.log` in the project root directory. The log files are created automatically if they do not exist.
 
 # <u>Customization</u>
 
