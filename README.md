@@ -500,9 +500,9 @@ ahjo-upgrade -v v3.1.0
 
 | Argument  | Shorthand | Description | Required | Default Value |
 | --- | --- | --- | --- | --- |
-| `--search-rules`  | `-r` | Path to YAML file that defines the search rules. | No | `ahjo_scan_rules.yaml` |
+| `--search-rules`  | `-r` | Path to YAML file that defines the search rules. | No | `./ahjo_scan_rules.yaml` |
 | `--stage` | `-st` | Scan files in git staging area instead of working directory. | No | `False` |
-| `--ignore-config` | `-ig` | Path to YAML file that defines the ignore rules. | No | `ahjo_scan_ignore.yaml` |
+| `--ignore-config` | `-ig` | Path to YAML file that defines the ignore rules. | No | `./ahjo_scan_ignore.yaml` |
 | `--init` | `-in` | Initialize config files for scan rules and ignored scan results. | No | `False` |
 
 The search rules are defined as a list of dictionaries. Each dictionary contains a search rule name, a list of file paths to be searched and parameters for the search rule. It is also possible to define a custom regex pattern for the search rule instead of using predefined search rules. The regex pattern is defined as a string in the `pattern` parameter.
@@ -528,7 +528,7 @@ The search rules are defined as a list of dictionaries. Each dictionary contains
 | `tables` | List of database tables. | `list` |
 
 ## Search rules file
-The search rules are defined in a YAML file. The file can be initialized with `--init` or `-in` flag. By default, the search rules are defined in `ahjo_scan_rules.yaml` file. Use `--search-rules` or `-r` flag to define a different path for the search rules file.
+The search rules are defined in a YAML file. The file can be initialized with `--init` or `-in` flag. By default, the search rules are defined in `./ahjo_scan_rules.yaml` file. Use `--search-rules` or `-r` flag to define a different path for the search rules file.
 
 Here is an example of search rules file:
 ```yaml
@@ -551,7 +551,7 @@ Here is an example of search rules file:
 ```
 
 ## Ignoring scan results
-To filter out false positives, scan results can be ignored by defining ignore rules in a YAML file. The ignore rules are defined as a list of dictionaries. Each dictionary contains a file path and a list of matches or rules to be ignored. The file can be initialized with `--init` or `-in` flag. By default, the ignore rules are defined in `ahjo_scan_ignore.yaml` file. Use `--ignore-config` or `-ig` flag to define a custom path for the ignore results file.
+To filter out false positives, scan results can be ignored by defining ignore rules in a YAML file. The ignore rules are defined as a list of dictionaries. Each dictionary contains a file path and a list of matches or rules to be ignored. The file can be initialized with `--init` or `-in` flag. By default, the ignore rules are defined in `./ahjo_scan_ignore.yaml` file. Use `--ignore-config` or `-ig` flag to define a custom path for the ignore results file.
 
 Below is an example of ignore results file:
 ```yaml

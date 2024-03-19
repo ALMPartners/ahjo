@@ -68,21 +68,21 @@ def install_precommit_scan(scan_rules_path: str = None, ignore_file_path: str = 
             logger.info("Aborting.")
             return
     
-    # Set path to the scan rules file (default is .ahjo_scan_rules.yaml)
+    # Set path to the scan rules file (default is ./ahjo_scan_rules.yaml)
     if not scan_rules_path:
-        logger.info("Enter the path to the scan rules file (default value of .ahjo_scan_rules.yaml will be used if left empty).")
+        logger.info("Enter the path to the scan rules file (default value of ./ahjo_scan_rules.yaml will be used if left empty).")
         scan_rules_path = input("Scan rules file path: ")
         if not scan_rules_path: 
             scan_rules_path = "ahjo_scan_rules.yaml"
     scan_rules_path = scan_rules_path.replace("\\", "/")
 
-    # Set path to the scan ignore file (default is .ahjo_scan_ignore.yaml)
+    # Set path to the scan ignore file (default is ./ahjo_scan_ignore.yaml)
     if not ignore_file_path:
-        logger.info("Enter the path to the scan ignore file (default value of .ahjo_scan_ignore.yaml will be used if left empty).")
-        scan_ignore_path = input("Scan ignore file path: ")
-        if not scan_ignore_path:
-            scan_ignore_path = "ahjo_scan_ignore.yaml"
-    scan_ignore_path = scan_ignore_path.replace("\\", "/")
+        logger.info("Enter the path to the scan ignore file (default value of ./ahjo_scan_ignore.yaml will be used if left empty).")
+        ignore_file_path = input("Scan ignore file path: ")
+        if not ignore_file_path:
+            ignore_file_path = "ahjo_scan_ignore.yaml"
+    ignore_file_path = ignore_file_path.replace("\\", "/")
 
     # Create the pre-commit hook script
     try:
@@ -91,7 +91,7 @@ def install_precommit_scan(scan_rules_path: str = None, ignore_file_path: str = 
                 HOOK_CONTENT.replace(
                     "$search_rules_path", scan_rules_path
                 ).replace(
-                    "$ignore_file_path", scan_ignore_path
+                    "$ignore_file_path", ignore_file_path
                 )    
             )
     except Exception as err:

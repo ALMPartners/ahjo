@@ -416,6 +416,8 @@ def load_ignored_items(file_path: str = "ahjo_scan_ignore.yaml") -> dict:
             logger.warning(f"Failed to load ignored matches from {file_path}.")
             logger.warning(e)
             pass
+    else:
+        logger.debug(f"Ignored matches file not found: {file_path}")
 
     return ignored_items
 

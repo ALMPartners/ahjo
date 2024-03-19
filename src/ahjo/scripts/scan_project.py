@@ -20,8 +20,8 @@ logger = getLogger('ahjo')
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--search-rules", required=False, help="Path to ahjo scan rules config file.")
-    parser.add_argument("-ig", "--ignore-config", required=False, help="Path to ahjo scan ignore config file.")
+    parser.add_argument("-r", "--search-rules", required=False, help="Path to ahjo scan rules config file.", default="ahjo_scan_rules.yaml")
+    parser.add_argument("-ig", "--ignore-config", required=False, help="Path to ahjo scan ignore config file.", default="ahjo_scan_ignore.yaml")
     parser.add_argument("-st", "--stage", action="store_true", required=False, help="Scan files in git staging area instead of working directory.")
     parser.add_argument("-q", "--quiet", action="store_true", required=False, 
         help="Hide additional status messages and show only the scan matches (if found). This option is used by the pre-commit hook."
@@ -29,8 +29,8 @@ def main():
     parser.add_argument("-in", "--init", action="store_true", required=False, help="Initialize config files for scan rules and ignored scan results.")
     args = parser.parse_args()
     quiet_mode = args.quiet
-    ignore_config_path = args.ignore_config if args.ignore_config else "ahjo_scan_ignore.yaml"
-    rules_config_path = args.search_rules if args.search_rules else "ahjo_scan_rules.yaml"
+    ignore_config_path = args.ignore_config
+    rules_config_path = args.search_rules
 
     if args.init:
         initialize_scan_config(scan_ignore_file = ignore_config_path, scan_rules_file = rules_config_path)
