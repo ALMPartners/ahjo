@@ -15,7 +15,8 @@ from logging import getLogger
 from logging.config import fileConfig
 from ahjo.operations.general.upgrade import upgrade
 from ahjo.context import config_is_valid
-from ahjo.interface_methods import get_config_path
+from ahjo.interface_methods import get_config_path, load_conf
+from ahjo.operation_manager import load_sqlalchemy_logger
 
 
 # load logging config
@@ -36,9 +37,13 @@ def main():
     args = parser.parse_args()
 
     config_filename = get_config_path(args.config_filename)
+    config_dict = load_conf(config_filename)
     non_interactive = args.non_interactive
-    if not config_is_valid(config_filename, non_interactive = non_interactive):
+    if not config_is_valid(config_dict, non_interactive = non_interactive):
         sys.exit(1)
+
+    if config_dict.get("enable_sqlalchemy_logging", False):
+        load_sqlalchemy_logger()
 
     upgrade_succeeded = upgrade(
         config_filename,

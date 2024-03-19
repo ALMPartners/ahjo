@@ -14,6 +14,7 @@ from ahjo.action import execute_action, list_actions, import_actions, action_aff
 from ahjo.context import config_is_valid, Context
 from ahjo.interface_methods import get_config_path
 from ahjo.operations.general.db_info import print_db_collation
+from ahjo.operation_manager import load_sqlalchemy_logger
 
 try:
     from ahjo.version import version as AHJO_VERSION
@@ -73,11 +74,7 @@ def main():
     context = Context(config_path, command_line_args = args_dict)
 
     if context.configuration.get("enable_sqlalchemy_logging", False):
-        fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_sqlalchemy.ini'), disable_existing_loggers=False)
-        getLogger('sqlalchemy.engine')
-        getLogger('sqlalchemy.pool')
-        getLogger('sqlalchemy.dialects')
-        getLogger('sqlalchemy.orm')
+        load_sqlalchemy_logger()
 
     import_actions(
         ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)

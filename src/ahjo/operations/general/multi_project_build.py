@@ -10,7 +10,7 @@ import sys
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.action import execute_action, registered_actions, DEFAULT_ACTIONS_SRC
-from ahjo.operation_manager import format_message
+from ahjo.operation_manager import format_message, load_sqlalchemy_logger
 from logging import getLogger
 from logging.config import fileConfig
 from pathlib import Path
@@ -67,11 +67,15 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
         # Load logging config
         os.chdir(project_path)
         sys.path.append(os.getcwd())
-        if load_conf(project_config_path).get("windows_event_log", False):
+        project_config_dict = load_conf(project_config_path)
+        if project_config_dict.get("windows_event_log", False):
             fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
         else:
             fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
         logger = getLogger('ahjo')
+        if project_config_dict.get("enable_sqlalchemy_logging", False):
+            load_sqlalchemy_logger()
+
         logger.info('------')
         logger.info('Building ahjo project: ' + ahjo_project)
 
@@ -80,7 +84,6 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
 
         try:
             # Load user defined actions
-            project_config_dict = load_conf(project_config_path)
             ahjo_action_files = project_config_dict.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
             
             for action_file in ahjo_action_files:

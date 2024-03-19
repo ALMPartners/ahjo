@@ -195,23 +195,23 @@ def merge_config_files(config_filename: str) -> dict:
     return config_data
 
 
-def config_is_valid(config_path: str, non_interactive: bool = False) -> bool:
+def config_is_valid(config: Union[str, dict], non_interactive: bool = False) -> bool:
     '''Validate configuration file.'''
 
-    configuration = load_conf(config_path)
+    config = config if isinstance(config, dict) else load_conf(config) 
 
     # Allow only non-interactive authentication methods in non-interactive mode.
     if non_interactive:
-        azure_auth = configuration.get("azure_authentication")
+        azure_auth = config.get("azure_authentication")
         if azure_auth is not None:
             if azure_auth == "ActiveDirectoryInteractive" :
                 logger.error("Error: Azure authentication method ActiveDirectoryInteractive is not supported in non-interactive mode.")
                 return False
         else:
-            if configuration.get("username_file") is None:
+            if config.get("username_file") is None:
                 logger.error("Error: Username file is required in non-interactive mode.")
                 return False
-            if configuration.get("password_file") is None:
+            if config.get("password_file") is None:
                 logger.error("Error: Password file is required in non-interactive mode.")
                 return False
 

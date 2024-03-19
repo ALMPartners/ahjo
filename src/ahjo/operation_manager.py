@@ -4,9 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Module for logging, printing and error handling deployment process."""
+import os
+import ahjo
 from datetime import datetime
 from logging import getLogger
 from traceback import format_exception
+from logging.config import fileConfig
 
 logger = getLogger('ahjo')
 
@@ -34,3 +37,11 @@ def format_message(mssg: str) -> str:
     timestamp = datetime.now()
     time_string = timestamp.strftime('%Y-%m-%d %H:%M:%S')
     return '[{}] {}'.format(time_string, mssg)
+
+
+def load_sqlalchemy_logger():
+    fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_sqlalchemy.ini'), disable_existing_loggers=False)
+    getLogger('sqlalchemy.engine')
+    getLogger('sqlalchemy.pool')
+    getLogger('sqlalchemy.dialects')
+    getLogger('sqlalchemy.orm')
