@@ -65,6 +65,9 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
 
         # Select versions to be deployed
         version_actions = get_upgradable_version_actions(upgrade_actions, current_db_version)
+        if len(list(version_actions.keys())) == 0:
+            logger.info("Database is already up to date. Current database version is " + current_db_version)
+            return True
 
         # Validate user input
         if version is not None:
@@ -197,9 +200,6 @@ def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
             if previous_version != git_previous_tag:
                 raise ValueError(f"Git versions in upgrade_actions are not listed in the correct order: {previous_version} -> {version}")
         previous_version = version
-
-    if len(list(version_actions.keys())) == 0:
-        raise ValueError(f"Database is already up to date. Current database version is {current_version}.")
         
     return version_actions
 

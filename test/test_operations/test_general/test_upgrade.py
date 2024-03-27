@@ -89,9 +89,9 @@ def test_actions_without_parameters():
     assert version_actions == upgrade_actions
 
 @pytest.mark.nopipeline
-def test_upgrade_version_with_up_to_date_version_should_raise_error():
-    with pytest.raises(ValueError, match="Database is already up to date."):
-        get_upgradable_version_actions({"v3.1.3": ["test-action"]}, "v3.1.3")
+def test_upgrade_version_with_up_to_date_version_should_not_raise_error():
+    version_actions = get_upgradable_version_actions({"v3.1.3": ["test-action"]}, "v3.1.3")
+    assert version_actions == {}
 
 @pytest.mark.nopipeline
 def test_validate_version_should_return_only_given_versions_actions():
