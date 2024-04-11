@@ -29,6 +29,15 @@ class TestWithSQLServer():
             pass
         chdir(old_cwd)
 
+    def assert_db_revision(self, correct_revision):
+        query = f"SELECT * FROM {self.alembic_table}"
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query))
+            if correct_revision is None:
+                assert result.fetchone() is None
+            else:
+                assert result.fetchone()[0] == correct_revision
+
     def test_alembic_version_table_should_not_exist(self):
         query = f"SELECT * FROM {self.alembic_table}"
         with self.engine.begin() as connection:
@@ -37,17 +46,11 @@ class TestWithSQLServer():
 
     def test_alembic_version_table_should_contain_latest_revision_after_upgrade_head(self):
         alembic.upgrade_db_to_latest_alembic_version(self.config_filepath)
-        query = f"SELECT * FROM {self.alembic_table}"
-        with self.engine.begin() as connection:
-            result = connection.execute(text(query))
-            assert result.fetchone()[0] == LATEST_REVISION
+        self.assert_db_revision(LATEST_REVISION)
 
     def test_alembic_version_table_should_be_empty_after_downgrade(self):
         alembic.downgrade_db_to_alembic_base(self.config_filepath)
-        query = f"SELECT * FROM {self.alembic_table}"
-        with self.engine.begin() as connection:
-            result = connection.execute(text(query))
-            assert result.fetchone() is None    # no revisions
+        self.assert_db_revision(None)
 
     def test_latest_revision_should_be_printed(self, caplog):
         caplog.set_level(logging.INFO)
@@ -69,3 +72,11 @@ class TestWithSQLServer():
         alembic.downgrade_db_to_alembic_base(self.config_filepath)
         alembic.print_alembic_version(self.engine, self.alembic_table)
         assert f"Table {self.alembic_table} is empty. No deployed revisions." in caplog.text
+
+    def test_alembic_command_should_contain_latest_revision_after_upgrade_head(self):
+        alembic.alembic_command(self.config_filepath, "upgrade", connection=self.engine, **{"revision": "head"})
+        self.assert_db_revision(LATEST_REVISION)
+
+    def test_alembic_command_should_be_empty_after_downgrade(self):
+        alembic.alembic_command(self.config_filepath, "downgrade", connection=self.engine, **{"revision": "base"})
+        self.assert_db_revision(None)
