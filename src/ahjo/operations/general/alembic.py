@@ -19,6 +19,11 @@ from typing import Union
 from alembic import command
 from alembic.config import Config
 
+ALEMBIC_API_COMMANDS = {
+    "check", "upgrade", "downgrade", "current", "history", "heads", "branches", "stamp", 
+    "revision", "edit", "ensure_version", "init", "list_templates", "merge", "show"
+}
+
 logger = getLogger('ahjo')
 
 
@@ -43,6 +48,39 @@ def alembic_config(config_filename: str, connection: Connection = None) -> Confi
     config.config_file_name = path.join(
         AHJO_PATH, 'resources/logger_alembic.ini')
     return config
+
+
+def alembic_command(config_filename: str, command_name: str, connection: Connection = None, *args, **kwargs):
+    """ Wrapper for alembic API commands. 
+    
+    Arguments
+    ---------
+    config_filename : str
+        Path to the project's configuration file.
+    command_name : str
+        Alembic API command to run. 
+        Command names can be found from https://alembic.sqlalchemy.org/en/latest/api/commands.html.
+    connection : Connection
+        SQL Alchemy Connection object.
+    *args, **kwargs
+        Arguments to pass to the Alembic command.
+    
+    Raises
+    ------
+    ValueError
+        If command_name is not in ALEMBIC_API_COMMANDS.
+    """
+    if command_name not in ALEMBIC_API_COMMANDS:
+        raise ValueError(f"Command {command_name} not in Alembic API commands.")
+    with OperationManager(f"Running Alembic command: {command_name}"):
+        getattr(command, command_name)(
+            config = alembic_config(
+                config_filename, 
+                connection = connection
+            ),
+            *args, 
+            **kwargs
+        )
 
 
 def upgrade_db_to_latest_alembic_version(config_filename: str, connection: Connection = None):

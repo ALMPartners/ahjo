@@ -409,6 +409,18 @@ alembic -x main_config=config_development.jsonc downgrade -1
 
 The [env.py](./ahjo/resources/files/env.py) is created in initialize-project command.
 
+## Alembic API commands
+Ahjo supports running alembic commands with the following command:
+```bash
+alembic-api <arguments>
+```
+Alembic API can be used for example in a situation where Ahjo is installed with MSI package and one needs to run alembic commands without python environment.
+
+Examples:
+```bash
+alembic-api revision -m "create table <table_name>"
+alembic-api -x main_config=config_development.jsonc upgrade +1
+```
 
 # <u> Authentication </u>
 Depending on the configuration, the database credentials can be stored into files or be asked when needed, once per application run. The credential handling is shared with alembic with custom [env.py](./ahjo/resources/files/env.py) file. The username and password files can be defined in the config file with the keys `username_file` and `password_file`. If no path is given, credentials are asked every time any database altering action is run. The password and username files are created automatically if they do not exist.

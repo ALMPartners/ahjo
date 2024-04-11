@@ -18,7 +18,8 @@ from ahjo.operations.general import (
     bulk_insert_into_database,
     drop_sqlfile_objects,
     deploy_sqlfiles,
-    upgrade
+    upgrade,
+    alembic_command
 )
 
 from ahjo.operations.tsql import (

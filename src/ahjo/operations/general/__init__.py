@@ -9,7 +9,8 @@
 from ahjo.operations.general.alembic import (
     downgrade_db_to_alembic_base,
     print_alembic_version,
-    upgrade_db_to_latest_alembic_version
+    upgrade_db_to_latest_alembic_version,
+    alembic_command
 )
 
 from ahjo.operations.general.bulk_insert import (
