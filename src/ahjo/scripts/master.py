@@ -9,12 +9,13 @@ import sys
 import ahjo.scripts.master_actions
 
 from logging import getLogger
-from logging.config import fileConfig
+from logging.config import fileConfig, dictConfig
 from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
 from ahjo.context import config_is_valid, Context
 from ahjo.interface_methods import get_config_path
 from ahjo.operations.general.db_info import print_db_collation
 from ahjo.operation_manager import load_sqlalchemy_logger
+from ahjo.logging.log_config import AHJO_LOG_CONFIG
 
 try:
     from ahjo.version import version as AHJO_VERSION
@@ -24,7 +25,9 @@ except ImportError:
 # Indicator for a frozen executable (e.g. running from an msi installation)
 CX_FROZEN_TAG = " (frozen)" if getattr(sys, "frozen", False) else ""
 
-fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
+# Set up logger
+fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
+dictConfig(AHJO_LOG_CONFIG)
 logger = getLogger('ahjo')
 
 info_msg = f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
@@ -84,6 +87,7 @@ def main():
         list_actions()
     else:
 
+        action_succeeded = False
         non_interactive = args.non_interactive
         if not config_is_valid(config_path, non_interactive = non_interactive):
             return
@@ -100,10 +104,25 @@ def main():
         if len(args.files) > 0 : kwargs['files'] = args.files
         if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
         if non_interactive : kwargs['skip_confirmation'] = True
-        execute_action(
-            *[ahjo_action, config_path],
-            **kwargs
+
+        try:
+            execute_action(
+                *[ahjo_action, config_path],
+                **kwargs
+            )
+            action_succeeded = True
+        except Exception:
+            pass
+
+        logger.info(
+            f"Action '{ahjo_action}' {'succeeded' if action_succeeded else 'failed'}.",
+            extra={
+                "flush" : True,
+                "context" : context
+            }
         )
+
+        sys.exit(0) if action_succeeded else sys.exit(1)
 
 if __name__ == '__main__':
     main()

@@ -44,12 +44,15 @@ class Context:
         self.config_filename = config_filename
         self.configuration = load_conf(config_filename)
         self.command_line_args = command_line_args
+        self.conn_info = None
         if self.configuration is None:
             raise Exception("No configuration found")
         
 
     def get_conn_info(self) -> dict:
-        return create_conn_info(self.configuration)
+        if self.conn_info is None:
+            self.conn_info = create_conn_info(self.configuration)
+        return self.conn_info
     
 
     def get_connectable(self) -> Union[Engine, Connection]:

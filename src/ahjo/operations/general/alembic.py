@@ -41,7 +41,7 @@ def alembic_config(config_filename: str, connection: Connection = None) -> Confi
     if connection:
         config.attributes["connection"] = connection
     config.config_file_name = path.join(
-        AHJO_PATH, 'resources/logger.ini')
+        AHJO_PATH, 'resources/logger_alembic.ini')
     return config
 
 
