@@ -40,7 +40,7 @@ AHJO_LOG_CONFIG = {
             "filename": "ahjo.log",
             "mode": "a+",
             "maxBytes": 1000000,
-            "backupCount": 5,
+            "backupCount": 1,
             "level": "DEBUG",
             "formatter": "formatter_file"
         }
