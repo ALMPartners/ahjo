@@ -114,8 +114,8 @@ def main():
         except Exception:
             pass
 
-        logger.info(
-            f"Action '{ahjo_action}' {'succeeded' if action_succeeded else 'failed'}.",
+        logger.debug(
+            "Logging to database",
             extra={
                 "flush" : True,
                 "context" : context

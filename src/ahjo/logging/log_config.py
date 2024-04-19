@@ -20,7 +20,7 @@ AHJO_LOG_CONFIG = {
     "handlers":{ 
         "handler_database":{
             "class": "ahjo.logging.db_handler.DatabaseHandler",
-            "level": "INFO",
+            "level": "DEBUG",
             "formatter": "formatter_console",
         },
         "handler_console":{
