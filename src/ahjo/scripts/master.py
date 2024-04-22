@@ -15,7 +15,7 @@ from ahjo.context import config_is_valid, Context
 from ahjo.interface_methods import get_config_path
 from ahjo.operations.general.db_info import print_db_collation
 from ahjo.operation_manager import load_sqlalchemy_logger
-from ahjo.logging.log_config import AHJO_LOG_CONFIG
+from ahjo.logging import AHJO_LOG_CONFIG, add_db_handler
 
 try:
     from ahjo.version import version as AHJO_VERSION
@@ -24,11 +24,6 @@ except ImportError:
 
 # Indicator for a frozen executable (e.g. running from an msi installation)
 CX_FROZEN_TAG = " (frozen)" if getattr(sys, "frozen", False) else ""
-
-# Set up logger
-fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
-dictConfig(AHJO_LOG_CONFIG)
-logger = getLogger('ahjo')
 
 info_msg = f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
 line = "-" * len(info_msg)
@@ -68,13 +63,19 @@ def main():
 
     args_dict.update(rest_args_dict)
 
+    config_path = get_config_path(args.config_filename)
+    context = Context(config_path, command_line_args = args_dict)
+
+    # Set up logger
+    fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
+    enable_database_logging = context.configuration.get("enable_database_logging", True)
+    if enable_database_logging: add_db_handler()
+    dictConfig(AHJO_LOG_CONFIG)
+    logger = getLogger('ahjo')
     logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')
     logger.debug(f'File(s):  {args.files}')
     logger.debug(f'Object type:  {args.object_type}')
-
-    config_path = get_config_path(args.config_filename)
-    context = Context(config_path, command_line_args = args_dict)
 
     if context.configuration.get("enable_sqlalchemy_logging", False):
         load_sqlalchemy_logger()
@@ -114,13 +115,14 @@ def main():
         except Exception:
             pass
 
-        logger.debug(
-            "Logging to database",
-            extra={
-                "flush" : True,
-                "context" : context
-            }
-        )
+        if enable_database_logging:
+            logger.debug(
+                "Logging to database",
+                extra={
+                    "flush" : True,
+                    "context" : context
+                }
+            )
 
         sys.exit(0) if action_succeeded else sys.exit(1)
 

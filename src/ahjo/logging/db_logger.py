@@ -40,7 +40,7 @@ class DatabaseLogger:
         self.context = context
         self.log_table_schema = log_table_schema
         self.log_table = log_table
-        self.user = context.get_conn_info().get("username")
+        self.user = context.get_conn_info().get("username", None)
         self.action = action
         self.commit = self.get_git_commit()
 
@@ -110,7 +110,7 @@ class DatabaseLogger:
                 "level": log_record.levelname,
                 "message": log_record.formatted_message,
                 "exc_info": log_record.exc_info,
-                #"user": self.user,
+                "user": self.user,
                 "ahjo_version": AHJO_VERSION,
                 "git_version": self.commit,
                 "git_repository": self.context.configuration.get("url_of_remote_git_repository", None)

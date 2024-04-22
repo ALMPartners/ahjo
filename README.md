@@ -361,6 +361,9 @@ BACKEND:
 | `database_init_size` | No | Initial size (MB) of database data file. | `int` | `100` |
 | `database_log_path` | No | Path of database log file. | `str` | |
 | `database_max_size` | No | Maximum size (MB) of database data file. | `int` | `10000` |
+| `enable_database_logging` | No | Enable logging to database. | `boolean` | `true` |
+| `log_table_schema` | No | Schema of log table. | `str` | `"dbo"` |
+| `log_table` | No | Name of ahjo log table. | `str` | `"ahjo_log"` |
 | `git_table` | No | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | `str` | `"git_version"` |
 | `git_table_schema` | No | Schema of git hash table. | `str` | `"dbo"` |
 | `metadata_allowed_schemas` | No | List of schemas that extended properties will be written to JSON files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
