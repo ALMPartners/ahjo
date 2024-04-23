@@ -5,16 +5,13 @@
 
 '''Ahjo project initialization command entrypoint.
 '''
-from os import getcwd, path
-from logging.config import fileConfig
-
+from os import getcwd
 from ahjo.interface_methods import are_you_sure, remove_special_chars
 from ahjo.operations import create_new_project
-import ahjo # unqualified import for ahjo.__file__ location
+from ahjo.logging import setup_ahjo_logger
 
 INIT_LOCATION = getcwd()
-
-fileConfig(path.join(path.dirname(ahjo.__file__), 'resources/logger.ini'))
+setup_ahjo_logger(enable_database_log = False)
 
 
 def main():

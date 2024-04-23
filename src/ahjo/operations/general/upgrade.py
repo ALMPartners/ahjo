@@ -8,17 +8,15 @@ import sys
 import importlib
 import os
 import ahjo.scripts.master_actions
-from logging import getLogger
-from logging.config import fileConfig
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.operations.general.db_info import print_db_collation
+from ahjo.logging import setup_ahjo_logger
 from ahjo.action import execute_action, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import Context
 
 
 sys.path.append(os.getcwd())
-logger = getLogger('ahjo')
 
 
 def upgrade(config_filename: str, version: str = None, skip_confirmation: bool = False):
@@ -45,11 +43,11 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("context_connectable_type", "engine")
-        if config.get("windows_event_log", False):
-            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
-        else:
-            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
-        logger = getLogger('ahjo')
+        logger = setup_ahjo_logger(
+            enable_database_log = config.get("enable_database_logging", True),
+            enable_windows_event_log = config.get("windows_event_log", False),
+            enable_sqlalchemy_log = config.get("enable_sqlalchemy_logging", False)
+        )
         updated_versions = []
 
         # Create context
@@ -141,6 +139,12 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
         for version in updated_versions:
             logger.info(" " * 2 + version)
         logger.info("------")
+
+    if config.get("enable_database_logging", True):
+        logger.debug(
+            "Logging to database",
+            extra = {"flush" : True, "context" : context}
+        )
 
     return True
 

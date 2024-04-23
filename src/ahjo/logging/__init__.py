@@ -5,9 +5,6 @@
 
 import os
 import ahjo
-from ahjo.logging.win_event_logger import winEventHandler
-from ahjo.logging.db_handler import DatabaseHandler
-from ahjo.logging.db_logger import DatabaseLogger
 from logging.config import fileConfig, dictConfig
 from logging import getLogger
 
@@ -69,13 +66,17 @@ AHJO_LOG_CONFIG = {
     }
 }
 
-def setup_ahjo_logger(config: dict):
+def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log: bool = False, enable_sqlalchemy_log: bool = False):
     """ Set up the logger configuration for ahjo. 
     
     Parameters:
     -----------
-    config: dict
-        Configuration dictionary containing the parameters for the logger configuration.
+    enable_database_log: bool
+        Enable database logging.
+    enable_windows_event_log: bool
+        Enable Windows event logging.
+    enable_sqlalchemy_log: bool
+        Enable SQLAlchemy logging.
 
     Returns:
     -----------
@@ -86,11 +87,11 @@ def setup_ahjo_logger(config: dict):
     fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
 
     # Load optional loggers
-    if config.get("enable_database_logging", True):
+    if enable_database_log:
         add_db_handler()
-    if config.get("windows_event_log", False):
+    if enable_windows_event_log:
         add_win_event_handler()
-    if config.get("enable_sqlalchemy_logging", False):
+    if enable_sqlalchemy_log:
         load_sqlalchemy_logger()
     
     # Load ahjo logger

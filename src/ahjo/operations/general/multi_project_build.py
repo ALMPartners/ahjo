@@ -10,9 +10,9 @@ import sys
 from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.action import execute_action, registered_actions, DEFAULT_ACTIONS_SRC
-from ahjo.operation_manager import format_message, load_sqlalchemy_logger
-from logging import getLogger
-from logging.config import fileConfig
+from ahjo.logging import setup_ahjo_logger
+from ahjo.operation_manager import format_message
+from ahjo.context import Context
 from pathlib import Path
 
 
@@ -64,17 +64,15 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
         project_actions = ahjo_projects[ahjo_project]["actions"]
         project_config_path = ahjo_projects[ahjo_project]["config"]
         
-        # Load logging config
+        # Load ahjo logger
         os.chdir(project_path)
         sys.path.append(os.getcwd())
         project_config_dict = load_conf(project_config_path)
-        if project_config_dict.get("windows_event_log", False):
-            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
-        else:
-            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
-        logger = getLogger('ahjo')
-        if project_config_dict.get("enable_sqlalchemy_logging", False):
-            load_sqlalchemy_logger()
+        logger = setup_ahjo_logger(
+            enable_database_log = project_config_dict.get("enable_database_logging", True),
+            enable_windows_event_log = project_config_dict.get("windows_event_log", False),
+            enable_sqlalchemy_log = project_config_dict.get("enable_sqlalchemy_logging", False)
+        )
 
         logger.info('------')
         logger.info('Building ahjo project: ' + ahjo_project)
@@ -116,5 +114,17 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
                 project_config_path, 
                 engine = master_engine, 
                 skip_confirmation = skip_project_confirmation
+            )
+
+        if project_config_dict.get("enable_database_logging", True):
+            logger.debug(
+                "Logging to database",
+                extra = {
+                    "flush" : True,
+                    "context" : Context(
+                        project_config_path, 
+                        master_engine = master_engine
+                    )
+                }
             )
         

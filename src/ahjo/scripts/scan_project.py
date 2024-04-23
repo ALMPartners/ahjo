@@ -7,16 +7,12 @@
     Ahjo scan command entrypoint.
 '''
 import argparse
-import os
 import sys
-import ahjo
-from logging import getLogger
-from logging.config import fileConfig
 from ahjo.operations.general.scan import scan_project, initialize_scan_config
 from ahjo.interface_methods import load_yaml_conf
+from ahjo.logging import setup_ahjo_logger
 
-fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
-logger = getLogger('ahjo')
+logger = setup_ahjo_logger(enable_database_log = False)
 
 def main():
     parser = argparse.ArgumentParser()

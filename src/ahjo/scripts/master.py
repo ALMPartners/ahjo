@@ -61,8 +61,13 @@ def main():
 
     config_path = get_config_path(args.config_filename)
     context = Context(config_path, command_line_args = args_dict)
+    enable_db_logging = context.configuration.get("enable_database_logging", True)
 
-    logger = setup_ahjo_logger(context.configuration)
+    logger = setup_ahjo_logger(
+        enable_database_log = enable_db_logging,
+        enable_windows_event_log = context.configuration.get("windows_event_log", False),
+        enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False)
+    )
     logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')
     logger.debug(f'File(s):  {args.files}')
@@ -98,7 +103,7 @@ def main():
         except Exception:
             pass
 
-        if context.configuration.get("enable_database_logging", True):
+        if enable_db_logging:
             logger.debug(
                 "Logging to database",
                 extra={

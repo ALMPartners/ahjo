@@ -7,15 +7,10 @@
     Ahjo config command entrypoint.
 '''
 import argparse
-import os
-import ahjo
-from logging import getLogger
-from logging.config import fileConfig
 from ahjo.context import convert_config_to_yaml, convert_config_to_json
-from ahjo.interface_methods import load_conf
+from ahjo.logging import setup_ahjo_logger
 
-fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger.ini'))
-logger = getLogger('ahjo')
+logger = setup_ahjo_logger(enable_database_log = False)
 
 def main():
 
@@ -38,8 +33,6 @@ def main():
     )
 
     args = parser.parse_args()
-    if load_conf(args.config).get("windows_event_log", False):
-        fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
 
     if args.convert_to in ["yaml", "yml"]:
         convert_config_to_yaml(
