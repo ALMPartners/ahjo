@@ -4,18 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import os
 import sys
 import ahjo.scripts.master_actions
 
-from logging import getLogger
-from logging.config import fileConfig, dictConfig
 from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
 from ahjo.context import config_is_valid, Context
 from ahjo.interface_methods import get_config_path
 from ahjo.operations.general.db_info import print_db_collation
-from ahjo.operation_manager import load_sqlalchemy_logger
-from ahjo.logging import AHJO_LOG_CONFIG, add_db_handler
+from ahjo.logging import setup_ahjo_logger
 
 try:
     from ahjo.version import version as AHJO_VERSION
@@ -66,19 +62,11 @@ def main():
     config_path = get_config_path(args.config_filename)
     context = Context(config_path, command_line_args = args_dict)
 
-    # Set up logger
-    fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
-    enable_database_logging = context.configuration.get("enable_database_logging", True)
-    if enable_database_logging: add_db_handler()
-    dictConfig(AHJO_LOG_CONFIG)
-    logger = getLogger('ahjo')
+    logger = setup_ahjo_logger(context.configuration)
     logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')
     logger.debug(f'File(s):  {args.files}')
     logger.debug(f'Object type:  {args.object_type}')
-
-    if context.configuration.get("enable_sqlalchemy_logging", False):
-        load_sqlalchemy_logger()
 
     import_actions(
         ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
@@ -96,11 +84,6 @@ def main():
         if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action):
             print_db_collation(context)
         
-        # Use different logger configuration for Windows Event Log
-        # Preferably we should have only one logger configuration, but this is a workaround for now
-        if context.configuration.get("windows_event_log", False):
-            fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_winLog.ini'))
-
         kwargs = {"context": context}
         if len(args.files) > 0 : kwargs['files'] = args.files
         if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
@@ -115,7 +98,7 @@ def main():
         except Exception:
             pass
 
-        if enable_database_logging:
+        if context.configuration.get("enable_database_logging", True):
             logger.debug(
                 "Logging to database",
                 extra={
