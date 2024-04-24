@@ -66,7 +66,7 @@ AHJO_LOG_CONFIG = {
     }
 }
 
-def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log: bool = False, enable_sqlalchemy_log: bool = False):
+def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log: bool = False, enable_sqlalchemy_log: bool = False, context = None):
     """ Set up the logger configuration for ahjo. 
     
     Parameters:
@@ -88,7 +88,7 @@ def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log
 
     # Load optional loggers
     if enable_database_log:
-        add_db_handler()
+        add_db_handler(context = context)
     if enable_windows_event_log:
         add_win_event_handler()
     if enable_sqlalchemy_log:
@@ -109,14 +109,15 @@ def load_sqlalchemy_logger():
     getLogger('sqlalchemy.orm')
 
 
-def add_db_handler():
+def add_db_handler(context = None):
     """ Add database handler to the logger configuration. """
     AHJO_LOG_CONFIG["loggers"]["ahjo"]["handlers"].append("handler_database")
     AHJO_LOG_CONFIG["loggers"]["alembic"]["handlers"].append("handler_database")
     AHJO_LOG_CONFIG["handlers"]["handler_database"] = {
         "class": "ahjo.logging.db_handler.DatabaseHandler",
         "level": "DEBUG",
-        "formatter": "formatter_console",
+        "formatter": "formatter_console"
+        #"context": context
     }
 
 def add_win_event_handler():

@@ -67,6 +67,7 @@ def main():
         enable_database_log = enable_db_logging,
         enable_windows_event_log = context.configuration.get("windows_event_log", False),
         enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False)
+        #context = context
     )
     logger.debug(f'Action:  {ahjo_action}')
     logger.debug(f'Config file:  {args.config_filename}')

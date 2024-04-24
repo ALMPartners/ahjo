@@ -8,6 +8,8 @@ from ahjo.operations.general.git_version import _get_git_commit_info
 from datetime import datetime
 from sqlalchemy import Column, MetaData, String, Table, DateTime, func, Integer
 from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy import insert
+from sqlalchemy.orm import Session
 from logging import getLogger
 
 try:
@@ -87,10 +89,9 @@ class DatabaseLogger:
                 ) from error
         
         # Insert log records to the database
-        with engine.connect() as connection:
-            for log_row in log_rows:
-                connection.execute(db_log_table.insert(), log_row)
-            connection.commit()
+        with Session(engine) as session:
+            with session.begin():
+                session.execute(insert(db_log_table), log_rows)
         
 
     def parse_log_records(self):

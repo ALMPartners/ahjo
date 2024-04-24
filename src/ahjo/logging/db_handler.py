@@ -13,7 +13,7 @@ class DatabaseHandler(logging.Handler):
         The handler stores log records in a buffer and flushes them to the database when 
         the buffer is full or when the log record has the attribute flush set to True.
     """
-    def __init__(self, capacity: int = 10000):
+    def __init__(self, capacity: int = 10000, context: Context = None):
         """ Constructor for DatabaseHandler class.
 
         Arguments:
@@ -23,10 +23,11 @@ class DatabaseHandler(logging.Handler):
 
         """
         super().__init__()
-        self.context = None
+        self.context = context
         self.capacity = capacity
         self.buffer = []
-    
+
+
     def emit(self, record: logging.LogRecord):
         """ Emit a log record to the database. 
 
@@ -44,6 +45,11 @@ class DatabaseHandler(logging.Handler):
 
         if hasattr(record, "flush") and record.flush and hasattr(record, "context"):
             self.flush(context = record.context)
+        
+        # Todo
+        #if len(self.buffer) >= self.capacity:
+        #    self.flush(context = self.context)
+
 
     def flush(self, context: Context = None):
         """ Log all records in the buffer to the database and clear the buffer. 
@@ -63,5 +69,3 @@ class DatabaseHandler(logging.Handler):
             ).log()
 
         self.buffer = []
-
-
