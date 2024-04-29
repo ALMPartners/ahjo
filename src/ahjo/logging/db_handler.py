@@ -13,19 +13,26 @@ class DatabaseHandler(logging.Handler):
         The handler stores log records in a buffer and flushes them to the database when 
         the buffer is full or when the log record has the attribute flush set to True.
     """
-    def __init__(self, capacity: int = 10000, context: Context = None):
+    def __init__(self, capacity: int = 100, context: Context = None):
         """ Constructor for DatabaseHandler class.
 
         Arguments:
         -----------
         capacity (int): 
             The maximum number of log records to store in the buffer before flushing to the database.
-
+        context (Context):
+            The context object holding the configuration and connection information.
         """
         super().__init__()
         self.context = context
         self.capacity = capacity
         self.buffer = []
+        self.locked = True
+        self.db_logger = DatabaseLogger(
+            context = context,
+            log_table_schema = context.configuration.get("log_table_schema", "dbo"),
+            log_table = context.configuration.get("log_table", "ahjo_log")
+        )
 
 
     def emit(self, record: logging.LogRecord):
@@ -43,29 +50,52 @@ class DatabaseHandler(logging.Handler):
         record.formatted_message = self.format(record)
         self.buffer.append(record)
 
-        if hasattr(record, "flush") and record.flush and hasattr(record, "context"):
-            self.flush(context = record.context)
-        
-        # Todo
-        #if len(self.buffer) >= self.capacity:
-        #    self.flush(context = self.context)
+        if self.shouldFlush(record = record):
+            self.flush()
 
 
-    def flush(self, context: Context = None):
-        """ Log all records in the buffer to the database and clear the buffer. 
+    def shouldFlush(self, record: logging.LogRecord = None):
+        """ Check if the buffer should be flushed.
 
         Arguments:
         -----------
-        context (Context): 
-            The context object to use for logging. If None, the context object from the last log record is used.
+        record (LogRecord): 
+            The log record to be checked.
 
+        Returns:
+        -----------
+        bool:
+            True if the buffer should be flushed, False otherwise.
         """
-        if context is not None:
-            DatabaseLogger(
-                log_records = self.buffer,
-                context = context,
-                log_table_schema = context.configuration.get("log_table_schema", "dbo"),
-                log_table = context.configuration.get("log_table", "ahjo_log")
-            ).log()
+        if len(self.buffer) >= self.capacity and not self.locked:
+            return True
+        if record is not None and hasattr(record, "flush") and record.flush:
+            return True
+        return False
 
+
+    def flush(self):
+        """ Log all records in the buffer to the database and clear the buffer. """
+        try:
+            self.db_logger.log(self.buffer)
+        except:
+            pass
         self.buffer = []
+
+
+    def set_lock(self, locked: bool):
+        """ Set the lock status of the handler. """
+        self.locked = locked
+
+
+def get_db_logger_handler(logger: logging.Logger):
+    """ Return database logger handler (if exists).
+    
+    Returns
+    -------
+    ahjo.logging.db_handler.DatabaseHandler
+        Database logger handler.
+    """
+    for handler in logger.handlers:
+        if handler.name == "handler_database":
+            return handler

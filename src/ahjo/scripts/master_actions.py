@@ -54,6 +54,9 @@ def init(context):
         else:
             with master_engine.connect() as con:
                 con.execute(text('USE ' + db_name + ';'))
+        for handler in logger.handlers:
+            if handler.name == "handler_database":
+                handler.flush()
 
 
 @action(affects_database=True, dependencies=['init'])

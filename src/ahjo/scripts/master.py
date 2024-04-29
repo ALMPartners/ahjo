@@ -61,18 +61,6 @@ def main():
 
     config_path = get_config_path(args.config_filename)
     context = Context(config_path, command_line_args = args_dict)
-    enable_db_logging = context.configuration.get("enable_database_logging", True)
-
-    logger = setup_ahjo_logger(
-        enable_database_log = enable_db_logging,
-        enable_windows_event_log = context.configuration.get("windows_event_log", False),
-        enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False)
-        #context = context
-    )
-    logger.debug(f'Action:  {ahjo_action}')
-    logger.debug(f'Config file:  {args.config_filename}')
-    logger.debug(f'File(s):  {args.files}')
-    logger.debug(f'Object type:  {args.object_type}')
 
     import_actions(
         ahjo_action_files = context.configuration.get("ahjo_action_files", DEFAULT_ACTIONS_SRC)
@@ -84,6 +72,16 @@ def main():
 
         action_succeeded = False
         non_interactive = args.non_interactive
+
+        enable_db_logging = context.configuration.get("enable_database_logging", True)
+
+        logger = setup_ahjo_logger(
+            enable_database_log = enable_db_logging,
+            enable_windows_event_log = context.configuration.get("windows_event_log", False),
+            enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
+            context = context
+        )
+
         if not config_is_valid(config_path, non_interactive = non_interactive):
             return
         
@@ -102,16 +100,14 @@ def main():
             )
             action_succeeded = True
         except Exception:
-            pass
+            if enable_db_logging:
+                context.connection = None
+                context.engine = None
+                context.set_connectable("engine")
 
-        if enable_db_logging:
-            logger.debug(
-                "Logging to database",
-                extra={
-                    "flush" : True,
-                    "context" : context
-                }
-            )
+        for handler in logger.handlers:
+            if handler.name == "handler_database":
+                handler.flush()
 
         sys.exit(0) if action_succeeded else sys.exit(1)
 

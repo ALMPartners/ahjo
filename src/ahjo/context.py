@@ -12,6 +12,7 @@ from typing import Union, Any
 from sqlalchemy.engine import Engine, Connection
 from ahjo.database_utilities import (create_conn_info, create_sqlalchemy_engine, create_sqlalchemy_url)
 from ahjo.interface_methods import load_conf, load_json_conf, load_yaml_conf
+from sqlalchemy import event
 
 logger = getLogger('ahjo')
 
@@ -62,6 +63,11 @@ class Context:
         if self.connectivity_type == "connection":
             return self.get_connection()
         return self.get_engine()
+    
+    
+    def set_connectable(self, connectable_type: str):
+        """Set connectivity type to 'connection'."""
+        self.connectivity_type = connectable_type
 
 
     def get_engine(self) -> Engine:
@@ -90,11 +96,31 @@ class Context:
             )
         return self.master_engine
     
-    
+
     def get_connection(self) -> Connection:
         """Create connection when needed first time."""
         if self.connection is None:
-            self.connection = self.get_engine().connect()
+
+            connection = self.get_engine().connect()
+
+            @event.listens_for(connection, "commit")
+            def receive_after_commit(conn):
+                print("connection commit")
+                for handler in logger.handlers:
+                    if handler.name == "handler_database":
+                        handler.set_lock(False)
+                        handler.flush()
+
+            @event.listens_for(connection, "rollback")
+            def receive_after_rollback(conn):
+                print("connection rollback")
+                for handler in logger.handlers:
+                    if handler.name == "handler_database":
+                        handler.buffer = [record for record in handler.buffer if record.levelname != "INFO"]
+                        handler.set_lock(False)
+   
+            self.connection = connection
+            
         if self.enable_transaction is None:
             if self.configuration.get("transaction_mode", "begin_once").lower() == "begin_once":
                 self.enable_transaction = True

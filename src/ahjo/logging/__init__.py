@@ -7,6 +7,7 @@ import os
 import ahjo
 from logging.config import fileConfig, dictConfig
 from logging import getLogger
+from ahjo.context import Context
 
 
 AHJO_LOG_CONFIG = {
@@ -109,15 +110,15 @@ def load_sqlalchemy_logger():
     getLogger('sqlalchemy.orm')
 
 
-def add_db_handler(context = None):
+def add_db_handler(context: Context = None):
     """ Add database handler to the logger configuration. """
     AHJO_LOG_CONFIG["loggers"]["ahjo"]["handlers"].append("handler_database")
     AHJO_LOG_CONFIG["loggers"]["alembic"]["handlers"].append("handler_database")
     AHJO_LOG_CONFIG["handlers"]["handler_database"] = {
         "class": "ahjo.logging.db_handler.DatabaseHandler",
         "level": "DEBUG",
-        "formatter": "formatter_console"
-        #"context": context
+        "formatter": "formatter_console",
+        "context": context
     }
 
 def add_win_event_handler():

@@ -10,6 +10,7 @@ from sqlalchemy import Column, MetaData, String, Table, DateTime, func, Integer
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
+from sqlalchemy.engine import Engine
 from logging import getLogger
 
 try:
@@ -22,7 +23,7 @@ logger = getLogger('ahjo')
 class DatabaseLogger:
     """ Class for logging log records to a database. """
 
-    def __init__(self, log_records: list, context: Context, log_table_schema: str, log_table: str, action: str = None):
+    def __init__(self, context: Context, log_table_schema: str, log_table: str, action: str = None):
         """ Constructor for DatabaseLogger class. 
         
         Arguments:
@@ -38,7 +39,6 @@ class DatabaseLogger:
         action (str):
             Name of the action that generated the log records.
         """
-        self.log_records = log_records
         self.context = context
         self.log_table_schema = log_table_schema
         self.log_table = log_table
@@ -46,23 +46,24 @@ class DatabaseLogger:
         self.action = action
         self.commit = self.get_git_commit()
 
-    def log(self):
+
+    def log(self, log_records: list):
         """ Insert the log records to the database. """
 
         # Convert log records to a list of rows to be inserted to the database
-        log_rows = self.parse_log_records()
+        log_rows = self.parse_log_records(log_records)
         if len(log_rows) == 0:
             return
 
         # Get the database engine and log table
-        engine = self.context.get_engine()
+        connectable = self.context.get_connectable()
         log_table = self.log_table
         log_table_schema = self.log_table_schema
         metadata = MetaData()
 
         # Get the log table from the database or create it if it does not exist
         try:
-            db_log_table = Table(log_table, metadata, autoload_with=engine, schema=log_table_schema)
+            db_log_table = Table(log_table, metadata, autoload_with=connectable, schema=log_table_schema)
         except NoSuchTableError as error:
             logger.info(
                 f"Table {log_table_schema + '.' + log_table} not found. Creating the table.")
@@ -82,19 +83,20 @@ class DatabaseLogger:
                 schema = log_table_schema
             )
             try:
-                metadata.create_all(engine)
+                metadata.create_all(connectable)
             except Exception as error:
                 raise Exception(
                     "Log table creation failed. See log for detailed error message."
                 ) from error
         
         # Insert log records to the database
-        with Session(engine) as session:
-            with session.begin():
-                session.execute(insert(db_log_table), log_rows)
+        with Session(connectable) as session:
+            session.execute(insert(db_log_table), log_rows)
+            if type(connectable) == Engine:
+                session.commit()
         
 
-    def parse_log_records(self):
+    def parse_log_records(self, log_records):
         """ Parse log records to a list of dictionaries. 
         
         Returns:
@@ -103,7 +105,7 @@ class DatabaseLogger:
             List of dictionaries containing log record information.
         """
         log_rows = []
-        for log_record in self.log_records:
+        for log_record in log_records:
             log_rows.append({
                 "timestamp": datetime.fromtimestamp(log_record.created),
                 "module": log_record.module,

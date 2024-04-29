@@ -113,13 +113,47 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
         SQL Alchemy engine.
     """
     engine = create_engine(sqlalchemy_url, **kwargs)
+
     if token is not None:
         @event.listens_for(engine, "do_connect")
         def provide_token(dialect, conn_rec, cargs, cparams):
             SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
             cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "") # remove the "Trusted_Connection" parameter that SQLAlchemy adds
             cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token} # apply it to keyword arguments
+
+    db_logger_handler = get_db_logger_handler()
+    if db_logger_handler is not None:
+
+        @event.listens_for(engine, "commit")
+        def receive_commit(conn):
+            db_logger_handler.set_lock(False)
+
+        @event.listens_for(engine, "begin")
+        def receive_begin(conn):
+            db_logger_handler.set_lock(True)
+
+        @event.listens_for(engine, "connect")
+        def receive_connect(dbapi_connection, connection_record):
+            db_logger_handler.set_lock(True)
+
+        @event.listens_for(engine, 'engine_disposed')
+        def receive_engine_disposed(engine):
+            db_logger_handler.set_lock(False)
+        
     return engine
+
+
+def get_db_logger_handler():
+    """ Return database logger handler (if exists).
+    
+    Returns
+    -------
+    ahjo.logging.db_handler.DatabaseHandler
+        Database logger handler.
+    """
+    for handler in logger.handlers:
+        if handler.name == "handler_database":
+            return handler
 
 
 @rearrange_params({"engine": "connectable"})
