@@ -11,7 +11,8 @@ import argparse
 import ahjo.scripts.master_actions
 import sys
 from ahjo.operations.general.upgrade import upgrade
-from ahjo.context import config_is_valid
+from ahjo.context import Context, config_is_valid
+from ahjo.logging import setup_ahjo_logger
 from ahjo.interface_methods import get_config_path, load_conf
 
 info_msg = "Ahjo upgrade-project"
@@ -33,11 +34,37 @@ def main():
     if not config_is_valid(config_dict, non_interactive = non_interactive):
         sys.exit(1)
 
+    # Create context
+    context = Context(config_filename)
+    context.set_enable_transaction(False)
+
+    # Setup logger
+    enable_db_logging = context.configuration.get("enable_database_logging", True)
+    logger = setup_ahjo_logger(
+        enable_database_log = enable_db_logging,
+        enable_windows_event_log = context.configuration.get("windows_event_log", False),
+        enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
+        context = context
+    )
+
     upgrade_succeeded = upgrade(
         config_filename,
-        args.version,
+        context,
+        version = args.version,
         skip_confirmation = non_interactive
     )
+
+    if enable_db_logging:
+
+        if not upgrade_succeeded:
+            context.connection = None
+            context.engine = None
+            context.set_connectable("engine")
+
+        for handler in logger.handlers:
+            if handler.name == "handler_database":
+                handler.flush()
+
     sys.exit(0) if upgrade_succeeded else sys.exit(1)
 
     

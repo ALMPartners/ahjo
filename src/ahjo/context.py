@@ -105,7 +105,6 @@ class Context:
 
             @event.listens_for(connection, "commit")
             def receive_after_commit(conn):
-                print("connection commit")
                 for handler in logger.handlers:
                     if handler.name == "handler_database":
                         handler.set_lock(False)
@@ -113,7 +112,6 @@ class Context:
 
             @event.listens_for(connection, "rollback")
             def receive_after_rollback(conn):
-                print("connection rollback")
                 for handler in logger.handlers:
                     if handler.name == "handler_database":
                         handler.buffer = [record for record in handler.buffer if record.levelname != "INFO"]

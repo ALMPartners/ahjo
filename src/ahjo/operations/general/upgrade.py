@@ -14,18 +14,21 @@ from ahjo.operations.general.db_info import print_db_collation
 from ahjo.logging import setup_ahjo_logger
 from ahjo.action import execute_action, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import Context
+from logging import getLogger
 
 
 sys.path.append(os.getcwd())
+logger = getLogger('ahjo')
 
-
-def upgrade(config_filename: str, version: str = None, skip_confirmation: bool = False):
+def upgrade(config_filename: str, context: Context, version: str = None, skip_confirmation: bool = False):
     """Upgrade database with upgrade actions.
     
     Parameters
     ----------
     config_filename : str
         Path to the configuration file.
+    context : ahjo.context.Context
+        Context object.
     version : str, optional
         Version to be upgraded. If not defined, the next upgradable version is upgraded.
     skip_confirmation : bool, optional
@@ -43,17 +46,8 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
         git_table_schema = config.get('git_table_schema', 'dbo')
         git_table = config.get('git_table', 'git_version')
         connectable_type = config.get("context_connectable_type", "engine")
-        logger = setup_ahjo_logger(
-            enable_database_log = config.get("enable_database_logging", True),
-            enable_windows_event_log = config.get("windows_event_log", False),
-            enable_sqlalchemy_log = config.get("enable_sqlalchemy_logging", False)
-        )
         updated_versions = []
 
-        # Create context
-        context = Context(config_filename)
-        context.set_enable_transaction(False)
-        
         # Display database collation
         if context.configuration.get("display_db_info", True):
             print_db_collation(context)
@@ -139,12 +133,6 @@ def upgrade(config_filename: str, version: str = None, skip_confirmation: bool =
         for version in updated_versions:
             logger.info(" " * 2 + version)
         logger.info("------")
-
-    if config.get("enable_database_logging", True):
-        logger.debug(
-            "Logging to database",
-            extra = {"flush" : True, "context" : context}
-        )
 
     return True
 

@@ -72,9 +72,8 @@ def main():
 
         action_succeeded = False
         non_interactive = args.non_interactive
-
+        
         enable_db_logging = context.configuration.get("enable_database_logging", True)
-
         logger = setup_ahjo_logger(
             enable_database_log = enable_db_logging,
             enable_windows_event_log = context.configuration.get("windows_event_log", False),
@@ -105,9 +104,10 @@ def main():
                 context.engine = None
                 context.set_connectable("engine")
 
-        for handler in logger.handlers:
-            if handler.name == "handler_database":
-                handler.flush()
+        if enable_db_logging:
+            for handler in logger.handlers:
+                if handler.name == "handler_database":
+                    handler.flush()
 
         sys.exit(0) if action_succeeded else sys.exit(1)
 

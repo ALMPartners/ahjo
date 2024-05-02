@@ -68,10 +68,13 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
         os.chdir(project_path)
         sys.path.append(os.getcwd())
         project_config_dict = load_conf(project_config_path)
+        context = Context(project_config_path, master_engine = master_engine)
+        enable_db_logging = context.configuration.get("enable_database_logging", True)
         logger = setup_ahjo_logger(
-            enable_database_log = project_config_dict.get("enable_database_logging", True),
+            enable_database_log = enable_db_logging,
             enable_windows_event_log = project_config_dict.get("windows_event_log", False),
-            enable_sqlalchemy_log = project_config_dict.get("enable_sqlalchemy_logging", False)
+            enable_sqlalchemy_log = project_config_dict.get("enable_sqlalchemy_logging", False),
+            context = context
         )
 
         logger.info('------')
@@ -108,23 +111,29 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
         os.chdir(project_path)
 
         # Run ahjo actions
+        action_failed = False
         for project_action in project_actions:
-            execute_action(
-                project_action, 
-                project_config_path, 
-                engine = master_engine, 
-                skip_confirmation = skip_project_confirmation
-            )
+            try:
+                execute_action(
+                    project_action, 
+                    project_config_path, 
+                    context=context,
+                    #engine = master_engine, 
+                    skip_confirmation = skip_project_confirmation
+                )
+            except Exception:
+                if enable_db_logging:
+                    context.connection = None
+                    context.engine = None
+                    context.set_connectable("engine")
+                    action_failed = True
+                    break
+        if enable_db_logging:
+            for handler in logger.handlers:
+                if handler.name == "handler_database":
+                    handler.flush()
 
-        if project_config_dict.get("enable_database_logging", True):
-            logger.debug(
-                "Logging to database",
-                extra = {
-                    "flush" : True,
-                    "context" : Context(
-                        project_config_path, 
-                        master_engine = master_engine
-                    )
-                }
-            )
-        
+        if action_failed:
+            sys.exit(1)
+
+    sys.exit(0)
