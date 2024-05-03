@@ -528,6 +528,27 @@ def get_schema_names(connectable: Union[Engine, Connection]) -> List[str]:
     return db_list
 
 
+def database_exists(engine: Engine):
+    """ Test database connection. 
+    
+    Arguments
+    ---------
+    engine
+        SQL Alchemy Engine.
+        
+    Returns
+    -------
+    bool
+        True if connection is successful, False otherwise.
+    """
+    try:
+        connection = engine.connect()
+        connection.close()
+    except:
+        return False
+    return True
+
+
 def get_dialect_patterns(dialect_name: str) -> dict:
     """Return dialect patterns (used in SQL parsing), given dialect name.
     If dialect name not recorded, return empty dictionary.

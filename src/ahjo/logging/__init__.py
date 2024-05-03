@@ -8,6 +8,8 @@ import ahjo
 from logging.config import fileConfig, dictConfig
 from logging import getLogger
 from ahjo.context import Context
+from ahjo.logging.db_logger import load_log_table
+from ahjo.database_utilities.sqla_utilities import database_exists
 
 
 AHJO_LOG_CONFIG = {
@@ -67,7 +69,8 @@ AHJO_LOG_CONFIG = {
     }
 }
 
-def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log: bool = False, enable_sqlalchemy_log: bool = False, context = None):
+def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log: bool = False, 
+        enable_sqlalchemy_log: bool = False, context = None, test_db_connection = True):
     """ Set up the logger configuration for ahjo. 
     
     Parameters:
@@ -84,24 +87,69 @@ def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log
     logging.Logger:
         Logger object for ahjo.
     """
-    # Load root logger configuration
-    fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
+    try:
+        # Load root logger configuration
+        fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_root.ini'))
 
-    # Load optional loggers
-    if enable_database_log:
-        add_db_handler(context = context)
-    if enable_windows_event_log:
-        add_win_event_handler()
-    if enable_sqlalchemy_log:
-        load_sqlalchemy_logger()
+        # Setup optional loggers
+        if enable_database_log:
+            setup_db_logger(context, test_db_connection = test_db_connection)
+
+        if enable_windows_event_log:
+            setup_win_event_handler()
+
+        if enable_sqlalchemy_log:
+            setup_sqlalchemy_logger()
+        
+        # Load ahjo logger
+        dictConfig(AHJO_LOG_CONFIG)
+
+        return getLogger('ahjo')
+
+    except Exception as error:
+        raise error
+
+
+def setup_db_logger(context: Context, test_db_connection = True):
+    """ Setup database logger. 
     
-    # Load ahjo logger
-    dictConfig(AHJO_LOG_CONFIG)
+    Parameters:
+    -----------
+    context: Context
+        The context object holding the configuration and connection information.
+    test_db_connection: bool
+        Test the database connection before setting up the logger.
+    
+    Returns:
+    -----------
+    logging.Logger:
+        Logger object for ahjo.
+    """
+    # Assume that the database exists if we are not testing the connection
+    db_exists = database_exists(context.get_engine()) if test_db_connection else True
 
-    return getLogger('ahjo')
+    if db_exists:
 
+        add_db_handler(
+            context = context, 
+            log_table = load_log_table(
+                context, 
+                context.configuration.get(
+                    "log_table_schema", 
+                    "dbo"
+                ), 
+                context.configuration.get(
+                    "log_table", 
+                    "ahjo_log"
+                )
+            )
+        )
 
-def load_sqlalchemy_logger():
+        dictConfig(AHJO_LOG_CONFIG)
+
+        return getLogger('ahjo')
+
+def setup_sqlalchemy_logger():
     """ Load the logger configuration for SQLAlchemy. """
     fileConfig(os.path.join(os.path.dirname(ahjo.__file__), 'resources/logger_sqlalchemy.ini'), disable_existing_loggers=False)
     getLogger('sqlalchemy.engine')
@@ -110,18 +158,27 @@ def load_sqlalchemy_logger():
     getLogger('sqlalchemy.orm')
 
 
-def add_db_handler(context: Context = None):
-    """ Add database handler to the logger configuration. """
+def add_db_handler(context: Context, log_table):
+    """ Add database handler to the logger configuration. 
+    
+    Parameters:
+    -----------
+    context: Context
+        The context object holding the configuration and connection information.
+    log_table: sqlalchemy.Table
+        The log table to which the log records are stored.
+    """
     AHJO_LOG_CONFIG["loggers"]["ahjo"]["handlers"].append("handler_database")
     AHJO_LOG_CONFIG["loggers"]["alembic"]["handlers"].append("handler_database")
     AHJO_LOG_CONFIG["handlers"]["handler_database"] = {
         "class": "ahjo.logging.db_handler.DatabaseHandler",
         "level": "DEBUG",
         "formatter": "formatter_console",
-        "context": context
+        "context": context,
+        "log_table": log_table
     }
 
-def add_win_event_handler():
+def setup_win_event_handler():
     """ Add Windows event handler to the logger configuration. """
     AHJO_LOG_CONFIG["loggers"]["ahjo"]["handlers"].append("handler_win_event")
     AHJO_LOG_CONFIG["handlers"]["handler_win_event"] = {

@@ -23,27 +23,20 @@ logger = getLogger('ahjo')
 class DatabaseLogger:
     """ Class for logging log records to a database. """
 
-    def __init__(self, context: Context, log_table_schema: str, log_table: str, action: str = None):
+    def __init__(self, context: Context, log_table: Table):
         """ Constructor for DatabaseLogger class. 
         
         Arguments:
         -----------
-        log_records (list): 
-            List of log records to be logged to the database.
         context (Context):
             Context object holding the configuration and connection information.
-        log_table_schema (str):
-            Schema of the log table.
-        log_table (str):
-            Name of the log table.
-        action (str):
-            Name of the action that generated the log records.
+        log_table (sqlalchemy.Table):
+            The log table to which the log records are stored.
         """
         self.context = context
-        self.log_table_schema = log_table_schema
         self.log_table = log_table
         self.user = context.get_conn_info().get("username", None)
-        self.action = action
+        #self.action = action
         self.commit = self.get_git_commit()
 
 
@@ -55,43 +48,10 @@ class DatabaseLogger:
         if len(log_rows) == 0:
             return
 
-        # Get the database engine and log table
-        connectable = self.context.get_connectable()
-        log_table = self.log_table
-        log_table_schema = self.log_table_schema
-        metadata = MetaData()
-
-        # Get the log table from the database or create it if it does not exist
-        try:
-            db_log_table = Table(log_table, metadata, autoload_with=connectable, schema=log_table_schema)
-        except NoSuchTableError as error:
-            logger.info(
-                f"Table {log_table_schema + '.' + log_table} not found. Creating the table.")
-            db_log_table = Table(
-                log_table, metadata,
-                Column("id", Integer, primary_key=True),
-                Column("timestamp", DateTime, server_default=func.now(), onupdate=func.now()),
-                Column("module", String),
-                #Column("action", String(100)),
-                Column("level", String(20)),
-                Column("message", String),
-                Column("exc_info", String),
-                Column("user", String(100)),
-                Column("ahjo_version", String(100)),
-                Column("git_version", String(100)),
-                Column("git_repository", String),
-                schema = log_table_schema
-            )
-            try:
-                metadata.create_all(connectable)
-            except Exception as error:
-                raise Exception(
-                    "Log table creation failed. See log for detailed error message."
-                ) from error
-        
         # Insert log records to the database
+        connectable = self.context.get_connectable()
         with Session(connectable) as session:
-            session.execute(insert(db_log_table), log_rows)
+            session.execute(insert(self.log_table), log_rows)
             if type(connectable) == Engine:
                 session.commit()
         
@@ -134,3 +94,81 @@ class DatabaseLogger:
             return commit
         except Exception as error:
             logger.debug(f"Failed to get git version. Error: {error}")
+
+
+def load_log_table(context, log_table_schema: str, log_table: str):
+    """ Load the log table from the database. If the table does not exist, create it.
+
+    Arguments:
+    -----------
+    context (Context):
+        The context object holding the configuration and connection information.
+    log_table_schema (str):
+        The schema of the log table.
+    log_table (str):
+        The name of the log table.
+    
+    Returns:
+    -----------
+    sqlalchemy.Table:
+        The log table.
+    """
+    metadata = MetaData()
+    try:
+        db_log_table = Table(
+            log_table, 
+            metadata, 
+            autoload_with = context.get_engine(), 
+            schema = log_table_schema
+        )
+    except NoSuchTableError:
+        db_log_table = create_log_table(
+            context, 
+            log_table_schema, 
+            log_table
+        )
+    except Exception as error:
+        raise error
+        
+    return db_log_table
+
+
+def create_log_table(context, log_table_schema: str, log_table: str):
+    """ Create the log table in the database.
+
+    Arguments:
+    -----------
+    context (Context):
+        The context object holding the configuration and connection information.
+    log_table_schema (str):
+        The schema of the log table.
+    log_table (str):
+        The name of the log table.
+
+    Returns:
+    -----------
+    sqlalchemy.Table:
+        The log table.
+    """
+    try:
+        metadata = MetaData()
+        connectable = context.get_engine()
+        db_log_table = Table(
+            log_table, metadata,
+            Column("id", Integer, primary_key=True),
+            Column("timestamp", DateTime, server_default=func.now(), onupdate=func.now()),
+            Column("module", String),
+            #Column("action", String(100)),
+            Column("level", String(20)),
+            Column("message", String),
+            Column("exc_info", String),
+            Column("user", String(100)),
+            Column("ahjo_version", String(100)),
+            Column("git_version", String(100)),
+            Column("git_repository", String),
+            schema = log_table_schema
+        )
+        metadata.create_all(connectable)
+    except Exception as error:
+        raise error
+    return db_log_table

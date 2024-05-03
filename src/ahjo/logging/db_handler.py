@@ -6,6 +6,7 @@
 import logging
 from ahjo.context import Context
 from ahjo.logging.db_logger import DatabaseLogger
+from sqlalchemy import Table
 
 class DatabaseHandler(logging.Handler):
     """
@@ -13,15 +14,17 @@ class DatabaseHandler(logging.Handler):
         The handler stores log records in a buffer and flushes them to the database when 
         the buffer is full or when the log record has the attribute flush set to True.
     """
-    def __init__(self, capacity: int = 100, context: Context = None):
+    def __init__(self, context: Context, log_table: Table, capacity: int = 100):
         """ Constructor for DatabaseHandler class.
 
         Arguments:
         -----------
-        capacity (int): 
-            The maximum number of log records to store in the buffer before flushing to the database.
         context (Context):
             The context object holding the configuration and connection information.
+        log_table (sqlalchemy.Table):
+            The log table to which the log records are stored.
+        capacity (int): 
+            The maximum number of log records to store in the buffer before flushing to the database.
         """
         super().__init__()
         self.context = context
@@ -30,8 +33,7 @@ class DatabaseHandler(logging.Handler):
         self.locked = True
         self.db_logger = DatabaseLogger(
             context = context,
-            log_table_schema = context.configuration.get("log_table_schema", "dbo"),
-            log_table = context.configuration.get("log_table", "ahjo_log")
+            log_table = log_table
         )
 
 

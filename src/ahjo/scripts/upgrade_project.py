@@ -40,12 +40,16 @@ def main():
 
     # Setup logger
     enable_db_logging = context.configuration.get("enable_database_logging", True)
-    logger = setup_ahjo_logger(
-        enable_database_log = enable_db_logging,
-        enable_windows_event_log = context.configuration.get("windows_event_log", False),
-        enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
-        context = context
-    )
+    try:
+        logger = setup_ahjo_logger(
+            enable_database_log = enable_db_logging,
+            enable_windows_event_log = context.configuration.get("windows_event_log", False),
+            enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
+            context = context
+        )
+    except Exception as e:
+        print(f"Error setting up logger: {str(e)}")
+        sys.exit(1)
 
     upgrade_succeeded = upgrade(
         config_filename,

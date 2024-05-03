@@ -17,6 +17,7 @@ from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from sqlalchemy.sql import text
 from sqlalchemy.engine import Connection
+from  ahjo.logging import setup_db_logger
 
 logger = getLogger('ahjo')
 
@@ -48,12 +49,21 @@ def init(context):
         collation = context.configuration.get('database_collation', 'Latin1_General_CS_AS')
         op.create_db(master_engine, db_name, db_path, log_path, init_size,
                      max_size, file_growth, compatibility_level, collation)
+    except:
+        raise
     finally:
         if dispose_master_engine:
             master_engine.dispose()
         else:
             with master_engine.connect() as con:
                 con.execute(text('USE ' + db_name + ';'))
+    if context.configuration.get("enable_database_logging", True):
+        # Create database log table
+        try:
+            setup_db_logger(context, test_db_connection = False)
+        except Exception as error:
+            logger.error(f"Error setting up logger: {str(error)}")
+            raise
         for handler in logger.handlers:
             if handler.name == "handler_database":
                 handler.flush()

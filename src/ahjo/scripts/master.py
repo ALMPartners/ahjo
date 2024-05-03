@@ -72,17 +72,21 @@ def main():
 
         action_succeeded = False
         non_interactive = args.non_interactive
-        
         enable_db_logging = context.configuration.get("enable_database_logging", True)
-        logger = setup_ahjo_logger(
-            enable_database_log = enable_db_logging,
-            enable_windows_event_log = context.configuration.get("windows_event_log", False),
-            enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
-            context = context
-        )
+        
+        try:
+            logger = setup_ahjo_logger(
+                enable_database_log = enable_db_logging,
+                enable_windows_event_log = context.configuration.get("windows_event_log", False),
+                enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
+                context = context
+            )
+        except Exception as error:
+            print(f"Error setting up logger: {str(error)}")
+            sys.exit(1)
 
         if not config_is_valid(config_path, non_interactive = non_interactive):
-            return
+            sys.exit(1)
         
         if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action):
             print_db_collation(context)
