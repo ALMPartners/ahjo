@@ -183,7 +183,7 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
     context: ahjo.context.Context
         Context object. If None, a new one is created.
     """
-    logger.info('------')
+    logger.info("------", extra={"record_class": "line"})
     with OperationManager('Starting to execute "' + action_name + '"'):
         if context is None:
             context = Context(config_filename, engine)
@@ -210,12 +210,10 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
 
 
 def list_actions():
-    logger.info('-------------------------------')
-    logger.info('List of available actions')
-    logger.info('-------------------------------')
+    print('List of available actions')
+    print('-------------------------------')
     for key, registeration in sorted(registered_actions.items()):
-        logger.info(
-            f"'{key}': {registeration.function.__doc__ or 'No description available.'}")
+        print(f"'{key}': {registeration.function.__doc__ or 'No description available.'}")
 
 
 def import_actions(ahjo_action_files: list = DEFAULT_ACTIONS_SRC, reload_module: bool = False) -> None:

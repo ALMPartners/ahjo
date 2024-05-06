@@ -27,7 +27,7 @@ class OperationManager:
         if traceback is not None:
             logger.error(''.join(format_exception(
                 exc_type, exc_value, traceback)))
-        logger.info('------')
+        logger.info('------', extra={"record_class": "line"})
 
 
 def format_message(mssg: str) -> str:

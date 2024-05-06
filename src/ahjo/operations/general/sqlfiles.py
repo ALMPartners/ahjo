@@ -215,7 +215,7 @@ def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Sessi
         file_transaction=file_transaction,
         commit_transaction=commit_transaction
     )
-    logger.info(path.basename(file))
+    logger.info(path.basename(file), extra={"record_class": "deployment"})
     if display_output:
         logger.info(format_to_table(output))
 

@@ -266,7 +266,8 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     try:
         for _ in range(n_files):
             for file in loop_files:
-                if file not in looped_files: logger.info(path.basename(file))
+                if file not in looped_files: 
+                    logger.info(path.basename(file), extra={"record_class": "deployment"})
                 looped_files.add(file)
                 batches = _file_to_batches(dialect_name, file, scripting_variables)
                 try:

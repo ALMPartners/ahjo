@@ -49,11 +49,41 @@ class DatabaseHandler(logging.Handler):
         if hasattr(record, "context"):
             self.context = record.context
 
+        if self.shouldFilter(record):
+            return
+
         record.formatted_message = self.format(record)
         self.buffer.append(record)
 
         if self.shouldFlush(record = record):
             self.flush()
+
+
+    def shouldFilter(self, record: logging.LogRecord):
+        """ Check if the log record should not be logged to the database.
+
+        Arguments:
+        -----------
+        record (LogRecord): 
+            The log record to be checked.
+
+        Returns:
+        -----------
+        bool:
+            True if the log record should be filtered, False otherwise.
+        """
+
+        if hasattr(record, "module"):
+            if record.module == "db_info":
+                return True
+            if record.module == "interface_methods":
+                return True
+            
+        if hasattr(record, "record_class"):
+            if record.record_class == "line":
+                return True
+            
+        return False
 
 
     def shouldFlush(self, record: logging.LogRecord = None):

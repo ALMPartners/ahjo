@@ -36,7 +36,6 @@ class DatabaseLogger:
         self.context = context
         self.log_table = log_table
         self.user = context.get_conn_info().get("username", None)
-        #self.action = action
         self.commit = self.get_git_commit()
 
 
@@ -69,10 +68,8 @@ class DatabaseLogger:
             log_rows.append({
                 "timestamp": datetime.fromtimestamp(log_record.created),
                 "module": log_record.module,
-                #"action": log_record.action if hasattr(log_record, "action") else None,
                 "level": log_record.levelname,
                 "message": log_record.formatted_message,
-                "exc_info": log_record.exc_info,
                 "user": self.user,
                 "ahjo_version": AHJO_VERSION,
                 "git_version": self.commit,
@@ -158,10 +155,8 @@ def create_log_table(context, log_table_schema: str, log_table: str):
             Column("id", Integer, primary_key=True),
             Column("timestamp", DateTime, server_default=func.now(), onupdate=func.now()),
             Column("module", String),
-            #Column("action", String(100)),
             Column("level", String(20)),
             Column("message", String),
-            Column("exc_info", String),
             Column("user", String(100)),
             Column("ahjo_version", String(100)),
             Column("git_version", String(100)),

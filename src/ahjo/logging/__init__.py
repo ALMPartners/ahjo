@@ -65,7 +65,11 @@ AHJO_LOG_CONFIG = {
         "formatter_file":{
             "format": "[%(asctime)s] [%(name)s] %(levelname).7s %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S"
+        },
+        "formatter_db":{
+            "()": "ahjo.logging.db_formatter.DatabaseFormatter",
         }
+
     }
 }
 
@@ -173,7 +177,7 @@ def add_db_handler(context: Context, log_table):
     AHJO_LOG_CONFIG["handlers"]["handler_database"] = {
         "class": "ahjo.logging.db_handler.DatabaseHandler",
         "level": "DEBUG",
-        "formatter": "formatter_console",
+        "formatter": "formatter_db",
         "context": context,
         "log_table": log_table
     }
