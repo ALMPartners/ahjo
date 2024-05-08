@@ -123,23 +123,36 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
 
     db_logger_handler = get_db_logger_handler()
     if db_logger_handler is not None:
-
-        @event.listens_for(engine, "commit")
-        def receive_commit(conn):
-            db_logger_handler.set_lock(False)
-
-        @event.listens_for(engine, "begin")
-        def receive_begin(conn):
-            db_logger_handler.set_lock(True)
-
-        @event.listens_for(engine, "connect")
-        def receive_connect(dbapi_connection, connection_record):
-            db_logger_handler.set_lock(True)
-
-        @event.listens_for(engine, 'engine_disposed')
-        def receive_engine_disposed(engine):
-            db_logger_handler.set_lock(False)
+        return add_db_logger_listeners_to_engine(engine, db_logger_handler)
         
+    return engine
+
+
+def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object):
+    """Add database logger listeners to engine.
+
+    Arguments
+    ---------
+    engine
+        SQL Alchemy engine.
+    """
+
+    @event.listens_for(engine, "commit")
+    def receive_commit(conn):
+        db_logger_handler.set_lock(False)
+
+    @event.listens_for(engine, "begin")
+    def receive_begin(conn):
+        db_logger_handler.set_lock(True)
+
+    @event.listens_for(engine, "connect")
+    def receive_connect(dbapi_connection, connection_record):
+        db_logger_handler.set_lock(True)
+
+    @event.listens_for(engine, 'engine_disposed')
+    def receive_engine_disposed(engine):
+        db_logger_handler.set_lock(False)
+
     return engine
 
 

@@ -66,7 +66,7 @@ class Context:
     
     
     def set_connectable(self, connectable_type: str):
-        """Set connectivity type to 'connection'."""
+        """Set connectivity type to connectable_type."""
         self.connectivity_type = connectable_type
 
 

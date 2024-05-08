@@ -20,6 +20,7 @@ from os import environ, getcwd, path
 
 import json
 import pytest
+from ahjo.context import Context
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import MetaData, Table
@@ -50,6 +51,14 @@ def ahjo_config():
             config = config['BACKEND']
         return config
     return read_samples_ahjo_config
+
+
+@pytest.fixture(scope='session')
+def ahjo_context():
+    """ Return context object for sample project."""
+    def read_context(sample_directory):
+        return Context(path.join(sample_directory, 'config_development.json'))
+    return read_context
 
 
 @pytest.fixture(scope='session')

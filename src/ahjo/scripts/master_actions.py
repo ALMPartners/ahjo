@@ -17,7 +17,7 @@ from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from sqlalchemy.sql import text
 from sqlalchemy.engine import Connection
-from  ahjo.logging import setup_db_logger
+from ahjo.logging import setup_db_logger
 
 logger = getLogger('ahjo')
 

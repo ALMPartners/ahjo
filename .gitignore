@@ -16,5 +16,7 @@ _build/
 build/
 dist/
 
+ahjo.log
+
 # version
 src/ahjo/version.py
