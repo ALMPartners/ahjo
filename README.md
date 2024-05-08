@@ -361,7 +361,7 @@ BACKEND:
 | `database_init_size` | No | Initial size (MB) of database data file. | `int` | `100` |
 | `database_log_path` | No | Path of database log file. | `str` | |
 | `database_max_size` | No | Maximum size (MB) of database data file. | `int` | `10000` |
-| `enable_database_logging` | No | Enable logging to database. | `boolean` | `true` |
+| `enable_db_logging` | No | Enable logging to database. | `boolean` | `true` |
 | `log_table_schema` | No | Schema of log table. | `str` | `"dbo"` |
 | `log_table` | No | Name of ahjo log table. | `str` | `"ahjo_log"` |
 | `git_table` | No | Name of git hash table. Table holds current branch, commit hash and URL of remote repository. | `str` | `"git_version"` |
@@ -581,8 +581,16 @@ The script creates a file named `pre-commit` to Git hooks directory. By default,
 
 
 # <u>Logging</u>
-Ahjo's logging is very inclusive. Everything Ahjo prints to console, is also written into log file `ahjo.log`. 
+### Log files
+Everything Ahjo prints to console, is also written into log file `ahjo.log` in the project root directory. The log files are created automatically if they do not exist.
+
+### Database log
+Actions that affect the database are logged to a database table by default (can be disabled by setting `enable_db_logging` to `false` in config file). The name and schema of the log table can be defined in the config file. The log table is created automatically if it does not exist. 
+
+### Windows Event Log
 Logging can be done to Windows Event Log by setting `windows_event_log` to `true` in config file. This feature can be utilized for Azure Monitor activities, for example. 
+
+### SQLAlchemy log
 SQL Alchemy logging can be enabled by setting `enable_sqlalchemy_logging` to `true` in config file. The logging is done to a file named `sqlalchemy.log` in the project root directory. The log files are created automatically if they do not exist.
 
 # <u>Customization</u>
