@@ -30,7 +30,7 @@ steps:
     displayName: Install AzureSignTool
 
   - bash: |
-      AzureSignTool sign -kvu "https://kv-sign-prod-001.vault.azure.net/" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
+      AzureSignTool sign -kvu "$(kvURI)" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
     displayName: Sign all msi-files in artefacts-directory
 
   - task: PublishPipelineArtifact@1
@@ -60,7 +60,7 @@ steps:
         $env:AZCOPY_SPA_APPLICATION_ID="$(TFTAApplicationId)"
         $env:AZCOPY_TENANT_ID="$(TenantId)"
         $env:AZCOPY_ACTIVE_DIRECTORY_ENDPOINT="https://login.microsoftonline.com/$(TenantId)/oauth2/v2.0/token"
-        D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' 'https://stalmbanksystestdev001.file.core.windows.net/msi-releases/ahjo/' --recursive --preserve-smb-permissions=true --preserve-smb-info=true
+        D:/a/1/s/temp/azcopy/azcopy.exe copy 'D:/\a\1\s\dist\*' "$(StorageAccountURL)" --recursive --preserve-smb-permissions=true --preserve-smb-info=true
     displayName: Copy msi-files to Azure Storage
 
   - task: powershell@2
@@ -68,5 +68,5 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        Invoke-WebRequest -Method POST -Uri "https://prod-90.westeurope.logic.azure.com:443/workflows/e66fd92a9c344cc089f461140f4aa8f5/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oWi7gdwFLBQQhiGNAvIonkyPpp7E_088iqtlCKiX5kY"
+        Invoke-WebRequest -Method POST -Uri "$(MPATriggerURL)"
     displayName: Trigger MPA-release pipeline
