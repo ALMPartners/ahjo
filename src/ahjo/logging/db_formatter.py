@@ -28,7 +28,7 @@ class DatabaseFormatter(logging.Formatter):
 
             # remove timestamp from the start of message
             if len(message) > 20 and message.startswith("[") and message[20] == "]":
-                return re.sub("^([\[]).*?([\]])", "", str(message)).lstrip()
+                return re.sub(r"^([\[]).*?([\]])", "", str(message)).lstrip()
             
         if hasattr(record, "record_class") and record.record_class == "deployment":
             #return f"File {message} deploy completed"

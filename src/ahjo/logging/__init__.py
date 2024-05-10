@@ -74,7 +74,7 @@ AHJO_LOG_CONFIG = {
 }
 
 def setup_ahjo_logger(enable_database_log: bool = True, enable_windows_event_log: bool = False, 
-        enable_sqlalchemy_log: bool = False, context = None, test_db_connection = True, disable_file_log = False):
+        enable_sqlalchemy_log: bool = False, context = None, test_db_connection = True):
     """ Set up the logger configuration for ahjo. 
     
     Parameters:
