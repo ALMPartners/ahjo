@@ -117,6 +117,13 @@ ahjo_config_exe = Executable(
     icon=icon,
 )
 
+ahjo_alembic_api_exe = Executable(
+    "src/ahjo/scripts/alembic_api.py",
+    target_name="alembic-api.exe", 
+    base=None,
+    icon=icon,
+)
+
 setup(
     name=name,
     version=version,
@@ -132,6 +139,7 @@ setup(
         ahjo_upgrade_exe, 
         ahjo_scan_exe,
         ahjo_install_git_hook_exe,
-        ahjo_config_exe
+        ahjo_config_exe,
+        ahjo_alembic_api_exe
     ],
 )
