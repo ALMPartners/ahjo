@@ -109,6 +109,7 @@ class Context:
                     if handler.name == "handler_database":
                         handler.set_lock(False)
                         handler.flush()
+                        break
 
             @event.listens_for(connection, "rollback")
             def receive_after_rollback(conn):
@@ -116,6 +117,7 @@ class Context:
                     if handler.name == "handler_database":
                         handler.buffer = [record for record in handler.buffer if record.levelname != "INFO"]
                         handler.set_lock(False)
+                        break
    
             self.connection = connection
             

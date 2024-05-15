@@ -5,13 +5,11 @@
 
 import copy
 import sys
-import importlib
 import os
 import ahjo.scripts.master_actions
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.operations.general.db_info import print_db_collation
-from ahjo.logging import setup_ahjo_logger
 from ahjo.action import execute_action, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import Context
 from logging import getLogger
@@ -81,9 +79,17 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
 
             # Checkout the next upgradable git version
             _checkout_tag(git_version)
+            config = load_conf(config_filename)
+
+            # Update version info in the database logger
+            if config.get("enable_database_logging", True):
+                for handler in logger.handlers:
+                    if handler.name == "handler_database":
+                        handler.flush()
+                        handler.db_logger.set_git_commit(git_version)
+                        break
 
             # Reload ahjo actions
-            config = load_conf(config_filename)
             import_actions(
                 ahjo_action_files = config.get("ahjo_action_files", DEFAULT_ACTIONS_SRC), 
                 reload_module = True

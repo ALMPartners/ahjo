@@ -29,7 +29,7 @@
         //,"database_file_growth": 500
         //,"database_compatibility_level": 140
         //,"database_collation": "Latin1_General_CS_AS"
-        //,"enable_database_logging": true
+        //,"enable_database_logging": false
         //,"log_table_schema": "dbo"
         //,"log_table": "ahjo_log"
         // Storing credentials to files is not secure, and not recommended in a production environment!

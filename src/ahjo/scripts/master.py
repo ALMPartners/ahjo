@@ -72,7 +72,7 @@ def main():
 
         action_succeeded = False
         non_interactive = args.non_interactive
-        enable_db_logging = context.configuration.get("enable_database_logging", True)
+        enable_db_logging = context.configuration.get("enable_database_logging", False)
         
         try:
             logger = setup_ahjo_logger(
@@ -112,6 +112,7 @@ def main():
             for handler in logger.handlers:
                 if handler.name == "handler_database":
                     handler.flush()
+                    break
 
         sys.exit(0) if action_succeeded else sys.exit(1)
 

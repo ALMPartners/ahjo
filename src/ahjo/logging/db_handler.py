@@ -5,6 +5,7 @@
 
 import logging
 from ahjo.context import Context
+from subprocess import check_output
 from ahjo.logging.db_logger import DatabaseLogger
 from sqlalchemy import Table
 
@@ -33,7 +34,8 @@ class DatabaseHandler(logging.Handler):
         self.locked = True
         self.db_logger = DatabaseLogger(
             context = context,
-            log_table = log_table
+            log_table = log_table,
+            commit = self.get_git_commit()
         )
 
 
@@ -120,6 +122,21 @@ class DatabaseHandler(logging.Handler):
         self.locked = locked
 
 
+    def get_git_commit(self):
+        """ Get the git commit info.
+
+        Returns:
+        -----------
+        str or None:
+            Git commit hash of the current commit.
+        """
+        try:
+            return check_output(['git', 'describe', '--always', '--tags']).decode("utf-8").strip()
+        except Exception as error:
+            print(f"Failed to get git version. Error: {error}")
+        return None
+    
+    
 def get_db_logger_handler(logger: logging.Logger):
     """ Return database logger handler (if exists).
     

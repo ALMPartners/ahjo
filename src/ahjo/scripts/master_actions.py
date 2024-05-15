@@ -56,7 +56,7 @@ def init(context):
 
             master_engine.dispose()
 
-            if context.configuration.get("enable_database_logging", True):
+            if context.configuration.get("enable_database_logging", False):
                 # Create database log table
                 try:
                     setup_db_logger(context, test_db_connection = False)
@@ -66,6 +66,7 @@ def init(context):
                 for handler in logger.handlers:
                     if handler.name == "handler_database":
                         handler.flush()
+                        break
         else:
             with master_engine.connect() as con:
                 con.execute(text('USE ' + db_name + ';'))

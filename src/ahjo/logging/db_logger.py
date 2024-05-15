@@ -4,26 +4,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from ahjo.context import Context
-from ahjo.operations.general.git_version import _get_git_commit_info
 from datetime import datetime
 from sqlalchemy import Column, MetaData, String, Table, DateTime, func, Integer
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
 from sqlalchemy.engine import Engine
-from logging import getLogger
 
 try:
     from ahjo.version import version as AHJO_VERSION
 except ImportError:
     AHJO_VERSION = "?.?.?"
 
-logger = getLogger('ahjo')
-
 class DatabaseLogger:
     """ Class for logging log records to a database. """
 
-    def __init__(self, context: Context, log_table: Table):
+    def __init__(self, context: Context, log_table: Table, commit: str = None):
         """ Constructor for DatabaseLogger class. 
         
         Arguments:
@@ -36,7 +32,7 @@ class DatabaseLogger:
         self.context = context
         self.log_table = log_table
         self.user = context.get_conn_info().get("username", None)
-        self.commit = self.get_git_commit()
+        self.commit = commit
 
 
     def log(self, log_records: list):
@@ -78,19 +74,10 @@ class DatabaseLogger:
         return log_rows
 
 
-    def get_git_commit(self):
-        """ Get the git commit hash of the current commit.
-
-        Returns:
-        -----------
-        str or None:
-            Git commit hash of the current commit.
-        """
-        try:
-            _, commit = _get_git_commit_info()
-            return commit
-        except Exception as error:
-            logger.debug(f"Failed to get git version. Error: {error}")
+    def set_git_commit(self, commit: str):
+        """ Set the git commit info. """
+        print("COMMITTI: ", commit)
+        self.commit = commit
 
 
 def load_log_table(context, log_table_schema: str, log_table: str):

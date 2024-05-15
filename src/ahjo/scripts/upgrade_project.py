@@ -39,7 +39,7 @@ def main():
     context.set_enable_transaction(False)
 
     # Setup logger
-    enable_db_logging = context.configuration.get("enable_database_logging", True)
+    enable_db_logging = context.configuration.get("enable_database_logging", False)
     try:
         logger = setup_ahjo_logger(
             enable_database_log = enable_db_logging,
@@ -68,6 +68,7 @@ def main():
         for handler in logger.handlers:
             if handler.name == "handler_database":
                 handler.flush()
+                break
 
     sys.exit(0) if upgrade_succeeded else sys.exit(1)
 

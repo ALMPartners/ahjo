@@ -70,7 +70,7 @@ def run_multi_project_build(master_config_path: str, skip_project_confirmation =
             sys.path.append(os.getcwd())
             project_config_dict = load_conf(project_config_path)
             #context = Context(project_config_path, master_engine = master_engine)
-            #enable_db_logging = context.configuration.get("enable_database_logging", True)
+            #enable_db_logging = context.configuration.get("enable_database_logging", False)
             logger = setup_ahjo_logger(
                 enable_database_log = False,
                 enable_windows_event_log = project_config_dict.get("windows_event_log", False),
