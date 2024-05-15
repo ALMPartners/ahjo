@@ -67,7 +67,7 @@ This assumes you have cloned the source code repository and have it open in a sh
 Create a new, empty build venv and install build requirements into it.
 
 ```
-py -3.11 -m venv venv_msi_build
+python -m venv venv_msi_build
 .\venv_msi_build\Scripts\Activate.ps1 
 pip install -r .\msi_build_requirements.txt
 ```
