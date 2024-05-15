@@ -76,7 +76,6 @@ class DatabaseLogger:
 
     def set_git_commit(self, commit: str):
         """ Set the git commit info. """
-        print("COMMITTI: ", commit)
         self.commit = commit
 
 
