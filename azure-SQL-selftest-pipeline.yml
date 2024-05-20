@@ -62,5 +62,5 @@ jobs:
         set -ex
         source ahjovenv/bin/activate
         cd /home/vsts/work/1/s
-        pytest --mssql_host localhost --mssql_port 1433 --mssql_username SA --mssql_password SALA_kala12 -m "not nopipeline"
+        pytest --mssql_host localhost --mssql_port 1433 --mssql_username sa --mssql_password SALA_kala12 -m "not nopipeline"
       displayName: Run ahjo
