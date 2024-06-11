@@ -43,7 +43,7 @@ def sql_files_found(data_src):
 
 @rearrange_params({"engine": "connectable"})
 def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str, list], message: str, display_output: bool = False, 
-        scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False) -> bool:
+        scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False) -> dict:
     """Run every SQL script file found in given directory/filelist and print the executed file names.
 
     If any file in directory/filelist cannot be deployed after multiple tries, raise an exeption and
@@ -74,6 +74,11 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
     commit_transaction
         Indicator to commit transaction after execution. Default is False.
 
+    Returns
+    -------
+    output
+        Dictionary with file names as keys and output as values.
+
     Raises
     ------
     ValueError
@@ -94,7 +99,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         transaction_scope = "files" if (enable_transaction is None and connectable_type is not Engine) else transaction_scope
 
         if transaction_scope != "files":
-            failed = sql_file_loop(
+            failed, output = sql_file_loop(
                 deploy_sql_from_file, 
                 connectable,
                 display_output, 
@@ -124,8 +129,8 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
             if display_output:
                 for result in output:
                     logger.info(format_to_table(result))
-            
-        return True
+
+        return output
 
 
 @rearrange_params({"engine": "connectable"})
@@ -162,7 +167,7 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
         if n_files == 0: return False
 
         if connectable_type == Engine:
-            failed = sql_file_loop(
+            failed, _ = sql_file_loop(
                 drop_sql_from_file, 
                 connectable,
                 object_type, 
@@ -189,7 +194,7 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
 
 @rearrange_params({"engine": "connectable"})
 def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Session], display_output: bool, scripting_variables: dict, 
-        file_transaction: bool = False, commit_transaction: bool = True):
+        file_transaction: bool = False, commit_transaction: bool = True) -> list:
     '''Run single SQL script file.
 
     Print output as formatted table.
@@ -206,6 +211,12 @@ def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Sessi
         Variables passed to SQL script.
     file_transaction
         Indicator to run script in transaction.
+
+    Returns
+    -------
+    output
+        Query output as list. If query returns no output, empty list is returned.
+
     '''
     output = execute_from_file(
         connectable,
@@ -218,6 +229,8 @@ def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Sessi
     logger.info(path.basename(file), extra={"record_class": "deployment"})
     if display_output:
         logger.info(format_to_table(output))
+
+    return output
 
 
 def drop_sql_from_file(file: str, engine: Engine, object_type: str):
@@ -271,24 +284,28 @@ def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_
 
     Returns
     -------
-    dict
-        Failed files and related errors. Empty if no fails.
+    errors
+        Dictionary with file names as keys and error messages as values.
+    outputs
+        outputs: Dictionary with file names as keys and output as values.
     '''
     copy_list = file_list.copy()
     copy_list_loop = copy_list.copy()
     errors = defaultdict(set)
+    outputs = {}
     for _ in range(max_loop):
         for file in copy_list_loop:
             try:
-                command(file, *args)
+                output = command(file, *args)
                 copy_list.remove(file)
+                outputs[file] = output
             except:
                 error_str = '\n------\n' + format_exc()
                 errors[file].add(error_str)
         copy_list_loop = copy_list.copy()
     if len(copy_list) > 0:
-        return {f: list(errors[f]) for f in copy_list}
-    return {}
+        return {f: list(errors[f]) for f in copy_list}, outputs
+    return {}, outputs
 
 
 def check_connectable_type(connectable, func_name):

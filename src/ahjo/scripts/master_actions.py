@@ -15,9 +15,12 @@ import ahjo.operations as op
 import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
+from ahjo.operations.general.db_test import DatabaseTester
+from ahjo.logging import setup_db_logger
+from sqlalchemy import Column, Integer, String, DateTime, func, MetaData, Table
 from sqlalchemy.sql import text
 from sqlalchemy.engine import Connection
-from ahjo.logging import setup_db_logger
+from sqlalchemy.exc import NoSuchTableError
 
 logger = getLogger('ahjo')
 
@@ -256,8 +259,45 @@ def downgrade(context):
 
 @action()
 def test(context):
-    """Run tests."""
-    op.deploy_sqlfiles(context.get_connectable(), './database/tests/', "Running tests", display_output=True)
+    """Run test files and optionally save the results to the database."""
+
+    metadata = MetaData()
+    connectable = context.get_connectable()
+    test_table = None
+
+    if context.configuration.get("save_test_results_to_db", True):
+        try:
+            # Load existing test table
+            test_table = Table(
+                context.configuration.get("test_table_name", "ahjo_tests"),
+                metadata, 
+                autoload_with = connectable, 
+                schema = context.configuration.get("test_table_schema", "dbo")
+            )
+        except NoSuchTableError:
+            if context.configuration.get("create_test_table_if_not_exists", True):
+
+                # Default table format for test results
+                test_table = Table(
+                    context.configuration.get("test_table_name", "ahjo_tests"),
+                    metadata,
+                    Column("BatchID", Integer, primary_key=True, autoincrement=True),
+                    Column("StartTime", DateTime),
+                    Column("EndTime", DateTime, default=func.now()),
+                    Column("TestName", String),
+                    Column("Issue", String),
+                    Column("Result", String),
+                    Column("TestFile", String),
+                    schema = context.configuration.get("test_table_schema", "dbo")
+                )
+                metadata.create_all(connectable)
+            else:
+                raise Exception("Test table not found.")
+        except Exception as error:
+            raise error
+
+    db_tester = DatabaseTester(context = context, table = test_table)
+    db_tester.execute_test_files("./database/tests/")
 
 
 @action(dependencies=["deploy"])

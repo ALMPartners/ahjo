@@ -45,3 +45,7 @@ from ahjo.operations.general.db_info import (
 from ahjo.operations.general.scan import (
     scan_project
 )
+
+from ahjo.operations.general.db_test import (
+    DatabaseTester
+)
