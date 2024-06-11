@@ -15,7 +15,7 @@ import ahjo.operations as op
 import ahjo.database_utilities as du
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
-from ahjo.operations.general.db_test import DatabaseTester
+from ahjo.operations.general.db_tester import DatabaseTester
 from ahjo.logging import setup_db_logger
 from sqlalchemy import Column, Integer, String, DateTime, func, MetaData, Table
 from sqlalchemy.sql import text
