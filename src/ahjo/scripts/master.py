@@ -9,6 +9,7 @@ import ahjo.scripts.master_actions
 
 from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
 from ahjo.context import config_is_valid, Context
+from ahjo.database_utilities.sqla_utilities import test_connection
 from ahjo.interface_methods import get_config_path
 from ahjo.operations.general.db_info import print_db_collation
 from ahjo.logging import setup_ahjo_logger
@@ -73,7 +74,20 @@ def main():
         action_succeeded = False
         non_interactive = args.non_interactive
         enable_db_logging = context.configuration.get("enable_database_logging", False)
-        
+
+        if context.configuration.get("connect_resiliently", True):
+
+            retry_attempts = context.configuration.get("connect_retry_count", 10)
+            connection_succeeded = test_connection(
+                engine = context.get_engine(),
+                retry_attempts = retry_attempts,
+                retry_interval = context.configuration.get("connect_retry_interval", 5)
+            )
+
+            if not connection_succeeded:
+                print(f"Connection failed after {retry_attempts} attempts. Exiting.")
+                sys.exit(1)
+
         try:
             logger = setup_ahjo_logger(
                 enable_database_log = enable_db_logging,

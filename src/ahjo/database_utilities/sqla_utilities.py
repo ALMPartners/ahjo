@@ -6,6 +6,7 @@
 """Utility functions for sqlalchemy
 """
 import importlib
+import time
 from ahjo.interface_methods import rearrange_params
 from logging import getLogger
 from os import path
@@ -168,6 +169,40 @@ def get_db_logger_handler():
     for handler in logger.handlers:
         if handler.name == "handler_database":
             return handler
+
+
+def test_connection(engine: Engine, retry_attempts: int = 10, retry_interval: int = 5):
+    """ Test database connection with retry attempts. 
+    This can be useful for Azure SQL databases that are not always immediately available.
+    
+    Arguments
+    ---------
+    engine
+        SQL Alchemy engine.
+    retry_attempts
+        Number of retry attempts.
+    retry_interval
+        Interval between retry attempts in seconds.
+
+    Returns
+    -------
+    bool
+        True if connection is successful, False otherwise.
+    """
+    connection_succeeded = False
+
+    for _ in range(retry_attempts):
+        try:
+            engine.connect()
+            connection_succeeded = True
+            engine.dispose()
+            break
+        except Exception as e:
+            print(f"Connection failed. Retrying in {retry_interval} seconds.")
+            print(e)
+            time.sleep(retry_interval)
+
+    return connection_succeeded
 
 
 @rearrange_params({"engine": "connectable"})
