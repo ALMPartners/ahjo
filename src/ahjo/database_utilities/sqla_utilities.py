@@ -199,7 +199,8 @@ def test_connection(engine: Engine, retry_attempts: int = 10, retry_interval: in
             break
         except Exception as e:
             print(f"Connection failed. Retrying in {retry_interval} seconds.")
-            print(e)
+            print(f"Error: {str(e)}")
+            print("------")
             time.sleep(retry_interval)
 
     return connection_succeeded
