@@ -266,20 +266,24 @@ def test(context):
     test_table = None
 
     if context.configuration.get("save_test_results_to_db", True):
+
+        test_table_name = context.configuration.get("test_table_name", "ahjo_tests")
+        test_table_schema = context.configuration.get("test_table_schema", "dbo")
+
         try:
             # Load existing test table
             test_table = Table(
-                context.configuration.get("test_table_name", "ahjo_tests"),
+                test_table_name,
                 metadata, 
                 autoload_with = connectable, 
-                schema = context.configuration.get("test_table_schema", "dbo")
+                schema = test_table_schema
             )
         except NoSuchTableError:
             if context.configuration.get("create_test_table_if_not_exists", True):
-
+                logger.debug(f"Test table not found. Creating new test table.")
                 # Default table format for test results
                 test_table = Table(
-                    context.configuration.get("test_table_name", "ahjo_tests"),
+                    test_table_name,
                     metadata,
                     Column("BatchID", Integer, primary_key=True, autoincrement=True),
                     Column("StartTime", DateTime),
@@ -288,9 +292,10 @@ def test(context):
                     Column("Issue", String),
                     Column("Result", String),
                     Column("TestFile", String),
-                    schema = context.configuration.get("test_table_schema", "dbo")
+                    schema = test_table_schema
                 )
                 metadata.create_all(connectable)
+                logger.debug(f"Test table '{test_table_schema}.{test_table_name}' created.")
             else:
                 raise Exception("Test table not found.")
         except Exception as error:
