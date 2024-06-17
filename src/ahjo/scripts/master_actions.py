@@ -24,6 +24,16 @@ from sqlalchemy.exc import NoSuchTableError
 
 logger = getLogger('ahjo')
 
+# Default column definitions for ahjo test table
+DEFAULT_TEST_TABLE_COLS = [
+    Column("BatchID", Integer, primary_key=True, autoincrement=True),
+    Column("StartTime", DateTime),
+    Column("EndTime", DateTime, default=func.now()),
+    Column("TestName", String),
+    Column("Issue", String),
+    Column("Result", String),
+    Column("TestFile", String)
+]
 
 @action()
 def init_config(context):
@@ -285,13 +295,7 @@ def test(context):
                 test_table = Table(
                     test_table_name,
                     metadata,
-                    Column("BatchID", Integer, primary_key=True, autoincrement=True),
-                    Column("StartTime", DateTime),
-                    Column("EndTime", DateTime, default=func.now()),
-                    Column("TestName", String),
-                    Column("Issue", String),
-                    Column("Result", String),
-                    Column("TestFile", String),
+                    *DEFAULT_TEST_TABLE_COLS,
                     schema = test_table_schema
                 )
                 metadata.create_all(connectable)
@@ -303,6 +307,27 @@ def test(context):
 
     db_tester = DatabaseTester(context = context, table = test_table)
     db_tester.execute_test_files("./database/tests/")
+
+
+@action(affects_database=True, dependencies=["init"])
+def create_test_table(context):
+    """Create test table for test results."""
+    metadata = MetaData()
+    connectable = context.get_connectable()
+    test_table_name = context.configuration.get("test_table_name", "ahjo_tests")
+    test_table_schema = context.configuration.get("test_table_schema", "dbo")
+    test_table = Table(
+        test_table_name,
+        metadata,
+        *DEFAULT_TEST_TABLE_COLS,
+        schema = test_table_schema
+    )
+    try:
+        metadata.create_all(connectable, checkfirst=False)
+    except Exception as error:
+        logger.error(f"Error creating test table: {str(error)}")
+        return
+    logger.info(f"Test table '{test_table_schema}.{test_table_name}' created.")
 
 
 @action(dependencies=["deploy"])
