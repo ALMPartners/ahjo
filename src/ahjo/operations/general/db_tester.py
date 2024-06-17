@@ -93,14 +93,14 @@ class DatabaseTester:
         try:
             connectable = self.connectable
 
+            # Get test table columns
+            test_table_columns = [column.name for column in self.table.columns]
+
             # Output format: Dict where key is the test file name and value is the test result.
             for filepath, output in file_results.items():
 
                 # Get the first row of the output as column names
                 output_columns = output[0]
-
-                # Get test table columns
-                test_table_columns = [column.name for column in self.table.columns]
                 
                 # Get the intersection of the output columns and the table columns and get the indices of the columns to match the data
                 columns = []
