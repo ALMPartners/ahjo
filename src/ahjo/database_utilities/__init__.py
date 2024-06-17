@@ -15,7 +15,8 @@ from ahjo.database_utilities.sqla_utilities import (
     get_schema_names,
     execute_from_file,
     execute_files_in_transaction,
-    drop_files_in_transaction
+    drop_files_in_transaction,
+    view
 )
 from ahjo.database_utilities.sqlcmd import (
     invoke_sqlcmd

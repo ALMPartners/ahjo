@@ -17,7 +17,7 @@ from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from ahjo.operations.general.db_tester import DatabaseTester
 from ahjo.logging import setup_db_logger
-from sqlalchemy import Column, Integer, String, DateTime, func, MetaData, Table
+from sqlalchemy import Column, Integer, String, DateTime, func, MetaData, Table, select
 from sqlalchemy.sql import text
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import NoSuchTableError
@@ -312,22 +312,62 @@ def test(context):
 @action(affects_database=True, dependencies=["init"])
 def create_test_table(context):
     """Create test table for test results."""
-    metadata = MetaData()
-    connectable = context.get_connectable()
-    test_table_name = context.configuration.get("test_table_name", "ahjo_tests")
-    test_table_schema = context.configuration.get("test_table_schema", "dbo")
-    test_table = Table(
-        test_table_name,
-        metadata,
-        *DEFAULT_TEST_TABLE_COLS,
-        schema = test_table_schema
-    )
     try:
+        metadata = MetaData()
+        connectable = context.get_connectable()
+        test_table_name = context.configuration.get("test_table_name", "ahjo_tests")
+        test_table_schema = context.configuration.get("test_table_schema", "dbo")
+        test_table = Table(
+            test_table_name,
+            metadata,
+            *DEFAULT_TEST_TABLE_COLS,
+            schema = test_table_schema
+        )
         metadata.create_all(connectable, checkfirst=False)
+        logger.info(f"Test table '{test_table_schema}.{test_table_name}' created.")
     except Exception as error:
         logger.error(f"Error creating test table: {str(error)}")
         return
-    logger.info(f"Test table '{test_table_schema}.{test_table_name}' created.")
+
+
+@action(affects_database=True, dependencies=["init"])
+def create_test_view(context):
+    """Create test view for test results."""
+    try:
+        connectable = context.get_connectable()
+        view_name = context.configuration.get("test_view_name", "vwAhjoTests")
+        view_schema = context.configuration.get("test_view_schema", "dbo")
+        metadata = MetaData()
+
+        # Load table for view
+        test_table = Table(
+            context.configuration.get("test_table_name", "ahjo_tests"),
+            MetaData(),
+            autoload_with = connectable,
+            schema = context.configuration.get("test_table_schema", "dbo")
+        )
+
+        # Create view
+        test_view = du.view(
+            view_name,
+            metadata,
+            select(
+                test_table.columns.BatchID.label("BatchID"),
+                test_table.columns.StartTime.label("StartTime"),
+                test_table.columns.EndTime.label("EndTime"),
+                test_table.columns.TestName.label("TestName"),
+                test_table.columns.Issue.label("Issue"),
+                test_table.columns.Result.label("Result"),
+                test_table.columns.TestFile.label("TestFile")
+            ),
+            schema = view_schema
+        )
+        metadata.create_all(connectable, checkfirst=False)
+        
+    except Exception as error:
+        logger.error(f"Error creating test view: {str(error)}")
+        return
+    logger.info(f"Test view '{view_schema}.{view_name}' created.")
 
 
 @action(dependencies=["deploy"])

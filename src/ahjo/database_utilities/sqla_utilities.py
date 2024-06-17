@@ -15,12 +15,13 @@ from traceback import format_exc
 
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
                        restOfLine, CaselessKeyword, Word, nums)
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, event
 from sqlalchemy.engine import Engine, Connection, make_url, engine_from_config
 from sqlalchemy.engine.url import URL
-from sqlalchemy.sql import text
-from sqlalchemy import event
+from sqlalchemy.ext import compiler
 from sqlalchemy.orm import Session
+from sqlalchemy.schema import DDLElement
+from sqlalchemy.sql import table, text
 
 logger = getLogger('ahjo')
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
@@ -598,3 +599,56 @@ def get_dialect_patterns(dialect_name: str) -> dict:
         }
     }
     return DIALECT_PATTERNS.get(dialect_name, {})
+
+
+# SQLAlchemy view creation 
+# source: https://github.com/sqlalchemy/sqlalchemy/wiki/Views
+class CreateView(DDLElement):
+    def __init__(self, name, selectable, schema = None):
+        self.name = name
+        self.selectable = selectable
+        self.schema = schema
+
+
+class DropView(DDLElement):
+    def __init__(self, name, schema = None):
+        self.name = name
+        self.schema = schema
+
+
+@compiler.compiles(CreateView)
+def _create_view(element, compiler, **kw):
+    return "CREATE VIEW %s AS %s" % (
+        (element.schema + '.' if element.schema else '') + element.name,
+        compiler.sql_compiler.process(element.selectable, literal_binds=True),
+    )
+
+
+@compiler.compiles(DropView)
+def _drop_view(element, compiler, **kw):
+    return "DROP VIEW %s" % ((element.schema + '.' if element.schema else '') + element.name)
+
+
+def view_exists(ddl, target, connection, **kw):
+    return ddl.name in inspect(connection).get_view_names()
+
+
+def view_doesnt_exist(ddl, target, connection, **kw):
+    return not view_exists(ddl, target, connection, **kw)
+
+
+def view(name, metadata, selectable, schema = None):
+    t = table(name, schema = schema)
+    t._columns._populate_separate_keys(
+        col._make_proxy(t) for col in selectable.selected_columns
+    )
+
+    event.listen(
+        metadata,
+        "after_create",
+        CreateView(name, selectable, schema = schema).execute_if(callable_=view_doesnt_exist),
+    )
+    event.listen(
+        metadata, "before_drop", DropView(name, schema = schema).execute_if(callable_=view_exists)
+    )
+    return t
