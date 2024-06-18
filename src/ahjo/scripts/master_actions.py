@@ -275,7 +275,7 @@ def test(context):
     connectable = context.get_connectable()
     test_table = None
 
-    if context.configuration.get("save_test_results_to_db", True):
+    if context.configuration.get("save_test_results_to_db", False):
 
         test_table_name = context.configuration.get("test_table_name", "ahjo_tests")
         test_table_schema = context.configuration.get("test_table_schema", "dbo")

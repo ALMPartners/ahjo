@@ -77,7 +77,7 @@ class DatabaseTester:
             Dict where key is the test file name and value is the test result.
         """
         file_results = deploy_sqlfiles(self.connectable, test_folder, "Running tests", display_output = display_output)
-        if self.context.configuration.get("save_test_results_to_db", True):
+        if self.context.configuration.get("save_test_results_to_db", False):
             self.save_results_to_db(file_results)
         return file_results
 
