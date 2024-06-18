@@ -26,7 +26,7 @@ logger = getLogger('ahjo')
 
 # Default column definitions for ahjo test table
 DEFAULT_TEST_TABLE_COLS = [
-    Column("BatchID", Integer, primary_key=True, autoincrement=True),
+    Column("BatchID", Integer),
     Column("StartTime", DateTime),
     Column("EndTime", DateTime, default=func.now()),
     Column("TestName", String),

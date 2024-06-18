@@ -11,6 +11,7 @@ from logging import getLogger
 from sqlalchemy import Table, insert
 from sqlalchemy.orm import Session
 from sqlalchemy.engine import Engine
+from sqlalchemy.sql import text
 
 logger = getLogger('ahjo')
 
@@ -40,11 +41,9 @@ class DatabaseTester:
         Table object where the test results are saved.
     connectable: Engine
         Engine object for connecting to the database.
-    add_test_file_to_result: bool
-        If True, the test file name is added to the test results.
     """
 
-    def __init__(self, context: Context, table: Table = None, add_test_file_to_result: bool = True):
+    def __init__(self, context: Context, table: Table = None):
         """Constructor for DatabaseTester class.
 
         Arguments:
@@ -53,13 +52,10 @@ class DatabaseTester:
             Context object.
         table: Table
             Table object where the test results are saved.
-        add_test_file_to_result: bool
-            If True, the test file name is added to the test results.
         """
         self.context = context
         self.table = table
         self.connectable = context.get_connectable()
-        self.add_test_file_to_result = add_test_file_to_result
     
     def execute_test_files(self, test_folder: str, display_output: bool = True) -> dict:
         """Run the tests in the test folder and optionally save the results to the database.
@@ -99,6 +95,14 @@ class DatabaseTester:
             # Output format: Dict where key is the test file name and value is the test result.
             for filepath, output in file_results.items():
 
+                batch_id = None
+                if "BatchID" in test_table_columns:
+                    # Get the next available BatchID
+                    with Session(connectable) as session:
+                        batch_id = session.execute(text(f"SELECT MAX(BatchID) + 1 FROM {self.table.fullname}")).scalar()
+                        if batch_id is None:
+                            batch_id = 1
+
                 # Get the first row of the output as column names
                 output_columns = output[0]
                 
@@ -121,8 +125,12 @@ class DatabaseTester:
                     for i, column in zip(column_indices, columns):
                         row_dict[column] = row[i]
 
+                    # Add BatchID to the row
+                    if "BatchID" in test_table_columns and "BatchID" not in output_columns:
+                        row_dict["BatchID"] = batch_id
+
                     # Add the test file name to the row
-                    if self.add_test_file_to_result:
+                    if "TestFile" in test_table_columns and "TestFile" not in output_columns:
                         row_dict["TestFile"] = filepath
 
                     insert_list.append(row_dict)
