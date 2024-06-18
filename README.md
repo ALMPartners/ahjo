@@ -281,7 +281,17 @@ Updated schemas are listed in *metadata_allowed_schemas*.
 
 ## test
 Runs tests and returns the results.
-Runs all SQL scripts under *./database/tests*.
+Runs all SQL scripts under *./database/tests*. 
+If *save_test_results_to_db* is set to true, saves the results to a table defined in *test_table_name* and *test_table_schema*.
+The columns of the result set should match the columns of the table where the results are saved (only the matching columns are saved to the database - the rest are ignored).
+
+## create_test_table
+Creates a table for test action results. The table is created with the columns defined in a global variable `DEFAULT_TEST_TABLE_COLS` in *ahjo.scripts.master_actions.py*.
+The name and schema of the table are defined in *test_table_name* and *test_table_schema*.
+
+## create_test_view
+Creates a view for displaying test action results. The columns of the view are the same as the columns of the table where the results are saved.
+The name and schema of the view are defined in *test_view_name* and *test_view_schema*.
 
 ## list
 You can view all available actions and their descriptions with command `ahjo list`.
@@ -387,6 +397,12 @@ BACKEND:
 | `sqlalchemy.*` | No | Items under sqlalchemy.* are passed as parameters to SQLAlchemy's [create_engine](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine) function. For example `sqlalchemy.pool_size: 10` is passed as pool_size=10 to `create_engine` function. | `dict` | If `dialect` is `mssql+pyodbc`: `"sqlalchemy.use_insertmanyvalues": false`, `"sqlalchemy.use_setinputsizes": false` |
 | `sqla_url_query_map` | No | A dictionary containing [SQLAlchemy URL query connection parameters](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.engine.URL.query). | `dict` | If ODBC Driver 18: `{"Encrypt" : "yes", "LongAsMax": "Yes"}`. If ODBC Driver 17 or older: `{"Encrypt" : "no"}`. Else: `{}` |
 | `enable_sqlalchemy_logging` | No | Enable [SQLAlchemy logging](https://docs.sqlalchemy.org/en/20/core/engines.html#configuring-logging). | `boolean` | `false` |
+| `save_test_results_to_db` | No | Save test action results to database table. | `boolean` | `false` |
+| `test_table_schema` | No | Schema of the table where test action results are saved. | `str` | `"dbo"` |
+| `test_table_name` | No | Name of the table where test action results are saved. | `str` | `"ahjo_tests"` |
+| `create_test_table_if_not_exists` | No | Create test table if it does not exist. | `boolean` | `true` |
+| `test_view_name` | No | Name of the view that is used to display test action results. | `str` | `"vwAhjoTests"` |
+| `test_view_schema` | No | Schema of the view that is used to display test action results. | `str` | `"dbo"` |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 
