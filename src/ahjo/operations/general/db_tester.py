@@ -39,8 +39,8 @@ class DatabaseTester:
         Context object.
     table: Table
         Table object where the test results are saved.
-    connectable: Engine
-        Engine object for connecting to the database.
+    connectable: Engine or Connection
+        SQLAlchemy Engine or Connection object for database connection.
     """
 
     def __init__(self, context: Context, table: Table = None):
@@ -79,7 +79,7 @@ class DatabaseTester:
 
 
     def save_results_to_db(self, file_results: dict):
-        """Save the test results to the database. 
+        """Save the test results to the database. Commits after saving the file output to the database table if connectable is Engine.
         
         Arguments:
         -----------
@@ -88,6 +88,7 @@ class DatabaseTester:
         """
         try:
             connectable = self.connectable
+            connection = connectable.connect() if type(connectable) == Engine else connectable
 
             # Get test table columns
             test_table_columns = [column.name for column in self.table.columns]
@@ -95,13 +96,11 @@ class DatabaseTester:
             # Output format: Dict where key is the test file name and value is the test result.
             for filepath, output in file_results.items():
 
+                # Get the next available BatchID
                 batch_id = None
                 if "BatchID" in test_table_columns:
-                    # Get the next available BatchID
-                    with Session(connectable) as session:
-                        batch_id = session.execute(text(f"SELECT MAX(BatchID) + 1 FROM {self.table.fullname}")).scalar()
-                        if batch_id is None:
-                            batch_id = 1
+                    batch_id = connection.execute(text(f"SELECT MAX(BatchID) + 1 FROM {self.table.fullname}")).scalar()
+                    batch_id = 1 if batch_id is None else batch_id
 
                 # Get the first row of the output as column names
                 output_columns = output[0]
@@ -136,10 +135,9 @@ class DatabaseTester:
                     insert_list.append(row_dict)
                 
                 # Save the results to the database
-                with Session(connectable) as session:
-                    session.execute(insert(self.table), insert_list)
-                    if type(connectable) == Engine:
-                        session.commit()
+                connection.execute(insert(self.table), insert_list)
+                if type(connectable) == Engine:
+                    connection.commit()
 
         except Exception as e:
             logger.error(f"Error saving test results to the database: {e}")
