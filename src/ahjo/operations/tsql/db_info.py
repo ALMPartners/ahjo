@@ -21,7 +21,7 @@ def print_collation(engine: Engine, db_name: str, config_collation_name: str = "
 
     # Check if the database exists
     if not check_if_db_exists(engine, db_name):
-        logger.info(format_message("Skipping database collation check. Database does not exist."))
+        logger.info(format_message("Skipping database collation check. Database does not exist or connection failed."))
         return
 
     try:
