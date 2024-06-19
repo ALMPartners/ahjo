@@ -24,11 +24,11 @@ class DatabaseTester:
     For example, the test file could return the following result set which corresponds to the default test table columns:
 
     SELECT 
-        StartTime,
-        EndTime,
-        TestName,
-        Issue,
-        Result
+        start_time,
+        end_time,
+        test_name,
+        issue,
+        result
     FROM @RESULTS
     ORDER BY ID
 
@@ -120,10 +120,10 @@ class DatabaseTester:
             # Output format: Dict where key is the test file name and value is the test result.
             for filepath, output in file_results.items():
 
-                # Get the next available BatchID
+                # Get the next available batch_id
                 batch_id = None
-                if "BatchID" in test_table_columns:
-                    batch_id = connection.execute(text(f"SELECT MAX(BatchID) + 1 FROM {self.table.fullname}")).scalar()
+                if "batch_id" in test_table_columns:
+                    batch_id = connection.execute(text(f"SELECT MAX(batch_id) + 1 FROM {self.table.fullname}")).scalar()
                     batch_id = 1 if batch_id is None else batch_id
 
                 # Get the first row of the output as column names
@@ -148,13 +148,13 @@ class DatabaseTester:
                     for i, column in zip(column_indices, columns):
                         row_dict[column] = row[i]
 
-                    # Add BatchID to the row
-                    if "BatchID" in test_table_columns and "BatchID" not in output_columns:
-                        row_dict["BatchID"] = batch_id
+                    # Add batch_id to the row
+                    if "batch_id" in test_table_columns and "batch_id" not in output_columns:
+                        row_dict["batch_id"] = batch_id
 
                     # Add the test file name to the row
-                    if "TestFile" in test_table_columns and "TestFile" not in output_columns:
-                        row_dict["TestFile"] = filepath
+                    if "test_file" in test_table_columns and "test_file" not in output_columns:
+                        row_dict["test_file"] = filepath
 
                     insert_list.append(row_dict)
                 

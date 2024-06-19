@@ -22,13 +22,13 @@ class TestDBTesterWithSQLServer():
         self.test_table = Table(
             TABLE_NAME, 
             metadata,
-            Column("BatchID", Integer),
-            Column("StartTime", DateTime),
-            Column("EndTime", DateTime, default=func.now()),
-            Column("TestName", String),
-            Column("Issue", String),
-            Column("Result", String),
-            Column("TestFile", String),
+            Column("batch_id", Integer),
+            Column("start_time", DateTime),
+            Column("end_time", DateTime, default=func.now()),
+            Column("test_name", String),
+            Column("issue", String),
+            Column("result", String),
+            Column("test_file", String),
             schema = SCHEMA
         )
         metadata.create_all(self.engine)
@@ -56,7 +56,7 @@ class TestDBTesterWithSQLServer():
 
     def test_db_tester_should_return_correct_columns(self):
         test_results = self.db_tester.execute_test_files(TEST_FILE)
-        expected_columns = ["StartTime", "EndTime", "TestName", "Issue", "Result"]
+        expected_columns = ["start_time", "end_time", "test_name", "issue", "result"]
         assert test_results[TEST_FILE][0] == expected_columns
 
     def test_db_tester_should_return_datetime_objects(self):
@@ -102,11 +102,11 @@ class TestDBTesterWithSQLServer():
         all_rows_are_equal = True
         for i, row in enumerate(rows):
             if not (
-                row.StartTime == test_results[TEST_FILE][i+1][0] 
-                and row.EndTime == test_results[TEST_FILE][i+1][1]
-                and row.TestName == test_results[TEST_FILE][i+1][2]
-                and row.Issue == test_results[TEST_FILE][i+1][3]
-                and row.Result == test_results[TEST_FILE][i+1][4]
+                row.start_time == test_results[TEST_FILE][i+1][0] 
+                and row.end_time == test_results[TEST_FILE][i+1][1]
+                and row.test_name == test_results[TEST_FILE][i+1][2]
+                and row.issue == test_results[TEST_FILE][i+1][3]
+                and row.result == test_results[TEST_FILE][i+1][4]
             ):
                 all_rows_are_equal = False
                 break
@@ -120,7 +120,7 @@ class TestDBTesterWithSQLServer():
         with self.engine.connect() as connection:
             result = connection.execute(reflected_table.select())
             rows = result.fetchall()
-        assert len(set([row.BatchID for row in rows])) == 1
+        assert len(set([row.batch_id for row in rows])) == 1
 
     def test_test_file_is_saved_to_db(self):
         self.db_tester.set_save_test_results_to_db(True)
@@ -129,7 +129,7 @@ class TestDBTesterWithSQLServer():
         with self.engine.connect() as connection:
             result = connection.execute(reflected_table.select())
             rows = result.fetchall()
-        assert set([row.TestFile for row in rows]) == {TEST_FILE}
+        assert set([row.test_file for row in rows]) == {TEST_FILE}
 
     def test_db_tester_should_not_save_results_to_db_by_default(self):
         self.db_tester.execute_test_files(TEST_FILE)

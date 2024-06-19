@@ -26,13 +26,13 @@ logger = getLogger('ahjo')
 
 # Default column definitions for ahjo test table
 DEFAULT_TEST_TABLE_COLS = [
-    Column("BatchID", Integer),
-    Column("StartTime", DateTime),
-    Column("EndTime", DateTime, default=func.now()),
-    Column("TestName", String),
-    Column("Issue", String),
-    Column("Result", String),
-    Column("TestFile", String)
+    Column("batch_id", Integer),
+    Column("start_time", DateTime),
+    Column("end_time", DateTime, default=func.now()),
+    Column("test_name", String),
+    Column("issue", String),
+    Column("result", String),
+    Column("test_file", String)
 ]
 
 @action()
@@ -356,13 +356,13 @@ def create_test_view(context):
             view_name,
             metadata,
             select(
-                test_table.columns.BatchID.label("BatchID"),
-                test_table.columns.StartTime.label("StartTime"),
-                test_table.columns.EndTime.label("EndTime"),
-                test_table.columns.TestName.label("TestName"),
-                test_table.columns.Issue.label("Issue"),
-                test_table.columns.Result.label("Result"),
-                test_table.columns.TestFile.label("TestFile")
+                test_table.columns.batch_id.label("batch_id"),
+                test_table.columns.start_time.label("start_time"),
+                test_table.columns.end_time.label("end_time"),
+                test_table.columns.test_name.label("test_name"),
+                test_table.columns.issue.label("issue"),
+                test_table.columns.result.label("result"),
+                test_table.columns.test_file.label("test_file")
             ),
             schema = view_schema
         )
