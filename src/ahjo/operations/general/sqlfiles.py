@@ -20,14 +20,40 @@ from sqlalchemy.orm import Session
 
 logger = getLogger('ahjo')
 
-def sql_files_found(data_src):
+def sql_files_found(data_src: Union[str, list]):
+    """ Find all SQL files in given path or file list. 
+    If given path is a single file, return a list containing the file.
+
+    Parameters
+    ----------
+    data_src
+        If data_src is string: path of directory holding the SQL script files. Can be also a single file.
+        If data_src is list: list of filepaths referencing to the SQL scripts.
+    
+    Returns
+    -------
+    files
+        List of SQL script file paths.
+    """
     files = []
+
     if isinstance(data_src, str) and len(data_src) > 0:
+
+        # Check if data_src is a single sql file
+        if data_src.endswith('.sql'):
+            if not Path(data_src).is_file():
+                logger.warning("File not found: " + data_src)
+                return files
+            return [data_src]
+
         if not Path(data_src).is_dir():
             logger.warning("Directory not found: " + data_src)
             return files
+        
         files = [path.join(data_src, f) for f in listdir(data_src) if f.endswith('.sql')]
+
     elif isinstance(data_src, list):
+
         invalid_params = []
         for arg in data_src:
             if arg.endswith('.sql'):
@@ -36,8 +62,10 @@ def sql_files_found(data_src):
                 invalid_params.append(arg)
         if len(invalid_params) > 0:
             logger.warning("SQL file(s) not found from: " + ' '.join(invalid_params))
+
     else:
         logger.warning("Parameter 'data_src' should be non-empty string or list.")
+
     return files
 
 
@@ -54,7 +82,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
     connectable
         SQL Alchemy Engine or Connection.
     data_src
-        If data_src is string: path of directory holding the SQL script files.
+        If data_src is string: path of directory holding the SQL script files. Can be also a single file.
         If data_src is list: list of filepaths referencing to the SQL scripts.
     message
         Message passed to OperationManager.
@@ -146,8 +174,8 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
     object_type
         Type of database object.
     data_src
-        If data_src is string: path of directory holding the SQL script files.
-        If data_src is list: list of filepaths referencing to the SQL script locations.
+        If data_src is string: path of directory holding the SQL script files. Can be also a single file.
+        If data_src is list: list of filepaths referencing to the SQL scripts.
     message
         Message passed to OperationManager.
 

@@ -305,7 +305,11 @@ def test(context):
         except Exception as error:
             raise error
 
-    db_tester = DatabaseTester(context = context, table = test_table)
+    db_tester = DatabaseTester(
+        connectable, 
+        table = test_table, 
+        save_test_results_to_db = context.configuration.get("save_test_results_to_db", False)
+    )
     db_tester.execute_test_files("./database/tests/")
 
 

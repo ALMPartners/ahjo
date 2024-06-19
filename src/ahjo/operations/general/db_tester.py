@@ -6,11 +6,10 @@
 """Module for database tests related operations."""
 
 from ahjo.operations.general.sqlfiles import deploy_sqlfiles
-from ahjo.context import Context
+from typing import Union
 from logging import getLogger
 from sqlalchemy import Table, insert
-from sqlalchemy.orm import Session
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.sql import text
 
 logger = getLogger('ahjo')
@@ -35,28 +34,53 @@ class DatabaseTester:
 
     Attributes:
     -----------
-    context: Context
-        Context object.
-    table: Table
-        Table object where the test results are saved.
     connectable: Engine or Connection
         SQLAlchemy Engine or Connection object for database connection.
+    table: Table
+        Table object where the test results are saved.
+    save_test_results_to_db: bool
+        If True, the test results are saved to the database. Default is False.
     """
 
-    def __init__(self, context: Context, table: Table = None):
+    def __init__(self, connectable: Union[Engine, Connection], table: Table = None, save_test_results_to_db: bool = False):
         """Constructor for DatabaseTester class.
 
         Arguments:
         -----------
-        context: Context
-            Context object.
+        connectable: Engine or Connection
+            SQLAlchemy Engine or Connection object for database connection.
         table: Table
             Table object where the test results are saved.
+        save_test_results_to_db: bool
+            If True, the test results are saved to the database. Default is False.
         """
-        self.context = context
+        self.connectable = connectable
         self.table = table
-        self.connectable = context.get_connectable()
+        self.save_test_results_to_db = save_test_results_to_db
     
+
+    def set_save_test_results_to_db(self, save_test_results_to_db: bool):
+        """Set the save_test_results_to_db attribute.
+
+        Arguments:
+        -----------
+        save_test_results_to_db: bool
+            If True, the test results are saved to the database.
+        """
+        self.save_test_results_to_db = save_test_results_to_db
+
+
+    def get_save_test_results_to_db(self) -> bool:
+        """Get the save_test_results_to_db attribute.
+
+        Returns:
+        -----------
+        bool
+            If True, the test results are saved to the database.
+        """
+        return self.save_test_results_to_db
+
+
     def execute_test_files(self, test_folder: str, display_output: bool = True) -> dict:
         """Run the tests in the test folder and optionally save the results to the database.
         
@@ -73,7 +97,7 @@ class DatabaseTester:
             Dict where key is the test file name and value is the test result.
         """
         file_results = deploy_sqlfiles(self.connectable, test_folder, "Running tests", display_output = display_output)
-        if self.context.configuration.get("save_test_results_to_db", False):
+        if self.save_test_results_to_db:
             self.save_results_to_db(file_results)
         return file_results
 
