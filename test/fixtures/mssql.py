@@ -94,7 +94,10 @@ def mssql_setup_and_teardown(mssql_master_engine, test_db_name):
                 text('SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = DB_ID(:test_db_name)'), {"test_db_name": test_db_name}
                 )
             for row in result.fetchall():
-                connection.execute(text(f'KILL {row.session_id}'))
+                try:
+                    connection.execute(text(f'KILL {row.session_id}'))
+                except:
+                    pass
             connection.execute(text(f'DROP DATABASE {test_db_name}'))
 
 
