@@ -92,7 +92,6 @@ def create_conn_info(conf: dict) -> dict:
 
         azure = importlib.import_module('.identity', 'azure')
         struct = importlib.import_module("struct")
-        requests = importlib.import_module("requests")
         azure_identity_settings = conf.get("azure_identity_settings")
         token_url = azure_identity_settings.get("token_url") if isinstance(azure_identity_settings, dict) and "token_url" in azure_identity_settings else "https://database.windows.net/.default"
         azure_credentials = azure.AzureCliCredential()
@@ -104,6 +103,7 @@ def create_conn_info(conf: dict) -> dict:
 
         # Get username
         try:
+            requests = importlib.import_module("requests")
             graph_token = azure_credentials.get_token("https://graph.microsoft.com/.default").token
             response = requests.get(
                 "https://graph.microsoft.com/v1.0/me", 
