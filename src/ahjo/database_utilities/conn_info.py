@@ -89,8 +89,10 @@ def create_conn_info(conf: dict) -> dict:
             sqla_engine_params[key[11:]] = value
 
     if azure_auth_lower == "azureidentity":
+
         azure = importlib.import_module('.identity', 'azure')
         struct = importlib.import_module("struct")
+        requests = importlib.import_module("requests")
         azure_identity_settings = conf.get("azure_identity_settings")
         token_url = azure_identity_settings.get("token_url") if isinstance(azure_identity_settings, dict) and "token_url" in azure_identity_settings else "https://database.windows.net/.default"
         azure_credentials = azure.AzureCliCredential()
@@ -99,6 +101,17 @@ def create_conn_info(conf: dict) -> dict:
         ).token.encode("utf-16-le")
         raw_token_len = len(raw_token)
         token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
+
+        # Get username
+        access_token = azure_credentials.get_token("https://graph.microsoft.com/.default")
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers)
+        if response.status_code == 200:
+            user_info = response.json()
+            username = user_info.get("userPrincipalName") 
+        else:
+            raise Exception(f"Failed to get user info: {response.status_code} - {response.text}")
+
     else:
         if sqlalchemy_url is None:
             if azure_auth in ('ActiveDirectoryIntegrated', 'ActiveDirectoryInteractive'):
