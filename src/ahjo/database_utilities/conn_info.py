@@ -103,18 +103,21 @@ def create_conn_info(conf: dict) -> dict:
         token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
 
         # Get username
-        graph_token = azure_credentials.get_token("https://graph.microsoft.com/.default").token
-        response = requests.get(
-            "https://graph.microsoft.com/v1.0/me", 
-            headers = {
-                "Authorization": f"Bearer {graph_token}"
-            }
-        )
-        if response.status_code == 200:
-            user_info = response.json()
-            username = user_info.get("userPrincipalName") 
-        else:
-            raise Exception(f"Failed to get user info: {response.status_code} - {response.text}")
+        try:
+            graph_token = azure_credentials.get_token("https://graph.microsoft.com/.default").token
+            response = requests.get(
+                "https://graph.microsoft.com/v1.0/me", 
+                headers = {
+                    "Authorization": f"Bearer {graph_token}"
+                }
+            )
+            if response.status_code == 200:
+                user_info = response.json()
+                username = user_info.get("userPrincipalName") 
+            else:
+                logger.debug(f"Failed to get user info: {response.status_code} - {response.text}")
+        except Exception as error:
+            logger.debug(f"Failed to get user info: {str(error)}")
 
     else:
         if sqlalchemy_url is None:
