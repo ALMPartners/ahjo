@@ -103,10 +103,11 @@ def create_conn_info(conf: dict) -> dict:
         token = struct.pack(f"<I{raw_token_len}s", raw_token_len, raw_token)
 
         # Get username
+        graph_token = azure_credentials.get_token("https://graph.microsoft.com/.default").token
         response = requests.get(
             "https://graph.microsoft.com/v1.0/me", 
             headers = {
-                "Authorization": f"Bearer {azure_credentials.get_token("https://graph.microsoft.com/.default").token}"
+                "Authorization": f"Bearer {graph_token}"
             }
         )
         if response.status_code == 200:
