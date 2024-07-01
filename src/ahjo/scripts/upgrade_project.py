@@ -39,7 +39,7 @@ def main():
     context = Context(config_filename)
     context.set_enable_transaction(False)
 
-    if context.configuration.get("connect_resiliently", True):
+    if context.configuration.get("connect_resiliently", False):
 
         retry_attempts = context.configuration.get("connect_retry_count", 10)
         connection_succeeded = test_connection(

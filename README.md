@@ -403,7 +403,7 @@ BACKEND:
 | `create_test_table_if_not_exists` | No | Create test table if it does not exist. | `boolean` | `true` |
 | `test_view_name` | No | Name of the view that is used to display test action results. | `str` | `"vwAhjoTests"` |
 | `test_view_schema` | No | Schema of the view that is used to display test action results. | `str` | `"dbo"` |
-| `connect_resiliently` | No | Test database connection before running actions. If connection fails, retry connection for `connect_retry_count` times with `connect_retry_interval` seconds interval. | `boolean` | `true` |
+| `connect_resiliently` | No | Test database connection before running actions. If connection fails, retry connection for `connect_retry_count` times with `connect_retry_interval` seconds interval. | `boolean` | `false` |
 | `connect_retry_count` | No | Number of retries for database connection. | `int` | `10` |
 | `connect_retry_interval` | No | Interval between connection retries in seconds. | `int` | `5` |
 

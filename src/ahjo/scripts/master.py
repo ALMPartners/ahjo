@@ -75,7 +75,7 @@ def main():
         non_interactive = args.non_interactive
         enable_db_logging = context.configuration.get("enable_database_logging", False)
 
-        if context.configuration.get("connect_resiliently", True):
+        if context.configuration.get("connect_resiliently", False):
 
             retry_attempts = context.configuration.get("connect_retry_count", 10)
             connection_succeeded = test_connection(
