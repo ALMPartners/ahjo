@@ -171,7 +171,7 @@ def get_db_logger_handler():
             return handler
 
 
-def test_connection(engine: Engine, retry_attempts: int = 10, retry_interval: int = 5):
+def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: int = 10):
     """ Test database connection with retry attempts. 
     This can be useful for Azure SQL databases that are not always immediately available.
     
