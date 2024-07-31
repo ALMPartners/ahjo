@@ -35,7 +35,8 @@ DEFAULT_TEST_TABLE_COLS = [
     Column("test_file", String)
 ]
 
-@action()
+
+@action(connection_required=False)
 def init_config(context):
     """Create a local configuration file."""
     op.create_local_config_base(context.config_filename)
@@ -247,7 +248,7 @@ def drop_files(context, **kwargs):
 
     op.drop_sqlfile_objects(context.get_connectable(), object_type, files, "Dropping files")
 
-@action('drop-obsolete', True)
+@action(affects_database=True)
 def drop_obsolete(context):
     """Drop obsolete database objects."""
     du.execute_from_file(

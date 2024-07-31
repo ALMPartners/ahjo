@@ -25,7 +25,7 @@ registered_actions = {}
 DEFAULT_ACTIONS_SRC = [{"source_file": "ahjo_actions.py", "name": "Ahjo actions"}]
 
 
-def action(name: str = None, affects_database: bool = False, dependencies: List[str] = []) -> Callable[[Context, Any], Any]:
+def action(name: str = None, affects_database: bool = False, dependencies: List[str] = [], connection_required: bool = True) -> Callable[[Context, Any], Any]:
     """Wrapper function for actions.
 
     Creates and registers an action.
@@ -40,13 +40,25 @@ def action(name: str = None, affects_database: bool = False, dependencies: List[
     dependencies
         All the actions that need to be done before the action.
         Dependencies cause notifications at action start.
+    connection_required
+        If True, the action requires a connection to database.
+    
+    Returns:
+    --------
+    function
+        Wrapper function for the action.
     """
     def wrapper(func):
         action_name = name
         if action_name is None:
             action_name = func.__name__.replace('_', '-')
-        ActionRegisteration(func, action_name,
-                            affects_database, set(dependencies))
+        ActionRegisteration(
+            function = func, 
+            name = action_name,
+            affects_database = affects_database, 
+            dependencies = set(dependencies),
+            connection_required = connection_required
+        )
         return func
     return wrapper
 
@@ -54,13 +66,14 @@ def action(name: str = None, affects_database: bool = False, dependencies: List[
 class ActionRegisteration:
     """The registeration information of an action."""
 
-    def __init__(self, function: Callable[[Context, Any], Any], name: str, affects_database: bool, dependencies: dict = {}, baseactions: dict = None):
+    def __init__(self, function: Callable[[Context, Any], Any], name: str, affects_database: bool, dependencies: dict = {}, baseactions: dict = None, connection_required: bool = True):
         self.function = function
         self.name = name
         self.affects_database = affects_database
         self.dependencies = set(dependencies)
         self.baseactions = baseactions if baseactions is not None else {name}
         self.register()
+        self.connection_required = connection_required
 
     def register(self):
         """Adds self to a global dictionary of all actions."""
@@ -113,6 +126,7 @@ def create_multiaction(action_name: str, subactions: List[str], description: str
     """
     registerations = [registered_actions[sa] for sa in subactions]
     affects_database = any([r.affects_database for r in registerations])
+    connection_required = any([r.connection_required for r in registerations])
     baseactions = {
         baseaction for r in registerations for baseaction in r.baseactions}
     dependencies = {
@@ -122,8 +136,14 @@ def create_multiaction(action_name: str, subactions: List[str], description: str
         returns = [r.function(*args, **kwargs) for r in registerations]
         return returns
     func.__doc__ = description
-    ActionRegisteration(func, action_name, affects_database,
-                        dependencies, baseactions)
+    ActionRegisteration(
+        function = func, 
+        name = action_name, 
+        affects_database = affects_database,
+        dependencies = dependencies, 
+        baseactions = baseactions, 
+        connection_required = connection_required
+    )
     return func
 
 

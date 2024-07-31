@@ -5,7 +5,7 @@
 
 import argparse
 import sys
-import ahjo.scripts.master_actions
+import importlib
 
 from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
 from ahjo.context import config_is_valid, Context
@@ -69,66 +69,75 @@ def main():
 
     if ahjo_action == 'list':
         list_actions()
-    else:
+        sys.exit(0)
 
-        action_succeeded = False
-        non_interactive = args.non_interactive
-        enable_db_logging = context.configuration.get("enable_database_logging", False)
+    action_succeeded = False
+    non_interactive = args.non_interactive
+    enable_db_logging = context.configuration.get("enable_database_logging", False)
+    registered_actions = importlib.import_module("ahjo.scripts.master_actions").registered_actions
+    registered_action = registered_actions.get(ahjo_action, None)
 
-        if context.configuration.get("connect_resiliently", False):
+    if registered_action is None:
+        print(f"Action '{ahjo_action}' not found.")
+        sys.exit(1)
 
-            retry_attempts = context.configuration.get("connect_retry_count", 10)
-            connection_succeeded = test_connection(
-                engine = context.get_engine(),
-                retry_attempts = retry_attempts,
-                retry_interval = context.configuration.get("connect_retry_interval", 5)
-            )
+    connection_required = registered_action.connection_required
+    init_in_baseactions = "init" in registered_action.baseactions
 
-            if not connection_succeeded:
-                print(f"Connection failed after {retry_attempts} attempts. Exiting.")
-                sys.exit(1)
+    if context.configuration.get("connect_resiliently", False) and not init_in_baseactions and connection_required:
 
-        try:
-            logger = setup_ahjo_logger(
-                enable_database_log = enable_db_logging,
-                enable_windows_event_log = context.configuration.get("windows_event_log", False),
-                enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
-                context = context
-            )
-        except Exception as error:
-            print(f"Error setting up logger: {str(error)}")
+        retry_attempts = context.configuration.get("connect_retry_count", 20)
+        connection_succeeded = test_connection(
+            engine = context.get_engine(),
+            retry_attempts = retry_attempts,
+            retry_interval = context.configuration.get("connect_retry_interval", 10)
+        )
+
+        if not connection_succeeded:
+            print(f"Connection failed after {retry_attempts} attempts. Exiting.")
             sys.exit(1)
 
-        if not config_is_valid(config_path, non_interactive = non_interactive):
-            sys.exit(1)
-        
-        if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action):
-            print_db_collation(context)
-        
-        kwargs = {"context": context}
-        if len(args.files) > 0 : kwargs['files'] = args.files
-        if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
-        if non_interactive : kwargs['skip_confirmation'] = True
+    try:
+        logger = setup_ahjo_logger(
+            enable_database_log = enable_db_logging,
+            enable_windows_event_log = context.configuration.get("windows_event_log", False),
+            enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
+            context = context
+        )
+    except Exception as error:
+        print(f"Error setting up logger: {str(error)}")
+        sys.exit(1)
 
-        try:
-            execute_action(
-                *[ahjo_action, config_path],
-                **kwargs
-            )
-            action_succeeded = True
-        except Exception:
-            if enable_db_logging:
-                context.connection = None
-                context.engine = None
-                context.set_connectable("engine")
+    if not config_is_valid(config_path, non_interactive = non_interactive):
+        sys.exit(1)
+    
+    if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action) and not init_in_baseactions:
+        print_db_collation(context)
+    
+    kwargs = {"context": context}
+    if len(args.files) > 0 : kwargs['files'] = args.files
+    if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
+    if non_interactive : kwargs['skip_confirmation'] = True
 
+    try:
+        execute_action(
+            *[ahjo_action, config_path],
+            **kwargs
+        )
+        action_succeeded = True
+    except Exception:
         if enable_db_logging:
-            for handler in logger.handlers:
-                if handler.name == "handler_database":
-                    handler.flush()
-                    break
+            context.connection = None
+            context.engine = None
+            context.set_connectable("engine")
 
-        sys.exit(0) if action_succeeded else sys.exit(1)
+    if enable_db_logging:
+        for handler in logger.handlers:
+            if handler.name == "handler_database":
+                handler.flush()
+                break
+
+    sys.exit(0) if action_succeeded else sys.exit(1)
 
 if __name__ == '__main__':
     main()
