@@ -172,8 +172,7 @@ def get_db_logger_handler():
 
 
 def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: int = 10):
-    """ Test database connection with retry attempts. 
-    This can be useful for Azure SQL databases that are not always immediately available.
+    """ Test database connection with retry attempts.
     
     Arguments
     ---------
@@ -189,21 +188,88 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
     bool
         True if connection is successful, False otherwise.
     """
-    connection_succeeded = False
+    connection_status = None
+    dialect_name = get_dialect_name(engine)
 
     for _ in range(retry_attempts):
-        try:
-            engine.connect()
-            connection_succeeded = True
-            engine.dispose()
-            break
-        except Exception as e:
-            print(f"Connection failed. Retrying in {retry_interval} seconds.")
-            print(f"Error: {str(e)}")
+
+        if dialect_name == "mssql":
+            connection_status, error_msg = try_pyodbc_connection(engine, retry_interval)
+        else:
+            connection_status, error_msg = try_sqla_connection(engine, retry_interval)
+
+        if connection_status == -1:
+            print(error_msg)
+            print(f"Retrying in {retry_interval} seconds.")
             print("------")
             time.sleep(retry_interval)
+        else:
+            if connection_status == 1:
+                print(error_msg)
+            break
 
-    return connection_succeeded
+    return connection_status == 0
+
+
+def try_sqla_connection(engine: Engine) -> int:
+    """ Test SQL Alchemy connection.
+    
+    Arguments
+    ---------
+    engine
+        SQL Alchemy engine.
+
+    Returns
+    -------
+    connection_status
+        0 = connected, -1 = timeout, 1 = error
+    """
+    connection_status = None
+    error_msg = None
+    try:
+        engine.connect()
+        connection_status = 0
+        engine.dispose()
+    except Exception as e:
+        connection_status = -1
+        error_msg = f"Connection failed: {str(e)}"
+
+    return connection_status, error_msg
+
+
+def try_pyodbc_connection(engine: Engine) -> int:
+    """ Test pyodbc connection. 
+    This can be useful for Azure SQL databases that are not always immediately available.
+    
+    Arguments
+    ---------
+    engine
+        SQL Alchemy engine.
+
+    Returns
+    -------
+    connection_status
+        0 = connected, -1 = timeout, 1 = error
+    """
+    connection_status = None
+    error_msg = None
+
+    try:
+        engine.connect()
+        connection_status = 0
+        engine.dispose()
+    except pyodbc.OperationError as e:
+        if e.args[0] == "08001":
+            error_msg = "Client unable to establish connection."
+            connection_status = -1
+        else:
+            error_msg = f"Error: {str(e)}"
+            connection_status = 1
+    except Exception as e:
+        error_msg = f"Error: {str(e)}"
+        connection_status = 1
+
+    return connection_status, error_msg
 
 
 @rearrange_params({"engine": "connectable"})
