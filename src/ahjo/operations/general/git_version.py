@@ -217,9 +217,10 @@ def _get_git_version(connectable: Union[Engine, Connection], git_table_schema: s
 def print_git_version(connectable: Union[Engine, Connection], git_table_schema: str, git_table: str):
     with OperationManager('Checking Git version from database'):
         repository, branch, version = _get_git_version(connectable, git_table_schema, git_table)
-        logger.info(f"Repository: {repository}")
-        logger.info(f"Branch: {branch}")
-        logger.info(f"Version: {version}")
+        if repository and branch and version:
+            logger.info(f"Repository: {repository}")
+            logger.info(f"Branch: {branch}")
+            logger.info(f"Version: {version}")
 
 
 def get_git_hooks_path() -> str:
