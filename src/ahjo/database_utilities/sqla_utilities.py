@@ -205,8 +205,16 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
             time.sleep(retry_interval)
         else:
             if connection_status == 1:
+                print("")
+                print("Database connection failed:")
+                print("")
                 print(error_msg)
+                print("")
+                print("------")
             break
+
+    if connection_status == -1:
+        print(f"Connection failed after {retry_attempts} attempts.")
 
     return connection_status == 0
 
@@ -232,7 +240,7 @@ def try_sqla_connection(engine: Engine) -> int:
         engine.dispose()
     except Exception as e:
         connection_status = -1
-        error_msg = f"Connection failed: {str(e)}"
+        error_msg = str(e)
 
     return connection_status, error_msg
 
@@ -258,15 +266,15 @@ def try_pyodbc_connection(engine: Engine) -> int:
         engine.connect()
         connection_status = 0
         engine.dispose()
-    except pyodbc.OperationError as e:
+    except pyodbc.OperationalError as e:
         if e.args[0] == "08001":
             error_msg = "Client unable to establish connection."
             connection_status = -1
         else:
-            error_msg = f"Error: {str(e)}"
+            error_msg = str(e)
             connection_status = 1
     except Exception as e:
-        error_msg = f"Error: {str(e)}"
+        error_msg = str(e)
         connection_status = 1
 
     return connection_status, error_msg

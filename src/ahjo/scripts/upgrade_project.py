@@ -39,16 +39,12 @@ def main():
     context.set_enable_transaction(False)
 
     if context.configuration.get("connect_resiliently", False):
-
-        retry_attempts = context.configuration.get("connect_retry_count", 20)
         connection_succeeded = test_connection(
             engine = context.get_engine(),
-            retry_attempts = retry_attempts,
+            retry_attempts = context.configuration.get("connect_retry_count", 20),
             retry_interval = context.configuration.get("connect_retry_interval", 10)
         )
-
         if not connection_succeeded:
-            print(f"Connection failed after {retry_attempts} attempts. Exiting.")
             sys.exit(1)
 
     # Setup logger

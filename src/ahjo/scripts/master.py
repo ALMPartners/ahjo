@@ -85,16 +85,12 @@ def main():
     init_in_baseactions = "init" in registered_action.baseactions
 
     if context.configuration.get("connect_resiliently", False) and not init_in_baseactions and connection_required:
-
-        retry_attempts = context.configuration.get("connect_retry_count", 20)
         connection_succeeded = test_connection(
             engine = context.get_engine(),
-            retry_attempts = retry_attempts,
+            retry_attempts = context.configuration.get("connect_retry_count", 20),
             retry_interval = context.configuration.get("connect_retry_interval", 10)
         )
-
         if not connection_succeeded:
-            print(f"Connection failed after {retry_attempts} attempts. Exiting.")
             sys.exit(1)
 
     try:
