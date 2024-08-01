@@ -194,9 +194,9 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
     for _ in range(retry_attempts):
 
         if dialect_name == "mssql":
-            connection_status, error_msg = try_pyodbc_connection(engine, retry_interval)
+            connection_status, error_msg = try_pyodbc_connection(engine)
         else:
-            connection_status, error_msg = try_sqla_connection(engine, retry_interval)
+            connection_status, error_msg = try_sqla_connection(engine)
 
         if connection_status == -1:
             print(error_msg)
