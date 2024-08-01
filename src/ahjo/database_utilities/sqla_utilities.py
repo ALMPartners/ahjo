@@ -267,7 +267,7 @@ def try_pyodbc_connection(engine: Engine) -> int:
         connection_status = 0
         engine.dispose()
     except pyodbc.OperationalError as e:
-        if e.args[0] == "08001":
+        if str(e).startswith("(pyodbc.OperationalError) ('08001'"):
             error_msg = "Client unable to establish connection."
             connection_status = -1
         else:
