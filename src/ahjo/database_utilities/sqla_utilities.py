@@ -28,9 +28,11 @@ logger = getLogger('ahjo')
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
 
 # Disable pyodbc pooling (https://docs.sqlalchemy.org/en/20/dialects/mssql.html#pyodbc-pooling-connection-close-behavior)
-pyodbc = importlib.import_module("pyodbc") if importlib.util.find_spec("pyodbc") is not None else None
-if pyodbc is not None:
+try:
+    import pyodbc
     pyodbc.pooling = False
+except ImportError:
+    pyodbc = None
 
 
 def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
