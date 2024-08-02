@@ -132,7 +132,7 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     return engine
 
 
-def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object):
+def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object) -> Engine:
     """Add database logger listeners to engine.
 
     Arguments
@@ -160,7 +160,7 @@ def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object)
     return engine
 
 
-def get_db_logger_handler():
+def get_db_logger_handler() -> object:
     """ Return database logger handler (if exists).
     
     Returns
@@ -173,7 +173,7 @@ def get_db_logger_handler():
             return handler
 
 
-def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: int = 10):
+def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: int = 10) -> bool:
     """ Test database connection with retry attempts.
     
     Arguments
@@ -191,7 +191,11 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
         True if connection is successful, False otherwise.
     """
     connection_status = None
-    dialect_name = get_dialect_name(engine)
+    
+    try:
+        dialect_name = get_dialect_name(engine)
+    except:
+        return False
 
     for _ in range(retry_attempts):
 
