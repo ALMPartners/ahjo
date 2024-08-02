@@ -279,6 +279,13 @@ def try_pyodbc_connection(engine: Engine) -> int:
         else:
             error_msg = str(e)
             connection_status = 1
+    except pyodbc.Error as e:
+        if str(e).startswith("(pyodbc.Error) ('HY000'"):
+            error_msg = "Database is not currently available."
+            connection_status = -1
+        else:
+            error_msg = str(e)
+            connection_status = 1
     except Exception as e:
         error_msg = str(e)
         connection_status = 1
