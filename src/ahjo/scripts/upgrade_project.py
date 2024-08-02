@@ -38,14 +38,12 @@ def main():
     context = Context(config_filename)
     context.set_enable_transaction(False)
 
-    if context.configuration.get("connect_resiliently", False):
-        connection_succeeded = test_connection(
+    if context.configuration.get("connect_resiliently", True):
+        test_connection(
             engine = context.get_engine(),
             retry_attempts = context.configuration.get("connect_retry_count", 20),
             retry_interval = context.configuration.get("connect_retry_interval", 10)
         )
-        if not connection_succeeded:
-            sys.exit(1)
 
     # Setup logger
     enable_db_logging = context.configuration.get("enable_database_logging", False)

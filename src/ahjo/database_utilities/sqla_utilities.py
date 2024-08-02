@@ -197,30 +197,26 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
     except:
         return False
 
-    for _ in range(retry_attempts):
+    try:
+        for _ in range(retry_attempts):
 
-        if dialect_name == "mssql":
-            connection_status, error_msg = try_pyodbc_connection(engine)
-        else:
-            connection_status, error_msg = try_sqla_connection(engine)
+            if dialect_name == "mssql":
+                connection_status, error_msg = try_pyodbc_connection(engine)
+            else:
+                connection_status, error_msg = try_sqla_connection(engine)
+
+            if connection_status == -1:
+                print(error_msg)
+                print(f"Retrying in {retry_interval} seconds.")
+                print("------")
+                time.sleep(retry_interval)
+            else:
+                break
 
         if connection_status == -1:
-            print(error_msg)
-            print(f"Retrying in {retry_interval} seconds.")
-            print("------")
-            time.sleep(retry_interval)
-        else:
-            if connection_status == 1:
-                print("")
-                print("Database connection failed:")
-                print("")
-                print(error_msg)
-                print("")
-                print("------")
-            break
-
-    if connection_status == -1:
-        print(f"Connection failed after {retry_attempts} attempts.")
+            print(f"Connection failed after {retry_attempts} attempts.")
+    except Exception:
+        connection_status = 1
 
     return connection_status == 0
 

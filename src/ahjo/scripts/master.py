@@ -81,17 +81,12 @@ def main():
         print(f"Action '{ahjo_action}' not found.")
         sys.exit(1)
 
-    connection_required = registered_action.connection_required
-    init_in_baseactions = "init" in registered_action.baseactions
-
-    if context.configuration.get("connect_resiliently", False) and not init_in_baseactions and connection_required:
-        connection_succeeded = test_connection(
+    if context.configuration.get("connect_resiliently", True) and registered_action.connection_required:
+        test_connection(
             engine = context.get_engine(),
             retry_attempts = context.configuration.get("connect_retry_count", 20),
             retry_interval = context.configuration.get("connect_retry_interval", 10)
         )
-        if not connection_succeeded:
-            sys.exit(1)
 
     try:
         logger = setup_ahjo_logger(
@@ -107,7 +102,7 @@ def main():
     if not config_is_valid(config_path, non_interactive = non_interactive):
         sys.exit(1)
     
-    if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action) and not init_in_baseactions:
+    if context.configuration.get("display_db_info", True) and action_affects_db(ahjo_action):
         print_db_collation(context)
     
     kwargs = {"context": context}
