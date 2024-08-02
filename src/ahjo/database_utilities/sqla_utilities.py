@@ -272,23 +272,17 @@ def try_pyodbc_connection(engine: Engine) -> int:
         engine.connect()
         connection_status = 0
         engine.dispose()
-    except pyodbc.OperationalError as e:
-        if str(e).startswith("(pyodbc.OperationalError) ('08001'"):
-            error_msg = "Client unable to establish connection."
-            connection_status = -1
-        else:
-            error_msg = str(e)
-            connection_status = 1
-    except pyodbc.Error as e:
-        if str(e).startswith("(pyodbc.Error) ('HY000'"):
-            error_msg = "Database is not currently available."
-            connection_status = -1
-        else:
-            error_msg = str(e)
-            connection_status = 1
     except Exception as e:
-        error_msg = str(e)
-        connection_status = 1
+        error_str = str(e)
+        if error_str.startswith("(pyodbc.OperationalError) ('08001'"):
+            error_msg = "Client unable to establish connection (ODBC error code: 08001)."
+            connection_status = -1
+        elif error_str.startswith("(pyodbc.Error) ('HY000'"):
+            error_msg = "Database is not currently available (ODBC error code: HY000)."
+            connection_status = -1
+        else:
+            error_msg = error_str
+            connection_status = 1
 
     return connection_status, error_msg
 
