@@ -381,6 +381,7 @@ BACKEND:
 | `sql_port` | Yes | Port number of target database server. | `int` | |
 | `target_database_name` | Yes | Name of target database. | `str` | |
 | `target_server_hostname` | Yes | Host name of target database server. | `str` | |
+| `target_database_protected` | No | Asks user to verify database name before running actions. | `boolean` | `false` |
 | `url_of_remote_git_repository` | No | URL of project's remote repository. | `str` | |
 | `username_file` | No | Path of file where username will be stored. If no path given, credentials are asked everytime any database altering action is run. | `str` | |
 | `db_permissions` | No | List of dictionaries containing file locations & scripting variables for setting up database permissions from sql file(s). Dictionary holds keys: "source" (`str`) and "variables" (`dict`). | `list` of `dict` | |

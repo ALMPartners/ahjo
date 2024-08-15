@@ -13,7 +13,7 @@ from logging import getLogger
 from typing import Any, Callable, List, Union
 
 from ahjo.context import Context
-from ahjo.interface_methods import are_you_sure
+from ahjo.interface_methods import are_you_sure, verify_input
 from ahjo.operation_manager import OperationManager, format_message
 from sqlalchemy.engine import Engine
 
@@ -88,9 +88,16 @@ class ActionRegisteration:
         if self.affects_database is True:
             conn_info = context.get_conn_info()
             warning_message = f"Warning! You are about to commit changes to server " \
-                f"{conn_info.get('server')} database {conn_info.get('database')}"
-            if not are_you_sure(warning_message):
-                return False
+                f"{conn_info.get('server')} database {conn_info.get('database')} \n"
+            if context.configuration.get("target_database_protected", False):
+                return verify_input(
+                    message = warning_message, 
+                    input_to_verify = context.configuration.get("target_database_name", ""), 
+                    input_name = "database name",
+                    use_logger = True
+                )
+            else:
+                return are_you_sure(warning_message)
         return True
 
     def notify_dependencies(self):
