@@ -52,4 +52,15 @@ jobs:
     - template: 'azure-pipelines/azure-test-template.yml'
       parameters:
         buildJob: "SYSTEM"
-  
+
+  - job: TriggerMPA
+    displayName: Trigger MPA-release pipeline
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    timeoutInMinutes: 30
+    dependsOn: 
+    - UserBuildTest
+    - SystemBuildTest
+    steps:
+    - template: 'azure-pipelines/MPA-trigger-template.yml'
