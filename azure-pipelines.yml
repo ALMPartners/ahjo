@@ -26,3 +26,30 @@ jobs:
     - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
       parameters: # Parameters the job needs
         pythonVersion: "3.11" 
+
+  - job: UserBuildTest
+    displayName: Build user test 
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    timeoutInMinutes: 30
+    dependsOn:
+    - Build
+    steps:
+    - template: 'azure-pipelines/azure-test-template.yml'
+      parameters:
+        buildJob: "USER"
+
+  - job: SystemBuildTest
+    displayName: Build system test 
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    timeoutInMinutes: 30
+    dependsOn:
+    - Build
+    steps:
+    - template: 'azure-pipelines/azure-test-template.yml'
+      parameters:
+        buildJob: "SYSTEM"
+  
