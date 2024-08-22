@@ -5,7 +5,6 @@
 
 """Utility functions for sqlalchemy
 """
-import importlib
 import time
 from ahjo.interface_methods import rearrange_params
 from logging import getLogger
@@ -13,7 +12,6 @@ from os import path
 from re import DOTALL, sub
 from typing import Iterable, List, Union
 from traceback import format_exc
-
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
                        restOfLine, CaselessKeyword, Word, nums)
 from sqlalchemy import create_engine, inspect, event
@@ -31,7 +29,7 @@ MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
 try:
     import pyodbc
     pyodbc.pooling = False
-except ImportError:
+except:
     pyodbc = None
 
 
