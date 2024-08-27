@@ -146,9 +146,6 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
 def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
     """Return a dictionary of upgradable versions and their actions."""
 
-    if upgrade_actions is None:
-        raise ValueError("Upgrade actions not defined.")
-
     version_actions = copy.deepcopy(upgrade_actions)
     git_tags = _get_all_tags()
     tag_set = set(git_tags)
@@ -156,7 +153,9 @@ def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
     if current_version not in tag_set:
         raise ValueError(f"Current version {current_version} does not exist in the repository.")
 
-    # From upgrade actions, remove versions that are previous to the current version.
+    # From upgrade actions, remove versions that are previous to the current version
+    first_upgrade_version = list(upgrade_actions.keys())[0]
+    upgrade_versions = set(upgrade_actions.keys())
     for version in upgrade_actions:
         try:
             previous_version = _get_previous_tag(version)
@@ -165,10 +164,12 @@ def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
         else: # Previous version found
             if previous_version == current_version:
                 break
+            elif version != first_upgrade_version and previous_version not in upgrade_versions:
+                raise ValueError(f"Upgrade actions are not defined for the version: {previous_version}.")
             else:
                 version_actions.pop(version)
 
-    # Validate versions and actions.
+    # Validate versions and actions
     previous_version = None
     for version in version_actions:
 
@@ -197,6 +198,7 @@ def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
             git_previous_tag = _get_previous_tag(version)
             if previous_version != git_previous_tag:
                 raise ValueError(f"Git versions in upgrade_actions are not listed in the correct order: {previous_version} -> {version}")
+            
         previous_version = version
         
     return version_actions
