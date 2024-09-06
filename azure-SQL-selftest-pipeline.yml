@@ -46,11 +46,13 @@ jobs:
 
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: "3.12"
+        versionSpec: "$(pythonVersion)"
       displayName: Install python "$(pythonVersion)"
 
     - bash: |
         set -ex
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
         python -m venv ahjovenv
         source ahjovenv/bin/activate
         python -m pip install --upgrade pip
