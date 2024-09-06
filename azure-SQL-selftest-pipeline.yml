@@ -46,7 +46,7 @@ jobs:
 
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: "$(pythonVersion)"
+        versionSpec: "3.12"
       displayName: Install python "$(pythonVersion)"
 
     - bash: |
