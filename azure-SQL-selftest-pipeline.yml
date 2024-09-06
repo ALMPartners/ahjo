@@ -16,7 +16,7 @@ variables:
 resources:
   containers:
   - container: mssql
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:latest
     env:
       ACCEPT_EULA: Y
       SA_PASSWORD: SALA_kala12
