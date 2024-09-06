@@ -1,0 +1,8 @@
+steps:
+  - task: powershell@2
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+    inputs:
+      targetType: 'inline'
+      script: |
+        Invoke-WebRequest -Method POST -Uri "$(MPATriggerURL)"
+    displayName: Trigger MPA-release pipeline

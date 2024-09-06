@@ -5,7 +5,6 @@
 
 """Utility functions for pyodbc. """
 
-import pyodbc
 from sqlalchemy.engine import Engine, Connection
 from typing import Union
 
@@ -47,7 +46,7 @@ def execute_queries(connectable: Union[Engine, Connection], queries: list, commi
     return results, errors
 
 
-def execute_query(cursor: pyodbc.Cursor, query: str, parameters: list = None, commit: bool = False, close: bool = False) -> tuple:
+def execute_query(cursor: object, query: str, parameters: list = None, commit: bool = False, close: bool = False) -> tuple:
     """Execute a query with a cursor.
 
     Arguments

@@ -95,6 +95,34 @@ def are_you_sure(message: Union[str, list], use_logger: bool = True) -> bool:
     return False
 
 
+def verify_input(message: Union[str, list], input_to_verify: str, input_name: str, use_logger: bool = True) -> bool:
+    """Verify input with user.
+
+    Arguments
+    ---------
+    message: str or list
+        Message(s) to display before user confirmation.
+    input_to_verify: str
+        Value to verify.
+    input_name: str
+        Name of the input.
+    use_logger: bool
+        If false, logger is disabled.
+
+    Returns
+    -------
+    bool
+        True if the input is correct, False if input_to_verify does not match the user's input.
+    """
+    display_message(message, use_logger)
+    display_message(f"Please type {input_name} name to continue: \n", use_logger)
+    user_input = input()
+    if user_input == input_to_verify:
+        display_message("confirmed", use_logger)
+        return True
+    display_message("\nInput does not match the configured value: " + input_to_verify + ". Cancelling.", use_logger)
+    return False
+
 def display_message(message: Union[str, list], use_logger: bool = True):
     """ Print or log a message (str) or multiple messages (list). """
     if isinstance(message, list):

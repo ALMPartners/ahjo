@@ -5,7 +5,6 @@
 
 """Utility functions for sqlalchemy
 """
-import importlib
 import time
 from ahjo.interface_methods import rearrange_params
 from logging import getLogger
@@ -13,7 +12,6 @@ from os import path
 from re import DOTALL, sub
 from typing import Iterable, List, Union
 from traceback import format_exc
-
 from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
                        restOfLine, CaselessKeyword, Word, nums)
 from sqlalchemy import create_engine, inspect, event
@@ -28,9 +26,11 @@ logger = getLogger('ahjo')
 MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
 
 # Disable pyodbc pooling (https://docs.sqlalchemy.org/en/20/dialects/mssql.html#pyodbc-pooling-connection-close-behavior)
-pyodbc = importlib.import_module("pyodbc") if importlib.util.find_spec("pyodbc") is not None else None
-if pyodbc is not None:
+try:
+    import pyodbc
     pyodbc.pooling = False
+except:
+    pyodbc = None
 
 
 def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
@@ -130,7 +130,7 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     return engine
 
 
-def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object):
+def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object) -> Engine:
     """Add database logger listeners to engine.
 
     Arguments
@@ -158,7 +158,7 @@ def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object)
     return engine
 
 
-def get_db_logger_handler():
+def get_db_logger_handler() -> object:
     """ Return database logger handler (if exists).
     
     Returns
@@ -171,9 +171,8 @@ def get_db_logger_handler():
             return handler
 
 
-def test_connection(engine: Engine, retry_attempts: int = 10, retry_interval: int = 5):
-    """ Test database connection with retry attempts. 
-    This can be useful for Azure SQL databases that are not always immediately available.
+def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: int = 10) -> bool:
+    """ Test database connection with retry attempts.
     
     Arguments
     ---------
@@ -189,21 +188,97 @@ def test_connection(engine: Engine, retry_attempts: int = 10, retry_interval: in
     bool
         True if connection is successful, False otherwise.
     """
-    connection_succeeded = False
+    connection_status = None
+    
+    try:
+        dialect_name = get_dialect_name(engine)
+    except:
+        return False
 
-    for _ in range(retry_attempts):
-        try:
-            engine.connect()
-            connection_succeeded = True
-            engine.dispose()
-            break
-        except Exception as e:
-            print(f"Connection failed. Retrying in {retry_interval} seconds.")
-            print(f"Error: {str(e)}")
-            print("------")
-            time.sleep(retry_interval)
+    try:
+        for _ in range(retry_attempts):
 
-    return connection_succeeded
+            if dialect_name == "mssql":
+                connection_status, error_msg = try_pyodbc_connection(engine)
+            else:
+                connection_status, error_msg = try_sqla_connection(engine)
+
+            if connection_status == -1:
+                print(error_msg)
+                print(f"Retrying in {retry_interval} seconds.")
+                print("------")
+                time.sleep(retry_interval)
+            else:
+                break
+
+        if connection_status == -1:
+            print(f"Connection failed after {retry_attempts} attempts.")
+    except Exception:
+        connection_status = 1
+
+    return connection_status == 0
+
+
+def try_sqla_connection(engine: Engine) -> int:
+    """ Test SQL Alchemy connection.
+    
+    Arguments
+    ---------
+    engine
+        SQL Alchemy engine.
+
+    Returns
+    -------
+    connection_status
+        0 = connected, -1 = timeout, 1 = error
+    """
+    connection_status = None
+    error_msg = None
+    try:
+        engine.connect()
+        connection_status = 0
+        engine.dispose()
+    except Exception as e:
+        connection_status = -1
+        error_msg = str(e)
+
+    return connection_status, error_msg
+
+
+def try_pyodbc_connection(engine: Engine) -> int:
+    """ Test pyodbc connection. 
+    This can be useful for Azure SQL databases that are not always immediately available.
+    
+    Arguments
+    ---------
+    engine
+        SQL Alchemy engine.
+
+    Returns
+    -------
+    connection_status
+        0 = connected, -1 = timeout, 1 = error
+    """
+    connection_status = None
+    error_msg = None
+
+    try:
+        engine.connect()
+        connection_status = 0
+        engine.dispose()
+    except Exception as e:
+        error_str = str(e)
+        if error_str.startswith("(pyodbc.OperationalError) ('08001'"):
+            error_msg = "Client unable to establish connection (ODBC error code: 08001)."
+            connection_status = -1
+        elif error_str.startswith("(pyodbc.Error) ('HY000'"):
+            error_msg = "Database is not currently available (ODBC error code: HY000)."
+            connection_status = -1
+        else:
+            error_msg = error_str
+            connection_status = 1
+
+    return connection_status, error_msg
 
 
 @rearrange_params({"engine": "connectable"})

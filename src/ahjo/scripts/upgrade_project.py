@@ -8,7 +8,6 @@
 '''
 
 import argparse
-import ahjo.scripts.master_actions
 import sys
 from ahjo.operations.general.upgrade import upgrade
 from ahjo.database_utilities.sqla_utilities import test_connection
@@ -39,18 +38,12 @@ def main():
     context = Context(config_filename)
     context.set_enable_transaction(False)
 
-    if context.configuration.get("connect_resiliently", False):
-
-        retry_attempts = context.configuration.get("connect_retry_count", 10)
-        connection_succeeded = test_connection(
+    if context.configuration.get("connect_resiliently", True):
+        test_connection(
             engine = context.get_engine(),
-            retry_attempts = retry_attempts,
-            retry_interval = context.configuration.get("connect_retry_interval", 5)
+            retry_attempts = context.configuration.get("connect_retry_count", 20),
+            retry_interval = context.configuration.get("connect_retry_interval", 10)
         )
-
-        if not connection_succeeded:
-            print(f"Connection failed after {retry_attempts} attempts. Exiting.")
-            sys.exit(1)
 
     # Setup logger
     enable_db_logging = context.configuration.get("enable_database_logging", False)

@@ -60,12 +60,12 @@ jobs:
         source ahjovenv/bin/activate
         python -m pip install --upgrade pip
         pip install .
-        pip install pyodbc pytest
+        pip install pyodbc pytest pytest-azurepipelines
       displayName: Install ahjo pip-package
 
     - bash: |
         set -ex
         source ahjovenv/bin/activate
         cd /home/vsts/work/1/s
-        pytest --mssql_host localhost --mssql_port 1433 --mssql_username sa --mssql_password SALA_kala12 -m "not nopipeline"
+        pytest --mssql_host localhost --mssql_port 1433 --mssql_username sa --mssql_password SALA_kala12 -m "not nopipeline" --test-run-title="Ahjo SQL self-tests"
       displayName: Run ahjo

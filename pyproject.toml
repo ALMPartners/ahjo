@@ -3,4 +3,4 @@ requires = ["setuptools >= 65.5.1", "wheel", "setuptools_scm[toml] >= 3.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "src/ahjo/version.py"
+version_file = "src/ahjo/version.py"

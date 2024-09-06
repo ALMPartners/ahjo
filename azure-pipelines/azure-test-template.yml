@@ -1,0 +1,38 @@
+parameters:
+- name: buildJob
+  type: string
+
+steps:
+  - bash: |
+      cd 'C:\agent\_work\1'
+      rm -rf .venv
+      rm -rf AHJO_BUILD_FOLDER_NAME
+    continueOnError: true
+    displayName: Clean up workdir
+  - checkout: self
+ 
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      source: "current"
+      artifact: 'Build'
+      targetPath: '$(Pipeline.Workspace)'
+    displayName: "Download build artefacts"
+
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+        try {
+          cd $(Pipeline.Workspace)
+          $filename = Get-ChildItem $(Pipeline.Workspace) | Where-Object {$_.Name -like '*${{parameters.buildJob}}.msi'}
+          Write-Host "Found file $filename"
+          Write-Host "Installing MSI $filename"
+          msiexec.exe /I "$filename" TARGETDIR="$(Pipeline.Workspace)" /quiet
+          Start-Sleep 60
+          $env:Path += ';$(Pipeline.Workspace)'
+          ahjo -h | Out-String -Stream
+        }
+        catch {
+          Throw "Aborted, MSI test returned $_"
+        }
+    displayName: Install MSI build and test commands
