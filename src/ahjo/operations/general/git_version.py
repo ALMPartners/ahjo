@@ -102,7 +102,7 @@ def _get_previous_tag(tag: str) -> str:
     """Retrieve the previous tag with 'git describe' command.
     Can fail if tags are not found.
     """
-    return check_output(["git", "describe", "--tags", "--abbrev=0", tag + "^"]).decode("utf-8").strip()
+    return check_output(["git", "describe", "--tags", "--abbrev=0", tag + "^", "--always"]).decode("utf-8").strip()
 
 
 def _get_all_tags() -> list:

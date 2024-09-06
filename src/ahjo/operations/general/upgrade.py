@@ -7,6 +7,7 @@ import copy
 import sys
 import os
 import ahjo.scripts.master_actions
+import networkx as nx
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.operations.general.db_info import print_db_collation
@@ -18,7 +19,7 @@ from logging import getLogger
 sys.path.append(os.getcwd())
 logger = getLogger('ahjo')
 
-def upgrade(config_filename: str, context: Context, version: str = None, skip_confirmation: bool = False):
+def upgrade(config_filename: str, context: Context, version: str = None, skip_confirmation: bool = False) -> bool:
     """Upgrade database with upgrade actions.
     
     Parameters
@@ -53,16 +54,54 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
         # Get the current git commit from database
         _, _, current_db_version = _get_git_version(context.get_connectable(), git_table_schema, git_table)
 
-        # Select versions to be deployed
-        version_actions = get_upgradable_version_actions(upgrade_actions, current_db_version)
-        if len(list(version_actions.keys())) == 0:
-            logger.info("Database is already up to date. Current database version is " + current_db_version)
+        # Get all tags from the git repository
+        git_tags = set(_get_all_tags())
+
+        if current_db_version not in git_tags:
+            raise ValueError(f"Current version in the database ({current_db_version}) has no corresponding tag in the git repository. The current version should be tagged in the git repository.")
+
+        # Create version dependency graph
+        tag_graph = create_version_dependency_graph(git_tags)
+        reverse_tag_graph = tag_graph.reverse()
+
+        # Check if database is up to date
+        upgradable_versions = set(reverse_tag_graph.neighbors(current_db_version))
+        if len(upgradable_versions) == 0:
+            logger.info("Database is already up to date. The current database version is " + current_db_version)
             return True
 
-        # Validate user input
-        if version is not None:
-            version_actions = validate_version(version, version_actions, upgrade_actions, current_db_version)
+        # Get versions that are older than the current database version
+        older_versions = set(nx.descendants(tag_graph, current_db_version))
 
+        # Omit config versions that are older than the current database version
+        config_versions = set(upgrade_actions.keys()) - older_versions
+
+        # Get the next version to upgrade
+        next_version_upgrade = get_next_version_upgrade(
+            next_upgrades_in_config = list(upgradable_versions & config_versions),
+            current_db_version = current_db_version
+        )
+
+        # Get ordered list of versions to update
+        ordered_versions = get_upgrade_version_path(
+            tag_graph = tag_graph, 
+            config_version_graph = tag_graph.subgraph(config_versions),
+            next_version_upgrade = next_version_upgrade
+        )
+
+        # Filter upgrade_actions to include only the versions that are in the ordered_versions list
+        version_actions = copy.deepcopy(upgrade_actions)
+        for v in upgrade_actions:
+            if v not in ordered_versions:
+                version_actions.pop(v)
+ 
+        # Validate upgrade actions
+        validate_upgrade_actions(version_actions)
+
+        # Validate version from user input
+        if version is not None:
+            version_actions = validate_version(version, version_actions, current_db_version)
+        
         if not skip_confirmation:
             # Format are_you_sure message
             are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
@@ -143,37 +182,173 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
     return True
 
 
-def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
-    """Return a dictionary of upgradable versions and their actions."""
+def get_next_version_upgrade(next_upgrades_in_config: list, current_db_version: str) -> str:
+    """Get the next version to upgrade from the current database version.
+    
+    Parameters
+    ----------
+    next_upgrades_in_config
+        List of upgradable versions in the upgrade actions.
+    current_db_version
+        Current database version.
 
-    version_actions = copy.deepcopy(upgrade_actions)
-    git_tags = _get_all_tags()
-    tag_set = set(git_tags)
+    Returns 
+    -------
+    str
+        Next version to upgrade from the current database version.
+    """
 
-    if current_version not in tag_set:
-        raise ValueError(f"Current version {current_version} does not exist in the repository.")
+    # Check that there is only one upgradable next version for the current database version
+    upgradable_versions_str = ", ".join(next_upgrades_in_config)
 
-    # From upgrade actions, remove versions that are previous to the current version
-    first_upgrade_version = list(upgrade_actions.keys())[0]
-    upgrade_versions = set(upgrade_actions.keys())
-    for version in upgrade_actions:
+    if len(next_upgrades_in_config) > 1:
+        error_msg = f"""Conflicting upgrade actions found for the current database version ({current_db_version}). 
+        The upgradable versions are: {upgradable_versions_str}. Only one upgrade version should be defined for the current database version."""
+        raise ValueError(error_msg)
+
+    if len(next_upgrades_in_config) == 0:
+        raise ValueError(f"The current database version ({current_db_version}) has no upgradable version in the upgrade actions. The next upgradable versions are: {upgradable_versions_str}.")
+
+    return next_upgrades_in_config[0]
+
+
+def get_upgrade_version_path(tag_graph: nx.DiGraph, config_version_graph: nx.DiGraph, next_version_upgrade: str) -> list:
+    """Get ordered list of versions to upgrade. 
+
+    Parameters
+    ----------
+    tag_graph
+        Tag graph. Each node represents a version and each edge represents a dependency to the previous version.
+    config_version_graph
+        Version graph. Each node represents a version and each edge represents a dependency to the previous version.
+        Versions older than the current database version are omitted in the graph.
+    next_version_upgrade
+        Next version to upgrade from the current database version. 
+        This version is the starting point for the upgrade path.
+
+    Returns
+    -------
+    list
+        Ordered list of versions to upgrade.
+    """
+
+    # Check if there are no version gaps in the upgrade actions
+    if not nx.is_weakly_connected(config_version_graph):
+
+        # Get nodes that are in the tag graph but not in the config version graph
+        tag_diff_nodes = set(tag_graph.nodes) - set(config_version_graph.nodes)
+        missing_versions = []
+
+        # Collect missing versions (in upgrade actions) to missing_versions
+        for node in tag_diff_nodes:
+            node_edges = list(tag_graph.in_edges(node)) + list(tag_graph.out_edges(node))
+            for edge in node_edges:
+                if edge[1] in config_version_graph.nodes:
+                    missing_versions.append(edge[0])
+                if edge[0] in config_version_graph.nodes:
+                    missing_versions.append(edge[1])
+
+        if len(missing_versions) > 0:
+            missing_versions_str = ", ".join(missing_versions)
+            error_msg = f"""Upgrade actions are not defined for the following versions: {missing_versions_str}.\nCheck that the upgrade actions are defined correctly."""
+            raise ValueError(error_msg)
+
+    # Get the latest version in the upgrade actions (version nodes with no incoming edges)
+    latest_versions_in_config = [node for node in config_version_graph.nodes if config_version_graph.in_degree(node) == 0]
+    
+    if len(latest_versions_in_config) > 1:
+        latest_versions_in_config_str = ", ".join(latest_versions_in_config)
+        raise ValueError(f"Multiple latest versions found in the upgrade actions: {latest_versions_in_config_str}. Check that the upgrade actions are defined correctly.")
+    
+    if len(latest_versions_in_config) == 0:
+        raise ValueError("No latest version found in the upgrade actions. Check that the upgrade actions are defined correctly.")
+
+    # Get all simple paths from the next_version_upgrade to the latest version in config_version_graph
+    config_version_paths = list(
+        nx.all_simple_paths(
+            config_version_graph.reverse(), 
+            source = next_version_upgrade, 
+            target = latest_versions_in_config[0]
+        )
+    )
+    
+    if len(config_version_paths) > 1:
+        config_version_paths_str = "\n".join([", ".join(path) for path in config_version_paths])
+        raise ValueError(f"Multiple upgrade paths found in the upgrade actions: {config_version_paths_str}. Check that the upgrade actions are defined correctly.")
+
+    return config_version_paths[0]
+
+
+def create_version_dependency_graph(versions: set) -> nx.DiGraph:
+    """Create a version dependency graph.
+
+    Parameters
+    ----------
+    versions
+        Set of versions.
+
+    Returns
+    -------
+    nx.DiGraph
+        Version dependency graph.
+    """
+    
+    G = nx.DiGraph()
+    
+    for version in versions:
         try:
             previous_version = _get_previous_tag(version)
         except: # No previous version found.
-            raise ValueError(f"Upgrade actions cannot be defined for the first version: {version}.")
+            continue
         else: # Previous version found
-            if previous_version == current_version:
-                break
-            elif version != first_upgrade_version and previous_version not in upgrade_versions:
-                raise ValueError(f"Upgrade actions are not defined for the version: {previous_version}.")
-            else:
-                version_actions.pop(version)
+            G.add_edge(version, previous_version)
 
-    # Validate versions and actions
-    previous_version = None
-    for version in version_actions:
+    return G
 
-        actions = version_actions[version]
+
+def plot_version_dependency_graph(G: nx.DiGraph, current_version: str = None):
+    """Plot the version dependency graph.
+
+    Parameters
+    ----------
+    G
+        Version dependency graph.
+    """
+    import matplotlib.pyplot as plt
+    #pos = nx.spring_layout(G)
+    pos = nx.planar_layout(G)
+    #pos = nx.shell_layout(G)
+    #pos = nx.circular_layout(G)
+    #pos = nx.spectral_layout(G)
+    #pos = nx.kamada_kawai_layout(G)
+    #pos = nx.random_layout(G)
+    #pos = nx.fruchterman_reingold_layout(G)
+    #pos = nx.bipartite_layout(G, G.nodes)
+
+    nx.draw(G, pos, with_labels=True)
+
+    if current_version is not None:
+        nx.draw_networkx_nodes(G, pos, nodelist=[current_version], node_color="green")
+
+    plt.show()
+
+
+def validate_upgrade_actions(upgrade_actions: dict) -> bool:
+    """Return a dictionary of upgradable versions and their actions.
+    
+    Parameters
+    ----------
+    upgrade_actions
+        Dictionary of upgrade actions.
+    
+    Returns
+    -------
+    dict
+        Dictionary of upgradable versions and their actions.
+    """
+    for version in upgrade_actions:
+
+        actions = upgrade_actions[version]
 
         if not isinstance(actions, list):
             raise ValueError(f"Upgrade actions for version {version} are not defined as list.")
@@ -191,24 +366,27 @@ def get_upgradable_version_actions(upgrade_actions: dict, current_version: str):
                     if len(action) >= 1 and not isinstance(action[1], dict):
                         raise ValueError(f"Upgrade action parameters are not defined as dictionary.")
 
-        if version not in tag_set:
-            raise ValueError(f"Git tag {version} does not exist in the repository.")
-        
-        if previous_version is not None:
-            git_previous_tag = _get_previous_tag(version)
-            if previous_version != git_previous_tag:
-                raise ValueError(f"Git versions in upgrade_actions are not listed in the correct order: {previous_version} -> {version}")
-            
-        previous_version = version
-        
-    return version_actions
+    return True
 
 
-def validate_version(version: str, version_actions: dict, upgrade_actions: dict, current_db_version: str):
-    """Validate that the version is upgradable."""
-    if version not in upgrade_actions:
-        raise ValueError(f"Version {version} actions are not defined in upgrade actions config file.")
-    valid_upgradable_version = list(version_actions.keys())[0]
+def validate_version(version: str, upgrade_actions: dict, current_db_version: str) -> dict:
+    """Validate that the version is upgradable.
+    
+    Parameters
+    ----------
+    version
+        Version to be upgraded.
+    upgrade_actions
+        Dictionary of upgrade actions.
+    current_db_version
+        Current database version.
+    
+    Returns
+    -------
+    dict
+        Dictionary of upgradable version and their actions
+    """
+    valid_upgradable_version = list(upgrade_actions.keys())[0]
     if version != valid_upgradable_version:
         raise ValueError(f"Version {version} is not the next upgrade. Current database version is {current_db_version}. Use version {valid_upgradable_version} instead.")
-    return {version: version_actions[version]}
+    return {version: upgrade_actions[version]}
