@@ -84,8 +84,8 @@ class AhjoUpgrade:
             reverse_tag_graph = tag_graph.reverse()
 
             # Check if database is up to date
-            upgradable_versions = set(reverse_tag_graph.neighbors(current_db_version))
-            if len(upgradable_versions) == 0:
+            next_git_version_upgrades = set(reverse_tag_graph.neighbors(current_db_version))
+            if len(next_git_version_upgrades) == 0:
                 logger.info("Database is already up to date. The current database version is " + current_db_version)
                 return True
 
@@ -97,9 +97,9 @@ class AhjoUpgrade:
 
             # Get the next version to upgrade
             next_version_upgrade = self.get_next_version_upgrade(
-                next_upgrades_in_config = list(upgradable_versions & config_versions),
+                next_upgrades_in_config = list(next_git_version_upgrades & config_versions),
                 current_db_version = current_db_version,
-                upgradable_versions = upgradable_versions
+                next_git_version_upgrades = next_git_version_upgrades
             )
 
             # Get ordered list of versions to update
@@ -202,26 +202,26 @@ class AhjoUpgrade:
         return True
 
 
-    def get_next_version_upgrade(self, next_upgrades_in_config: list, current_db_version: str, upgradable_versions: set) -> str:
+    def get_next_version_upgrade(self, next_upgrades_in_config: list, current_db_version: str, next_git_version_upgrades: set) -> str:
         """Get the next version to upgrade from the current database version.
         
         Parameters
         ----------
         next_upgrades_in_config
-            List of upgradable versions in the upgrade actions.
+            Versions that are defined in the upgrade actions and are upgradable from the current database version.
         current_db_version
             Current database version.
-        upgradable_versions
-            Set of upgradable versions.
+        next_git_version_upgrades
+            Set of versions (from git version tree) that are upgradable from the current database version.
 
         Returns 
         -------
         str
             Next version to upgrade from the current database version.
         """
-        upgradable_versions_str = ", ".join(list(upgradable_versions))
+        upgradable_versions_str = ", ".join(list(next_git_version_upgrades))
 
-        if len(upgradable_versions) == 1:
+        if len(next_git_version_upgrades) == 1:
             next_versions_str = f"The next upgradable version is: {upgradable_versions_str}."
         else:
             next_versions_str = f"The next upgradable versions are: {upgradable_versions_str}."
