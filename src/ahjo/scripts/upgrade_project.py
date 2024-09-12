@@ -9,7 +9,7 @@
 
 import argparse
 import sys
-from ahjo.operations.general.upgrade import upgrade
+from ahjo.operations.general.upgrade import AhjoUpgrade
 from ahjo.database_utilities.sqla_utilities import test_connection
 from ahjo.context import Context, config_is_valid
 from ahjo.logging import setup_ahjo_logger
@@ -59,12 +59,13 @@ def main():
         print(f"Error setting up logger: {str(e)}")
         sys.exit(1)
 
-    upgrade_succeeded = upgrade(
-        config_filename,
-        context,
+    ahjo_upgrade = AhjoUpgrade(
+        config_filename = config_filename,
+        context = context,
         version = args.version,
         skip_confirmation = non_interactive
     )
+    upgrade_succeeded = ahjo_upgrade.upgrade()
 
     if enable_db_logging:
 

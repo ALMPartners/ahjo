@@ -35,7 +35,7 @@ from ahjo.operations.general.sqlfiles import (
 )
 
 from ahjo.operations.general.upgrade import (
-    upgrade
+    AhjoUpgrade
 )
 
 from ahjo.operations.general.db_info import (
