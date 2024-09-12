@@ -8,6 +8,7 @@ import sys
 import os
 import ahjo.scripts.master_actions
 import networkx as nx
+import importlib
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
 from ahjo.operations.general.db_info import print_db_collation
@@ -79,7 +80,8 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
         # Get the next version to upgrade
         next_version_upgrade = get_next_version_upgrade(
             next_upgrades_in_config = list(upgradable_versions & config_versions),
-            current_db_version = current_db_version
+            current_db_version = current_db_version,
+            upgradable_versions = upgradable_versions
         )
 
         # Get ordered list of versions to update
@@ -165,7 +167,7 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
             connection = context.get_connectable()
             connection.commit()
             connection.close()
-            
+
     except Exception as error:
         logger.error('Ahjo project upgrade failed:')
         logger.error(error)
@@ -182,7 +184,7 @@ def upgrade(config_filename: str, context: Context, version: str = None, skip_co
     return True
 
 
-def get_next_version_upgrade(next_upgrades_in_config: list, current_db_version: str) -> str:
+def get_next_version_upgrade(next_upgrades_in_config: list, current_db_version: str, upgradable_versions: set) -> str:
     """Get the next version to upgrade from the current database version.
     
     Parameters
@@ -191,23 +193,28 @@ def get_next_version_upgrade(next_upgrades_in_config: list, current_db_version: 
         List of upgradable versions in the upgrade actions.
     current_db_version
         Current database version.
+    upgradable_versions
+        Set of upgradable versions.
 
     Returns 
     -------
     str
         Next version to upgrade from the current database version.
     """
+    upgradable_versions_str = ", ".join(list(upgradable_versions))
 
-    # Check that there is only one upgradable next version for the current database version
-    upgradable_versions_str = ", ".join(next_upgrades_in_config)
+    if len(upgradable_versions) == 1:
+        next_versions_str = f"The next upgradable version is: {upgradable_versions_str}."
+    else:
+        next_versions_str = f"The next upgradable versions are: {upgradable_versions_str}."
 
     if len(next_upgrades_in_config) > 1:
         error_msg = f"""Conflicting upgrade actions found for the current database version ({current_db_version}). 
-        The upgradable versions are: {upgradable_versions_str}. Only one upgrade version should be defined for the current database version."""
+        {next_versions_str} Only one upgrade version should be defined for the current database version."""
         raise ValueError(error_msg)
 
     if len(next_upgrades_in_config) == 0:
-        raise ValueError(f"The current database version ({current_db_version}) has no upgradable version in the upgrade actions. The next upgradable versions are: {upgradable_versions_str}.")
+        raise ValueError(f"The current database version ({current_db_version}) has no upgradable version in the upgrade actions. {next_versions_str}")
 
     return next_upgrades_in_config[0]
 
@@ -306,7 +313,7 @@ def create_version_dependency_graph(versions: set) -> nx.DiGraph:
     return G
 
 
-def plot_version_dependency_graph(G: nx.DiGraph, current_version: str = None):
+def plot_version_dependency_graph(G: nx.DiGraph, current_version: str = None, upgrade_action_versions: list = None, layout: str = "spring") -> None:
     """Plot the version dependency graph.
 
     Parameters
@@ -314,22 +321,32 @@ def plot_version_dependency_graph(G: nx.DiGraph, current_version: str = None):
     G
         Version dependency graph.
     """
-    import matplotlib.pyplot as plt
-    #pos = nx.spring_layout(G)
-    pos = nx.planar_layout(G)
-    #pos = nx.shell_layout(G)
-    #pos = nx.circular_layout(G)
-    #pos = nx.spectral_layout(G)
-    #pos = nx.kamada_kawai_layout(G)
-    #pos = nx.random_layout(G)
-    #pos = nx.fruchterman_reingold_layout(G)
-    #pos = nx.bipartite_layout(G, G.nodes)
+    plt = importlib.import_module("matplotlib.pyplot")
 
-    nx.draw(G, pos, with_labels=True)
+    if layout == "spring":
+        pos = nx.spring_layout(G)
+    elif layout == "planar":
+        pos = nx.planar_layout(G)
+    elif layout == "shell":
+        pos = nx.shell_layout(G)
+    elif layout == "circular":
+        pos = nx.circular_layout(G)
+    elif layout == "spectral":
+        pos = nx.spectral_layout(G)
+    elif layout == "kamada_kawai":
+        pos = nx.kamada_kawai_layout(G)
+    else:
+        pos = nx.spring_layout(G)
+
+    nx.draw(G, pos, with_labels=True, node_color="skyblue")
+
+    if upgrade_action_versions is not None:
+        nx.draw_networkx_nodes(G, pos, nodelist=upgrade_action_versions, node_color="orange")
 
     if current_version is not None:
         nx.draw_networkx_nodes(G, pos, nodelist=[current_version], node_color="green")
 
+    plt.title("Version Dependency Graph")
     plt.show()
 
 

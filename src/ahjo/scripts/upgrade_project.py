@@ -26,6 +26,7 @@ def main():
     parser.add_argument("config_filename", help="Configuration filename.", type=str, nargs="?")
     parser.add_argument("-v", "--version", type=str, help="Version to upgrade to.", required=False)
     parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
+    parser.add_argument("-p", "--plot", action="store_true", help="Plot the database schema.", required=False, default=False)
     args = parser.parse_args()
 
     config_filename = get_config_path(args.config_filename)
