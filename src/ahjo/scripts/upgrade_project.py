@@ -10,6 +10,7 @@
 import argparse
 import sys
 from ahjo.operations.general.upgrade import AhjoUpgrade
+from ahjo.operations.general.db_info import print_db_collation
 from ahjo.database_utilities.sqla_utilities import test_connection
 from ahjo.context import Context, config_is_valid
 from ahjo.logging import setup_ahjo_logger
@@ -58,6 +59,10 @@ def main():
     except Exception as e:
         print(f"Error setting up logger: {str(e)}")
         sys.exit(1)
+
+    # Display database collation
+    if context.configuration.get("display_db_info", True):
+        print_db_collation(context)
 
     ahjo_upgrade = AhjoUpgrade(
         config_filename = config_filename,

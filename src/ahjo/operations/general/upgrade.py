@@ -11,7 +11,6 @@ import networkx as nx
 import importlib
 from ahjo.interface_methods import load_conf, are_you_sure
 from ahjo.operations.general.git_version import _get_all_tags, _get_git_version, _get_previous_tag, _checkout_tag
-from ahjo.operations.general.db_info import print_db_collation
 from ahjo.action import execute_action, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import Context
 from logging import getLogger
@@ -70,10 +69,6 @@ class AhjoUpgrade:
             git_table = config.get('git_table', 'git_version')
             connectable_type = config.get("context_connectable_type", "engine")
             updated_versions = []
-
-            # Display database collation
-            if self.context.configuration.get("display_db_info", True):
-                print_db_collation(self.context)
 
             # Get the current git commit from database
             _, _, current_db_version = _get_git_version(self.context.get_connectable(), git_table_schema, git_table)
