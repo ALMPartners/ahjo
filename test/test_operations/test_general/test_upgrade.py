@@ -1,8 +1,7 @@
 import pytest
 import copy
-# todo 
-"""
-from ahjo.operations.general.upgrade import get_upgradable_version_actions, validate_version
+import networkx as nx
+from ahjo.operations.general.upgrade import AhjoUpgrade
 
 
 NON_UPGRADABLE_VERSIONS = ["v3.0.3", "v3.1.0", "v3.1.1", "v3.1.2"]
@@ -18,102 +17,120 @@ UPGRADE_ACTIONS[CURRENT_VERSION] = ["test-action"]
 for version in UPGRADABLE_VERSIONS:
     UPGRADE_ACTIONS[version] = ["test-action"]
 
-@pytest.mark.nopipeline
-def test_old_versions_should_be_filtered_out():
-    version_actions = get_upgradable_version_actions(UPGRADE_ACTIONS, CURRENT_VERSION)
-    upgradable_versions = list(version_actions.keys())
-    assert any(version in upgradable_versions for version in NON_UPGRADABLE_VERSIONS) == False
+class TestAhjoUpgrade():
 
-@pytest.mark.nopipeline
-def test_only_upgradable_versions_should_be_included():
-    version_actions = get_upgradable_version_actions(UPGRADE_ACTIONS, CURRENT_VERSION)
-    upgradable_versions = list(version_actions.keys())
-    assert all(version in upgradable_versions for version in UPGRADABLE_VERSIONS) == True
-
-@pytest.mark.nopipeline
-def test_version_not_in_repository_should_raise_error():
-    with pytest.raises(ValueError, match="Current version this_tag_is_not_in_repository does not exist in the repository."):
-        get_upgradable_version_actions(UPGRADE_ACTIONS, "this_tag_is_not_in_repository")
-
-@pytest.mark.nopipeline
-def test_upgrade_version_not_in_repository_should_raise_error():
-    version_actions = copy.deepcopy(UPGRADE_ACTIONS)
-    version_actions["this_tag_is_not_in_repository"] = ["test-action"]
-    with pytest.raises(ValueError, match="Git tag this_tag_is_not_in_repository does not exist in the repository."):
-        get_upgradable_version_actions(version_actions, CURRENT_VERSION)
-
-@pytest.mark.nopipeline
-def test_upgrade_versions_in_incorrect_order_should_raise_error():
-    with pytest.raises(ValueError, match="Upgrade actions are not defined for the version: v3.1.1."):
-        get_upgradable_version_actions(
-            {
-                "v3.1.3": ["test-action"],
-                "v3.1.2": ["test-action"],
-                "v3.1.4": ["test-action"]
-            }, 
-            CURRENT_VERSION
+    @pytest.fixture(scope='function', autouse=True)
+    def ahjo_upgrade_setup(self, mssql_sample, ahjo_context):
+        self.ahjo_upgrade = AhjoUpgrade(
+            config_filename = mssql_sample,
+            context = ahjo_context(mssql_sample),
+            version = None
         )
+        yield
 
-@pytest.mark.nopipeline
-def test_upgrade_version_with_no_actions_should_raise_error():
-    with pytest.raises(ValueError, match="Upgrade actions are not defined for version v3.1.3."):
-        get_upgradable_version_actions({"v3.1.3": []}, CURRENT_VERSION)
+    def test_get_next_version_upgrade_with_valid_input(self):
+        next_version = self.ahjo_upgrade.get_next_version_upgrade(
+            next_upgrades_in_config = ["b"],
+            current_db_version = "a",
+            next_git_version_upgrades = ["b", "c", "d"]
+        )
+        assert next_version == "b"
 
-@pytest.mark.nopipeline
-def test_upgrade_version_with_wrong_action_format_should_raise_error():
-    with pytest.raises(ValueError, match="Upgrade actions for version v3.1.3 are not defined as list."):
-        get_upgradable_version_actions({"v3.1.3": 1}, CURRENT_VERSION)
+    def test_get_next_version_upgrade_without_next_upgrade_in_config(self):
+        with pytest.raises(ValueError, match=r'The current database version \(a\) has no upgradable version in the upgrade actions. The next upgradable version is: b'):
+            self.ahjo_upgrade.get_next_version_upgrade(
+                next_upgrades_in_config = [],
+                current_db_version = "a",
+                next_git_version_upgrades = ["b"]
+            )
 
-@pytest.mark.nopipeline
-def test_upgrade_version_with_wrong_action_name_format_should_raise_error():
-    with pytest.raises(ValueError, match="Upgrade action is not defined as string or list."):
-        get_upgradable_version_actions({"v3.1.3": [1]}, CURRENT_VERSION)
+    def test_get_upgrade_version_path_with_valid_input(self):
 
-@pytest.mark.nopipeline
-def test_upgrade_version_with_wrong_action_name_should_raise_error():
-    with pytest.raises(ValueError, match="Upgrade action name is not defined as string."):
-        get_upgradable_version_actions({"v3.1.3": [[1]]}, CURRENT_VERSION)
+        tag_graph = nx.DiGraph()
+        tag_graph.add_edge("e", "d")
+        tag_graph.add_edge("d", "c")
+        tag_graph.add_edge("c", "b")
+        tag_graph.add_edge("b", "a")
 
-@pytest.mark.nopipeline
-def test_action_parameters_with_wrong_format_should_raise_error():
-    with pytest.raises(ValueError, match="Upgrade action parameters are not defined as dictionary."):
-        get_upgradable_version_actions({"v3.1.3": [["test-action", 1]]}, CURRENT_VERSION)
+        upgrade_version_path = self.ahjo_upgrade.get_upgrade_version_path(
+            tag_graph = tag_graph,
+            config_version_graph =  tag_graph.subgraph({"a", "b", "c", "d", "e"}), 
+            next_version_upgrade = "a"
+        )
+        assert upgrade_version_path == ["a", "b", "c", "d", "e"]
 
-@pytest.mark.nopipeline
-def test_action_parameters_with_correct_format():
-    upgrade_actions = {"v3.1.3": [["test-action", {"test-parameter": 1}]]}
-    version_actions = get_upgradable_version_actions(upgrade_actions, CURRENT_VERSION)
-    assert version_actions == upgrade_actions
+    def test_get_upgrade_version_path_with_missing_version(self):
+        
+        tag_graph = nx.DiGraph()
+        tag_graph.add_edge("e", "d")
+        tag_graph.add_edge("d", "c")
+        tag_graph.add_edge("c", "b")
 
-@pytest.mark.nopipeline
-def test_actions_without_parameters():
-    upgrade_actions = {"v3.1.3": ["test-action"]}
-    version_actions = get_upgradable_version_actions(upgrade_actions, CURRENT_VERSION)
-    assert version_actions == upgrade_actions
+        with pytest.raises(ValueError, match=r"Upgrade actions are not defined for the following versions: d.\nCheck that the upgrade actions are defined correctly."):
+            self.ahjo_upgrade.get_upgrade_version_path(
+                tag_graph = tag_graph,
+                config_version_graph =  tag_graph.subgraph({"b", "c", "e"}), 
+                next_version_upgrade = "b"
+            )
 
-@pytest.mark.nopipeline
-def test_upgrade_version_with_up_to_date_version_should_not_raise_error():
-    version_actions = get_upgradable_version_actions({"v3.1.3": ["test-action"]}, "v3.1.3")
-    assert version_actions == {}
+    def test_get_upgrade_version_path_with_multiple_heads(self):
+                
+        tag_graph = nx.DiGraph()
+        tag_graph.add_edge("d2", "c")
+        tag_graph.add_edge("d1", "c")
+        tag_graph.add_edge("c", "b")
+        tag_graph.add_edge("b", "a")
 
-@pytest.mark.nopipeline
-def test_validate_version_should_return_only_given_versions_actions():
-    version_actions = validate_version(
-        "v3.1.3", 
-        {"v3.1.3": ["test-action"], "v3.1.4": ["test-action"], "v3.1.5": ["test-action"]}, 
-        UPGRADE_ACTIONS, 
-        "v3.1.2"
-    )
-    assert version_actions == {"v3.1.3": ["test-action"]}
 
-@pytest.mark.nopipeline
-def test_validate_version_should_raise_error_if_version_not_in_upgrade_actions():
-    with pytest.raises(ValueError, match="Version invalid_tag actions are not defined in upgrade actions config file."):
-        validate_version("invalid_tag", {"v3.1.3": ["test-action"]}, UPGRADE_ACTIONS, "v3.1.2")
+        with pytest.raises(ValueError, match=r"Multiple latest versions found in the upgrade actions: d2, d1. Check that the upgrade actions are defined correctly."):
+            self.ahjo_upgrade.get_upgrade_version_path(
+                tag_graph = tag_graph,
+                config_version_graph =  tag_graph.subgraph({"a", "b", "c", "d1", "d2"}), 
+                next_version_upgrade = "a"
+            )
 
-@pytest.mark.nopipeline
-def test_validate_version_should_raise_error_if_version_is_not_next_upgrade():
-    with pytest.raises(ValueError, match="Version v3.1.3 is not the next upgrade."):
-        validate_version("v3.1.3", {"v3.1.5": ["test-action"]}, UPGRADE_ACTIONS, "v3.1.3")
+    def test_validate_version_should_return_only_given_versions_actions(self):
+        version_actions = self.ahjo_upgrade.validate_version(
+            "v3.1.3", 
+            {"v3.1.3": ["test-action"], "v3.1.4": ["test-action"]}, 
+            "v3.1.2"
+        )
+        assert version_actions == {"v3.1.3": ["test-action"]}
 
-"""
+    def test_validate_version_should_raise_error_if_version_is_not_next_upgrade(self):
+        with pytest.raises(ValueError, match=f"Version invalid_tag is not the next upgrade. Current database version is v3.1.2. Use version v3.1.3 instead."):
+            self.ahjo_upgrade.validate_version(
+                version = "invalid_tag", 
+                upgrade_actions = {"v3.1.3": ["test-action"]}, 
+                current_db_version = "v3.1.2"
+            )
+
+    def test_validate_upgrade_actions_with_valid_input(self):
+        assert self.ahjo_upgrade.validate_upgrade_actions(upgrade_actions = UPGRADE_ACTIONS) == True
+
+    def test_validate_upgrade_actions_with_invalid_type_int(self):
+        with pytest.raises(ValueError, match="Upgrade actions for version v3.1.3 are not defined as list."):
+            self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": 1})
+
+    def test_validate_upgrade_actions_with_invalid_type_str(self):
+        with pytest.raises(ValueError, match="Upgrade actions for version v3.1.3 are not defined as list."):
+            self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": "invalid"})
+
+    def test_validate_upgrade_actions_with_empty_list(self):
+        with pytest.raises(ValueError, match="Upgrade actions are not defined for version v3.1.3."):
+            self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": []})
+
+    def test_validate_upgrade_action_with_invalid_type_int(self):
+        with pytest.raises(ValueError, match="Upgrade action is not defined as string or list."):
+            self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": [1]})
+
+    def test_validate_upgrade_action_with_invalid_type(self):
+        with pytest.raises(ValueError, match="Upgrade action name is not defined as string."):
+            self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": [[1]]})
+
+    def test_validate_upgrade_action_with_valid_input(self):
+        assert self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": ["test-action"]}) == True
+
+    def test_validate_upgrade_action_with_invalid_action_parameter_type(self):
+        with pytest.raises(ValueError, match="Upgrade action parameters are not defined as dictionary."):
+            self.ahjo_upgrade.validate_upgrade_actions({"v3.1.3": [["test-action", 1]]})
