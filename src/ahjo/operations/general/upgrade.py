@@ -65,6 +65,7 @@ class AhjoUpgrade:
             # Load settings
             config = load_conf(self.config_filename)
             upgrade_actions = load_conf(config.get("upgrade_actions_file", f"./upgrade_actions.jsonc"))
+            config_versions = set(upgrade_actions.keys())
             git_table_schema = config.get('git_table_schema', 'dbo')
             git_table = config.get('git_table', 'git_version')
             connectable_type = config.get("context_connectable_type", "engine")
@@ -82,18 +83,12 @@ class AhjoUpgrade:
             # Create version dependency graph
             tag_graph = self.create_version_dependency_graph(git_tags)
             reverse_tag_graph = tag_graph.reverse()
-
+            
             # Check if database is up to date
             next_git_version_upgrades = set(reverse_tag_graph.neighbors(current_db_version))
             if len(next_git_version_upgrades) == 0:
                 logger.info("Database is already up to date. The current database version is " + current_db_version)
                 return True
-
-            # Get versions that are older than the current database version
-            older_versions = set(nx.descendants(tag_graph, current_db_version))
-
-            # Omit config versions that are older than the current database version
-            config_versions = set(upgrade_actions.keys()) - older_versions
 
             # Get the next version to upgrade
             next_version_upgrade = self.get_next_version_upgrade(
@@ -101,6 +96,13 @@ class AhjoUpgrade:
                 current_db_version = current_db_version,
                 next_git_version_upgrades = next_git_version_upgrades
             )
+
+            # Get versions that are older than the next_version_upgrade
+            older_versions = set(nx.descendants(tag_graph, next_version_upgrade))
+
+            # Omit versions that are older than the next upgradable version
+            config_versions.discard(older_versions)
+            tag_graph.remove_nodes_from(older_versions)
 
             # Get ordered list of versions to update
             ordered_versions = self.get_upgrade_version_path(
@@ -262,16 +264,16 @@ class AhjoUpgrade:
 
             # Get nodes that are in the tag graph but not in the config version graph
             tag_diff_nodes = set(tag_graph.nodes) - set(config_version_graph.nodes)
-            missing_versions = []
+            missing_versions = set()
 
             # Collect missing versions (in upgrade actions) to missing_versions
             for node in tag_diff_nodes:
                 node_edges = list(tag_graph.in_edges(node)) + list(tag_graph.out_edges(node))
                 for edge in node_edges:
                     if edge[1] in config_version_graph.nodes:
-                        missing_versions.append(edge[0])
+                        missing_versions.add(edge[0])
                     if edge[0] in config_version_graph.nodes:
-                        missing_versions.append(edge[1])
+                        missing_versions.add(edge[1])
 
             if len(missing_versions) > 0:
                 missing_versions_str = ", ".join(missing_versions)
