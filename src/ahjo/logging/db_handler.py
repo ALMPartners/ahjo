@@ -84,6 +84,8 @@ class DatabaseHandler(logging.Handler):
         if hasattr(record, "record_class"):
             if record.record_class == "line":
                 return True
+            if record.record_class == "skip_db_record":
+                return True
             
         return False
 

@@ -6,6 +6,7 @@
 """Module for database tests related operations."""
 
 from ahjo.operations.general.sqlfiles import deploy_sqlfiles
+from ahjo.interface_methods import format_to_table
 from typing import Union
 from logging import getLogger
 from sqlalchemy import Table, insert
@@ -96,10 +97,85 @@ class DatabaseTester:
         dict
             Dict where key is the test file name and value is the test result.
         """
-        file_results = deploy_sqlfiles(self.connectable, test_folder, "Running tests", display_output = display_output)
+        file_results = deploy_sqlfiles(self.connectable, test_folder, "Running tests")
         if self.save_test_results_to_db:
             self.save_results_to_db(file_results)
+        if display_output:
+            self.display_test_results(file_results)
         return file_results
+
+
+    def display_test_results(self, file_results: dict, cols_to_skip: list = ["start_time", "end_time"], 
+            col_ordering: list = ["ID", "issue", "test_name", "result"]):
+        """ Default method to display the test results.
+
+        Arguments:
+        -----------
+        file_results: dict
+            Dict where key is the test file name and value is the test result. 
+        cols_to_skip: list
+            List of column names to skip from the output.
+        col_ordering: list
+            List of column names to order the output.
+        """
+
+        # Default column name and value for the test results
+        # This is used to count the number of tests passed
+        result_col_name = "result"
+        result_passed_str = "OK"
+        n_files = len(file_results)
+
+        for filepath, output in file_results.items():
+
+            if n_files > 1:
+                logger.info(f"Test file: {filepath}", extra={"record_class": "skip_db_record"})
+                logger.info("", extra={"record_class": "skip_db_record"})
+
+            output_columns = output[0]
+            cols_to_skip_indices = [i for i, col in enumerate(output_columns) if col in cols_to_skip]
+            new_rows = []
+            result_col_exists = True if result_col_name in output_columns else False
+            n_tests_passed = 0
+            n_tests = len(output) - 1
+
+            for row in output:
+
+                new_row = []
+                for col_i, col in enumerate(row):
+                    if col_i in cols_to_skip_indices:
+                        continue
+
+                    if result_col_exists and col_i == output_columns.index(result_col_name) and col.lower() == result_passed_str.lower():
+                        n_tests_passed += 1
+
+                    new_row.append(col)
+
+                # reorder the columns
+                new_row = []
+                for col in col_ordering:
+                    try:
+                        swap_indx = output_columns.index(col)
+                    except Exception as e:
+                        logger.error(f"Column '{col}' not found in the output columns: {output_columns}")
+                        raise e
+                    new_row.append(row[swap_indx])
+
+                new_rows.append(new_row)
+
+            # Header row to human friendly format
+            new_rows[0] = [col.replace("_", " ").title() for col in new_rows[0]]
+
+            # Add final row with the number of tests passed
+            if result_col_exists:
+                new_rows.append(["", "", "TOTAL", f"{n_tests_passed}/{n_tests} PASSED"])
+
+            logger.info(format_to_table(new_rows), extra={"record_class": "skip_db_record"})
+
+            if result_col_exists and n_tests_passed != n_tests:
+                n_failed_tests = n_tests - n_tests_passed
+                tests_str = "tests" if n_failed_tests > 1 else "test"
+                logger.warning(f"Warning: {n_failed_tests} {tests_str} failed!")
+                logger.info("", extra={"record_class": "skip_db_record"})
 
 
     def save_results_to_db(self, file_results: dict):
