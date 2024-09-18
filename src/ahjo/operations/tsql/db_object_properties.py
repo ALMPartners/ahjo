@@ -20,7 +20,7 @@ import json
 import time
 from logging import getLogger
 from os import makedirs, path
-from typing import Union
+from typing import Union, Any
 
 from ahjo.interface_methods import rearrange_params
 from ahjo.context import AHJO_PATH
@@ -62,6 +62,7 @@ DB_OBJECTS = {
     },
     'column': {
         'file': path.join(DOCS_DIR, 'columns.json'),
+        'default_values': path.join(DOCS_DIR, 'columns_default.json'),
         'query': 'resources/sql/queries/extended_properties_columns.sql',
         'key_columns': ['schema_name', 'object_name', 'column_name']
     }
@@ -109,13 +110,11 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
                     f"Cannot update extended properties for {object_type}s. File {source_file} does not exist.")
                 continue
 
-            try:
-                with open(source_file, 'r', encoding='utf-8') as f:
-                    documented_properties = json.load(f)
-            except Exception as err:
-                raise Exception(
-                    f'Failed to read extended properties for {object_type}') from err
-            
+            documented_properties = load_json_object_properties(source_file, object_type)
+
+            if object_type == "column":
+                documented_properties = add_default_column_metadata(existing_metadata, documented_properties)
+
             for object_name, extended_properties in documented_properties.items():
                 schema_name = object_name.split('.')[0]
                 if schema_name in schema_list:
@@ -167,6 +166,71 @@ def update_db_object_properties(connectable: Union[Engine, Connection], schema_l
         finally:
             end_time = time.time()
             logger.info(f'Extended properties updated in {end_time - start_time:.2f} seconds')
+
+
+def load_json_object_properties(file: str, object_type: str) -> Any:
+    """Load extended properties from JSON file.
+
+    Arguments
+    ---------
+    file : str
+        Path to JSON file.
+    object_type : str
+        Type of object.
+
+    Returns
+    -------
+    Any
+        Extended properties as dictionary.
+    """
+    try:
+        with open(file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as err:
+        raise Exception(
+            f'Failed to read extended properties for {object_type}') from err
+
+
+def add_default_column_metadata(existing_metadata: dict, documented_properties: dict) -> dict:
+    """Add default column metadata values to documented properties if column is missing from database.
+
+    Arguments
+    ---------
+    existing_metadata : dict
+        Existing metadata fetched from database.
+    documented_properties : dict
+        Documented metadata loaded from JSON file.
+    
+    Returns
+    -------
+    dict
+        Documented metadata with default column values added.
+    """
+    # Load default column values from JSON file
+    default_file = DB_OBJECTS["column"]["default_values"]
+    default_column_values = load_json_object_properties(default_file, "column") if path.exists(default_file) else {}
+
+    # If default column values are not found, return JSON metadata as is
+    if len(default_column_values) == 0:
+        return documented_properties
+
+    # Load existing column names from database
+    db_metadata_objects = existing_metadata.keys()
+    db_columns = set([object_name for object_name in db_metadata_objects])
+
+    # Remove objects that are already documented
+    # -> leave only columns that are missing from json file
+    for json_object_name in documented_properties.keys():
+        db_columns.discard(json_object_name)
+
+    # Add default column values to documented_properties
+    if len(db_columns) > 0:
+        for db_object_name in db_columns:
+            db_column_name = db_object_name.split('.')[2]
+            if db_column_name in default_column_values:
+                documented_properties[db_object_name] = default_column_values[db_column_name]
+
+    return documented_properties
 
 
 def get_update_extended_properties_sql_query(object_name: str, object_metadata: dict, 
