@@ -37,7 +37,7 @@ FLAG_QUERY = """
 
 
 @pytest.mark.mssql
-class TestWithSQLServer():
+class TestDBObjectPropertiesWithSQLServer():
 
     @pytest.fixture(scope='function', autouse=True)
     def db_objects_setup_and_teardown(self, mssql_sample, mssql_engine, run_alembic_action):
@@ -75,16 +75,22 @@ class TestWithSQLServer():
         dop.update_db_object_properties(self.engine, ['store'])
         assert len(caplog.record_tuples) == 0
 
-    def test_all_descs_in_db_should_be_found_in_file(self):
+    def test_all_descs_in_db_should_be_found_in_files(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
         with self.engine.begin() as connection:
             result = connection.execute(text(DESC_QUERY))
             db_decs = result.fetchall()
-            column_description_file = './docs/db_objects/columns.json'
-            with open(column_description_file, 'r') as f:
+            with open("./docs/db_objects/columns.json", "r") as f:
                 file_descs = json.load(f)
+            with open("./docs/db_objects/columns_default.json", "r") as f:
+                default_descs = json.load(f)
             for row in db_decs:
-                assert row[1] == file_descs[row[0]]['Description']
+                object_name = row[0]
+                if object_name not in file_descs:
+                    file_desc = default_descs[object_name.split('.')[-1]]["Description"]
+                else:
+                    file_desc = file_descs[object_name]['Description']
+                assert file_desc == row[1]
 
     def test_all_descs_in_file_should_be_found_in_db(self):
         dop.update_db_object_properties(self.engine, ['store', 'report'])
