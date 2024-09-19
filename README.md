@@ -272,12 +272,46 @@ Prints the alembic- and git-version currently in the database.
 Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
 
 ## update-file-obj-prop
-Write objects and their extended properties (only SQL Server) to JSON files under *./docs* directory.
-Documented schemas are listed in *metadata_allowed_schemas*.
+Write database objects and their extended properties (only SQL Server) to JSON files under *./docs/db_objects* directory. 
+Use *metadata_allowed_schemas* to define which schema-scoped objects are documented.
+The JSON files are named after the object type, for example *procedures.json* or *views.json*. 
+Example of JSON file content:
+```json
+{
+    "dbo.procedure_1": {
+        "description": "This is a procedure",
+        "author": "John Doe"
+    },
+    "dbo.procedure_2": {
+        "description": "This is another procedure",
+        "author": "Jane Doe"
+    }
+}
+```
+Each object is represented as a dictionary where the key is the object name and the value is a dictionary of extended properties.
+The dictionary can contain any number of key-value pairs where the key is the name of the extended property and the value is the value of the extended property. 
+If the object type is column, the object name should be in the format: `<schema name>.<table or view name>.<column name>`.
 
 ## update-db-obj-prop
-Update documented extended properties (only SQL Server) from JSON files under *./docs* directory to database.
-Updated schemas are listed in *metadata_allowed_schemas*.
+Update documented extended properties (only SQL Server) from JSON files under *./docs/db_objects* directory to database.
+Use *metadata_allowed_schemas* to define which schema-scoped objects are documented.
+The format of the JSON files is the same as defined in [update-file-obj-prop](#update-file-obj-prop).
+
+It is also possible to define default metadata for columns in *./docs/db_objects/columns_default.json* file. 
+So if a table has a column called id, and a default value for the Description for a column called id has been defined in *docs/db_objects/columns_default.json*, that value is used, unless there is a row for that specific table's id column in *docs\db_objects\columns.json*.
+
+To define default metadata for columns, use the following format:
+```json
+{
+    "id": {
+        "Description": "Surrogate key."
+    },
+    "Timestamp": {
+        "Description": "Timestamp of the record creation."
+    }
+}
+```
+where the key is the column name and the value is a dictionary of extended properties.
 
 ## test
 Runs tests and returns the results.
