@@ -25,7 +25,7 @@ jobs:
     steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
     - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
       parameters: # Parameters the job needs
-        pythonVersion: "3.11" 
+        pythonVersion: "3.12" 
 
   - job: UserBuildTest
     displayName: Build user test 

@@ -1,4 +1,4 @@
-image: python:3.11
+image: python:3.12
 
 options:
   # Set maximum execution time for each step
@@ -13,7 +13,7 @@ pipelines:
           script:
             - apt-get update && apt-get -y install unixodbc-dev
             - pip install tox
-            - tox -e py311 -- --pipeline
+            - tox -e py312 -- --pipeline
       - step:
           caches:
             - pip
