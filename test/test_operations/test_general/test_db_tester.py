@@ -50,17 +50,17 @@ class TestDBTesterWithSQLServer():
         )
     
     def test_db_tester_should_return_correct_number_of_rows(self):
-        test_results = self.db_tester.execute_test_files(TEST_FILE)
+        test_results = self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         n_rows = len(test_results[TEST_FILE][1:])
         assert n_rows == 3
 
     def test_db_tester_should_return_correct_columns(self):
-        test_results = self.db_tester.execute_test_files(TEST_FILE)
+        test_results = self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         expected_columns = ["start_time", "end_time", "test_name", "issue", "result"]
         assert test_results[TEST_FILE][0] == expected_columns
 
     def test_db_tester_should_return_datetime_objects(self):
-        test_results = self.db_tester.execute_test_files(TEST_FILE)
+        test_results = self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         all_rows_are_datetime = True
         for row in test_results[TEST_FILE][1:]:
             if type(row[0]) != datetime.datetime or type(row[1]) != datetime.datetime:
@@ -69,7 +69,7 @@ class TestDBTesterWithSQLServer():
         assert all_rows_are_datetime
 
     def test_db_tester_should_return_correct_rows(self):
-        test_results = self.db_tester.execute_test_files(TEST_FILE)
+        test_results = self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         all_rows_are_correct = True
         for i, row in enumerate(test_results[TEST_FILE][1:]):
             if not (
@@ -83,7 +83,7 @@ class TestDBTesterWithSQLServer():
 
     def test_output_rowcount_should_be_equal_to_db_rowcount(self):
         self.db_tester.set_save_test_results_to_db(True)
-        test_results = self.db_tester.execute_test_files(TEST_FILE)
+        test_results = self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         reflected_table = self.reflected_test_table()
         with self.engine.connect() as connection:
             result = connection.execute(reflected_table.select())
@@ -92,7 +92,7 @@ class TestDBTesterWithSQLServer():
 
     def test_output_rows_should_equal_to_db_rows(self):
         self.db_tester.set_save_test_results_to_db(True)
-        test_results = self.db_tester.execute_test_files(TEST_FILE)
+        test_results = self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         reflected_table = self.reflected_test_table()
 
         with self.engine.connect() as connection:
@@ -115,7 +115,7 @@ class TestDBTesterWithSQLServer():
 
     def test_batch_id_should_be_same_for_all_rows(self):
         self.db_tester.set_save_test_results_to_db(True)
-        self.db_tester.execute_test_files(TEST_FILE)
+        self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         reflected_table = self.reflected_test_table()
         with self.engine.connect() as connection:
             result = connection.execute(reflected_table.select())
@@ -124,7 +124,7 @@ class TestDBTesterWithSQLServer():
 
     def test_test_file_is_saved_to_db(self):
         self.db_tester.set_save_test_results_to_db(True)
-        self.db_tester.execute_test_files(TEST_FILE)
+        self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         reflected_table = self.reflected_test_table()
         with self.engine.connect() as connection:
             result = connection.execute(reflected_table.select())
@@ -132,7 +132,7 @@ class TestDBTesterWithSQLServer():
         assert set([row.test_file for row in rows]) == {TEST_FILE}
 
     def test_db_tester_should_not_save_results_to_db_by_default(self):
-        self.db_tester.execute_test_files(TEST_FILE)
+        self.db_tester.execute_test_files(TEST_FILE, display_output = False)
         reflected_table = self.reflected_test_table()
         with self.engine.connect() as connection:
             result = connection.execute(reflected_table.select())
