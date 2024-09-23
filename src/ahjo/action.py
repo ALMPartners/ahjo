@@ -8,6 +8,7 @@
 import os
 import sys
 import importlib
+import time
 
 from logging import getLogger
 from typing import Any, Callable, List, Union
@@ -228,7 +229,10 @@ def execute_action(action_name: str, config_filename: str, engine: Engine = None
         if not skip_confirmation and not action.pre_exec_check(context):
             return
     
+    start_time = time.time()
     action_output = action.function(context, *args, **kwargs)
+    end_time = time.time()
+    logger.debug(f"Action '{action_name}' executed in {end_time - start_time:.2f} seconds")
     
     if context.get_enable_transaction(): 
         context.commit_and_close_transaction()

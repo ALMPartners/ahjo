@@ -16,7 +16,8 @@ from ahjo.database_utilities.sqla_utilities import (
     execute_from_file,
     execute_files_in_transaction,
     drop_files_in_transaction,
-    view
+    view,
+    get_dialect_name
 )
 from ahjo.database_utilities.sqlcmd import (
     invoke_sqlcmd

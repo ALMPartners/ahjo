@@ -31,7 +31,8 @@ from ahjo.operations.general.initialization import (
 from ahjo.operations.general.sqlfiles import (
     deploy_sqlfiles,
     drop_sqlfile_objects,
-    deploy_sql_from_file
+    deploy_sql_from_file,
+    create_dependency_graph
 )
 
 from ahjo.operations.general.upgrade import (

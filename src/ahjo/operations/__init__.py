@@ -19,7 +19,8 @@ from ahjo.operations.general import (
     drop_sqlfile_objects,
     deploy_sqlfiles,
     upgrade,
-    alembic_command
+    alembic_command,
+    create_dependency_graph
 )
 
 from ahjo.operations.tsql import (
