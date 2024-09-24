@@ -33,6 +33,12 @@ PROJECT_STRUCTURE = {
         },
         "assemblies": {},
         "functions": {"schema.functionName.sql": "resources/sql/templates/schema.functionName.sql"},
+        "permissions": {
+            "add_users_to_db_roles.sql": "resources/sql/templates/add_users_to_db_roles.sql",
+            "create_db_roles.sql": "resources/sql/templates/create_db_roles.sql",
+            "create_db_users.sql": "resources/sql/templates/create_db_users.sql",
+            "grant_db_permissions.sql": "resources/sql/templates/grant_db_permissions.sql"
+        },
         "procedures": {"schema.procedureName.sql": "resources/sql/templates/schema.procedureName.sql"},
         "clr-procedures": {},
         "views":  {"schema.viewName.sql": "resources/sql/templates/schema.viewName.sql"},

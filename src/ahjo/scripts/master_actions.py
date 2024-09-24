@@ -143,6 +143,7 @@ def deploy(context):
                 context.configuration.get('metadata_allowed_schemas')
         )
 
+
 @action(affects_database=True, dependencies=['init'])
 def deploy_files(context, **kwargs):
     """(MSSQL) Run 'alembic upgrade head' Deploy files. Update Git version."""
@@ -166,6 +167,7 @@ def deploy_files(context, **kwargs):
             repository = context.configuration.get('url_of_remote_git_repository'),
             git_version_info_path = context.configuration.get('git_version_info_path')
         )
+
 
 @action(affects_database=True, dependencies=['init'])
 def assembly(context):
@@ -225,6 +227,54 @@ def create_db_permissions(context):
 
 
 @action(affects_database=True, dependencies=["init"])
+def create_db_roles(context):
+    """(MSSQL) Create database roles."""
+    op.deploy_sqlfiles(
+        connectable = context.get_connectable(),
+        data_src = "./database/permissions/create_db_roles.sql",
+        message = "Creating database roles",
+        display_output = False,
+        scripting_variables = context.configuration.get("db_permissions_variables")
+    )
+
+
+@action(affects_database=True, dependencies=["create-db-roles"])
+def grant_db_permissions(context):
+    """(MSSQL) Grant permissions to roles."""
+    op.deploy_sqlfiles(
+        connectable = context.get_connectable(),
+        data_src = "./database/permissions/grant_db_permissions.sql",
+        message = "Granting permissions to roles",
+        display_output = False,
+        scripting_variables = context.configuration.get("db_permissions_variables")
+    )
+
+
+@action(affects_database=True, dependencies=["init"])
+def create_db_users(context):
+    """(MSSQL) Create database users."""
+    op.deploy_sqlfiles(
+        connectable = context.get_connectable(),
+        data_src = "./database/permissions/create_db_users.sql",
+        message = "Creating database users",
+        display_output = False,
+        scripting_variables = context.configuration.get("db_permissions_variables")
+    )
+
+
+@action(affects_database=True, dependencies=["create-db-roles", "create-db-users"])
+def add_users_to_roles(context):
+    """(MSSQL) Add users to roles."""
+    op.deploy_sqlfiles(
+        connectable = context.get_connectable(),
+        data_src = "./database/permissions/add_users_to_db_roles.sql",
+        message = "Adding users to roles",
+        display_output = False,
+        scripting_variables = context.configuration.get("db_permissions_variables")
+    )
+
+
+@action(affects_database=True, dependencies=["init"])
 def drop(context):
     """(MSSQL) Drop views, procedures, functions and clr-procedures."""
     op.drop_sqlfile_objects(context.get_connectable(), 'VIEW', "./database/views/", "Dropping views")
@@ -232,6 +282,7 @@ def drop(context):
     op.drop_sqlfile_objects(context.get_connectable(), 'FUNCTION', "./database/functions/", "Dropping functions")
     op.drop_sqlfile_objects(context.get_connectable(), 'PROCEDURE', "./database/clr-procedures/", "Dropping CLR-procedures")
     op.drop_sqlfile_objects(context.get_connectable(), 'ASSEMBLY', "./database/assemblies/", "Dropping assemblies")
+
 
 @action(affects_database=True, dependencies=["init"])
 def drop_files(context, **kwargs):
@@ -248,6 +299,7 @@ def drop_files(context, **kwargs):
 
     op.drop_sqlfile_objects(context.get_connectable(), object_type, files, "Dropping files")
 
+
 @action(affects_database=True)
 def drop_obsolete(context):
     """Drop obsolete database objects."""
@@ -255,6 +307,7 @@ def drop_obsolete(context):
         context.get_connectable(),
         './database/drop_obsolete_objects.sql'
     )
+
 
 @action(affects_database=True, dependencies=["init"])
 def downgrade(context):
@@ -405,7 +458,16 @@ def update_db_obj_prop(context):
         context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
         )
-                
-    
-create_multiaction("complete-build", ["init", "deploy", "data", "testdata", "test"],
-                   description="(MSSQL) Run 'init', 'deploy', 'data', 'testdata' and 'test' actions.")
+
+
+create_multiaction(
+    "create-users-roles-and-permissions", 
+    ["create-db-roles", "grant-db-permissions", "create-db-users", "add-users-to-roles"],
+    description = "(MSSQL) Run 'create-db-roles', 'grant-db-permissions', 'create-db-users' and 'add-users-to-roles' actions."
+)
+
+create_multiaction(
+    "complete-build",
+    ["init", "deploy", "data", "testdata", "test"],
+    description="(MSSQL) Run 'init', 'deploy', 'data', 'testdata' and 'test' actions."
+)

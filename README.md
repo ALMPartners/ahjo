@@ -256,6 +256,22 @@ Inserts data for testing into database. Runs all SQL files under *./database/dat
 ## complete-build
 Runs actions init, deploy, data, testdata and test in order.
 
+## create-db-roles
+Runs SQL scripts defined in *./database/permissions/create_db_roles.sql* to create database roles. 
+To pass scripting variables to the SQL script, define them in the config file under `db_permissions_variables` key (optional).
+
+## grant-db-permissions
+Runs SQL scripts defined in *./database/permissions/grant_db_permissions.sql* to grant database permissions.
+To pass scripting variables to the SQL script, define them in the config file under `db_permissions_variables` key (optional).
+
+## create-db-users
+Runs SQL scripts defined in *./database/permissions/create_db_users.sql* to create database users.
+To pass scripting variables to the SQL script, define them in the config file under `db_permissions_variables` key (optional).
+
+## add-users-to-roles
+Runs SQL scripts defined in *./database/permissions/add_users_to_db_roles.sql* to add users to database roles.
+To pass scripting variables to the SQL script, define them in the config file under `db_permissions_variables` key (optional).
+
 ## drop
 Drops all views, procedures, functions, clr-procedures and assemblies that are listed in directory *./database*. Drops are executed with TRY-CATCH.
 
