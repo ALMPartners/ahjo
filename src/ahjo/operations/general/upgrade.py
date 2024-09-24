@@ -124,17 +124,9 @@ class AhjoUpgrade:
             if self.version is not None:
                 version_actions = self.validate_version(self.version, version_actions, current_db_version)
             
-            if not self.skip_confirmation:
-                # Format are_you_sure message
-                are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
-                for tag in version_actions:
-                    are_you_sure_msg.append(tag + ":")
-                    action_names = [action[0] if isinstance(action, list) else action for action in version_actions[tag]]
-                    are_you_sure_msg.append(" " * 2 + ", ".join(action_names))
-                are_you_sure_msg.append("")
-
-                # Confirm action
-                if not are_you_sure(are_you_sure_msg, False): return False
+            # Confirm upgrade actions
+            if not self.skip_confirmation and not are_you_sure(self.format_confirmation_msg(version_actions), False):
+                return False
 
             for git_version in version_actions:
 
@@ -203,6 +195,32 @@ class AhjoUpgrade:
 
         return True
 
+
+    def format_confirmation_msg(self, version_actions: dict) -> None:
+        """Format the confirmation message for the upgrade actions.
+
+        Parameters
+        ----------
+        version_actions
+            Dictionary of upgradable versions and their actions.
+
+        Returns
+        -------
+        list
+            Formatted confirmation message.
+        """
+        server_name = self.context.configuration.get("target_server_hostname", "")
+        db_name = self.context.configuration.get("target_database_name", "")
+        are_you_sure_msg = ["You are about to run the following upgrade actions: ", ""]
+        for tag in version_actions:
+            are_you_sure_msg.append(tag + ":")
+            action_names = [action[0] if isinstance(action, list) else action for action in version_actions[tag]]
+            are_you_sure_msg.append(" " * 2 + ", ".join(action_names))
+        are_you_sure_msg.append("")
+        are_you_sure_msg.append(f"Changes will be committed to the database {db_name} on server {server_name}.")
+        are_you_sure_msg.append("")
+
+        return are_you_sure_msg
 
     def get_next_version_upgrade(self, next_upgrades_in_config: list, current_db_version: str, next_git_version_upgrades: set) -> str:
         """Get the next version to upgrade from the current database version.
