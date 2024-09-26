@@ -13,6 +13,7 @@ from logging import getLogger
 
 import ahjo.operations as op
 import ahjo.database_utilities as du
+import networkx as nx
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from ahjo.operations.general.db_tester import DatabaseTester
@@ -458,6 +459,24 @@ def update_db_obj_prop(context):
         context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
         )
+
+
+@action()
+def plot_dependency_graph(context, **kwargs):
+    """(MSSQL) Plot dependency graph."""
+    cl_args = context.get_command_line_args()
+    deploy_files = cl_args.get("files", [])
+    cl_layout = cl_args.get("layout")
+    if not (isinstance(deploy_files, list) and len(deploy_files) > 0):
+        deploy_files = ["./database/functions/", "./database/procedures/", "./database/views/", "./database/tables/"]
+
+    G = op.create_dependency_graph(deploy_files)
+    G.remove_nodes_from(list(nx.isolates(G)))
+
+    op.plot_dependency_graph(
+        G,
+        layout = cl_layout[0].lower() if cl_layout is not None else "spring_layout"
+    )
 
 
 create_multiaction(

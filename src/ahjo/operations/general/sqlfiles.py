@@ -246,12 +246,21 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
             sql_script_str = remove_comments_from_sql_string(sql_script_str)
             file_strs[file_path] = sql_script_str
             created_objects = find_created_objects(sql_script_str, object_types)
+            n_created_objects = 0
+            created_object_type = None
 
-            for _, object_names in created_objects.items():
+            for object_type, object_names in created_objects.items():
                 for object_name in object_names:
                     objects_to_files[object_name] = file_path
+                    n_created_objects += 1
+                    created_object_type = object_type
 
-            G.add_node(file_path, object_type = "file", objects = created_objects)
+            if n_created_objects == 0:
+                created_object_type = None
+            if n_created_objects > 1:
+                created_object_type = "multiple"
+
+            G.add_node(file_path, object_type = "file", objects = created_objects, created_object_type = created_object_type)
         
         for file_path in files:
 

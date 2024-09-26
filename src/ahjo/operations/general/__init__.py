@@ -50,3 +50,7 @@ from ahjo.operations.general.scan import (
 from ahjo.operations.general.db_tester import (
     DatabaseTester
 )
+
+from ahjo.operations.general.visualization import (
+    plot_dependency_graph
+)
