@@ -129,20 +129,22 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         connectable_type = type(connectable)
         check_connectable_type(connectable, "deploy_sqlfiles")
         dialect_name = get_dialect_name(connectable)
+        sort_files = True if sort_files and isinstance(data_src, str) and dialect_name == "mssql" else False
         files = sql_files_found(data_src)
         n_files = len(files)
+        error_msg = None
+        if n_files == 0: return False
+        max_loop = 1 if sort_files else n_files
         
         # Sort views and tables based on dependencies to avoid errors related to missing objects (mssql only)
-        if re.search(r"views|tables", data_src, re.IGNORECASE) and sort_files and dialect_name == "mssql":
+        if sort_files and re.search(r"views|tables", data_src, re.IGNORECASE):
             try:
-                object_type = "views" if re.search(r"views", data_src, re.IGNORECASE) else "tables"
+                object_type = "view" if re.search(r"views", data_src, re.IGNORECASE) else "table"
                 files = topological_sort(files, object_types = [object_type])
             except:
                 logger.warning("Failed to sort files based on dependencies.")
                 logger.warning("Files are executed in the order they are found.")
-        
-        error_msg = None
-        if n_files == 0: return False
+                max_loop = n_files
 
         # Set transaction scope to 'files' if not set by user and connectable is not Engine.
         transaction_scope = "files" if (enable_transaction is None and connectable_type is not Engine) else transaction_scope
@@ -156,7 +158,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
                 True if enable_transaction and transaction_scope == "file" else False,
                 True if connectable_type is Engine else commit_transaction,
                 file_list = files,
-                max_loop = 1 if sort_files else n_files
+                max_loop = max_loop
             )
 
             if len(failed) > 0:
@@ -189,6 +191,8 @@ def topological_sort(files: list, object_types: list = None) -> list:
     ----------
     files
         List of file paths.
+    object_types
+        List of object types to sort based on dependencies.
 
     Returns
     -------
@@ -208,6 +212,11 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
     ----------
     data_src
         If data_src is string: path of directory holding the SQL script files. Can be also a single file.
+        If data_src is list: list of filepaths referencing to the SQL scripts.
+    object_types
+        List of object types to parse for dependencies. 
+        Valid object types: 'table', 'view', 'procedure', 'function', 'trigger', 'index', 'partition'.
+        By default all object types are included.
 
     Returns
     -------
@@ -218,14 +227,14 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
     files = sql_files_found(data_src)
     objects_to_files = {}
     file_strs = {}
-    object_types_whitelist = ["tables", "views", "procedures", "functions", "triggers", "indexes", "partitions"]
+    object_types_whitelist = ["table", "view", "procedure", "function", "trigger", "index", "partition"]
 
     try:
         # Select only valid object types
         if object_types is not None:
             object_types = [object_type for object_type in object_types if object_type in object_types_whitelist]
             if len(object_types) == 0:
-                raise ValueError("Invalid object types. Valid object types: 'tables', 'views', 'procedures', 'functions', 'triggers', 'indexes', 'partitions'")
+                raise ValueError("Invalid object types. Valid object types: 'table', 'view', 'procedure', 'function', 'trigger', 'index', 'partition'")
         else:
             object_types = object_types_whitelist
 
@@ -277,13 +286,13 @@ def find_created_objects(sql_script: str, object_types: list) -> dict:
     """
     # Regular expressions to match SQL object creation statements
     object_patterns = {
-        "tables": re.compile(r"\bCREATE\s+TABLE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "views": re.compile(r"\bCREATE\s+VIEW\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "procedures": re.compile(r"\bCREATE\s+PROCEDURE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "functions": re.compile(r"\bCREATE\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "triggers": re.compile(r"\bCREATE\s+TRIGGER\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "indexes": re.compile(r"\bCREATE\s+INDEX\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "partitions": re.compile(r"\bCREATE\s+PARTITION\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE)
+        "table": re.compile(r"\bCREATE\s+TABLE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "view": re.compile(r"\bCREATE\s+VIEW\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "procedure": re.compile(r"\bCREATE\s+PROCEDURE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "function": re.compile(r"\bCREATE\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "trigger": re.compile(r"\bCREATE\s+TRIGGER\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "index": re.compile(r"\bCREATE\s+INDEX\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "partition": re.compile(r"\bCREATE\s+PARTITION\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE)
     }
     created_objects = {}
 
@@ -314,10 +323,10 @@ def find_dependencies(sql_script: str, object_types: list) -> list:
     """
     dependencies = []
     patterns = {
-        "tables": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "procedures": re.compile(r'\bEXEC\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "views": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "partitions": re.compile(r'\bAS\s+PARTITION\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?')
+        "table": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
+        "procedure": re.compile(r'\bEXEC\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
+        "view": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
+        "partition": re.compile(r'\bAS\s+PARTITION\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?')
     }
     
     for pattern in object_types:
