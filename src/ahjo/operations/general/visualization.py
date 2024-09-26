@@ -14,6 +14,12 @@ except:
 
 logger = getLogger('ahjo')
 
+import plotly.graph_objects as go
+import networkx as nx
+
+import plotly.graph_objects as go
+import networkx as nx
+
 def plot_dependency_graph(G, layout: str = "spring_layout"):
     """Plot a dependency graph with Plotly.
 
@@ -23,6 +29,7 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
         A directed graph representing dependencies between objects.
     """
     try:
+        # Select layout
         if layout == "spring_layout":
             pos = nx.spring_layout(G)
         elif layout == "kamada_kawai_layout":
@@ -56,6 +63,8 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
         node_y = []
         node_color = []
         node_size = []
+        node_hover_text = []
+
         for node in G.nodes():
             x, y = pos[node]
             node_x.append(x)
@@ -63,33 +72,49 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
             node_color.append(G.nodes[node].get("created_object_type", "default"))
             node_size.append(15 + (G.in_degree(node)))
 
+            # Find incoming and outgoing nodes
+            incoming_nodes = list(G.predecessors(node))
+            outgoing_nodes = list(G.successors(node))
+
+            # Convert lists to readable strings, separating each node by line break
+            #incoming_str = "<br>".join(incoming_nodes) if incoming_nodes else "None"
+            
+            # Create hover text for each node
+            #hover_text = f"Node: {node}<br><br>Incoming nodes:<br>{incoming_str}<br><br>Dependencies:<br>{outgoing_str}"
+
+            outgoing_str = "<br>".join(outgoing_nodes) if outgoing_nodes else "None"
+            hover_text = f"Node: {node}<br><br>Dependencies:<br>{outgoing_str}"
+            node_hover_text.append(hover_text)
+
         fig = go.Figure()
+
         fig.add_trace(
             go.Scatter(
-                x=edge_x, y=edge_y, 
+                x=edge_x, y=edge_y,
                 mode="lines",
-                line=dict(width=0.1, color="black"), 
-                hoverinfo = "none", 
-                showlegend = False, 
-                line_shape = "linear"
+                line=dict(width=0.1, color="black"),
+                hoverinfo="none",
+                showlegend=False,
+                line_shape="linear"
             )
         )
+
         fig.add_trace(
             go.Scatter(
-                x=node_x, 
-                y=node_y, 
+                x=node_x,
+                y=node_y,
                 mode="markers",
-                text = list(G.nodes()), 
-                hoverinfo = "text", 
-                textposition = "top center",
-                marker = dict(
-                    color = [list(set(node_color)).index(x) for x in node_color], 
-                    size = node_size,
+                text=node_hover_text,
+                hoverinfo="text",
+                textposition="top center",
+                marker=dict(
+                    color=[list(set(node_color)).index(x) for x in node_color],
+                    size=node_size,
                     line=dict(width=2, color='black')
                 )
             )
         )
-        
+
         for edge in G.edges():
             x0, y0 = pos[edge[0]]
             x1, y1 = pos[edge[1]]
@@ -105,8 +130,8 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
             )
 
         fig.update_layout(
-            title="Dependency Graph", 
-            showlegend=False, 
+            title="Dependency Graph",
+            showlegend=False,
             hovermode="closest",
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
@@ -115,4 +140,4 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
         fig.show()
 
     except Exception as e:
-        logger.error(f"Error plotting dependency graph: {e}")
+        print(f"Error plotting dependency graph: {e}")
