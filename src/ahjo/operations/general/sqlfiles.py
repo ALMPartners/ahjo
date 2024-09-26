@@ -251,8 +251,7 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
                 for object_name in object_names:
                     objects_to_files[object_name] = file_path
 
-            file_objects = created_objects.keys()
-            G.add_node(file_path, object_type = "file", objects = file_objects)
+            G.add_node(file_path, object_type = "file", objects = created_objects)
         
         for file_path in files:
 
