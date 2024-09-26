@@ -5,8 +5,12 @@
 
 """ Module for visualization operations. """
 import networkx as nx
-import plotly.graph_objects as go
 from logging import getLogger
+
+try:
+    import plotly.graph_objects as go
+except:
+    go = None
 
 logger = getLogger('ahjo')
 
