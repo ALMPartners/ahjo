@@ -14,7 +14,7 @@ steps:
   - task: DownloadPipelineArtifact@2
     inputs:
       source: "current"
-      artifact: 'Build'
+      artifact: 'MSIBuild.${{parameters.buildJob}}'
       targetPath: '$(Pipeline.Workspace)'
     displayName: "Download build artefacts"
 
@@ -24,7 +24,7 @@ steps:
       script: |
         try {
           cd $(Pipeline.Workspace)
-          $filename = Get-ChildItem $(Pipeline.Workspace) | Where-Object {$_.Name -like '*${{parameters.buildJob}}.msi'}
+          $filename = Get-ChildItem $(Pipeline.Workspace) | Where-Object {$_.Name -like '*.msi'}
           Write-Host "Found file $filename"
           Write-Host "Installing MSI $filename"
           msiexec.exe /I "$filename" TARGETDIR="$(Pipeline.Workspace)" /quiet

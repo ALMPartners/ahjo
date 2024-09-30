@@ -15,52 +15,70 @@ variables:
   - template: azure-pipelines/azure-variables-template.yml
 
 # List of jobs for the pipeline to execute
-jobs:
-  - job: Build # System name for job
-    displayName: Build artefacts # Display name for job
-    pool: # Which DevOps Agent the job uses, for msi-builds windows OS is required. If access to ALMP Azure resources is needed, the pool must be self-hosted
-      name: Azure Pipelines # Pool name
-      vmImage: 'windows-latest' # virtual machine image/OS
-    timeoutInMinutes: 30 # Timeout
-    steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
-    - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
-      parameters: # Parameters the job needs
-        pythonVersion: "3.12" 
+stages:
+- stage: MSIBuild # Stage name
+  displayName: Build MSI installers # Display name for stage
+  jobs:
+    - job: BuildForUser # System name for job
+      displayName: Build user installer # Display name for job
+      pool: # Which DevOps Agent the job uses, for msi-builds windows OS is required. If access to ALMP Azure resources is needed, the pool must be self-hosted
+        name: Azure Pipelines # Pool name
+        vmImage: 'windows-latest' # virtual machine image/OS
+      timeoutInMinutes: 25 # Timeout
+      steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
+      - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
+        parameters: # Parameters the job needs
+          pythonVersion: "3.12"
+          MsiTargetType: "user" # User or system
 
-  - job: UserBuildTest
-    displayName: Build user test 
-    pool:
-      name: Azure Pipelines
-      vmImage: 'windows-latest'
-    timeoutInMinutes: 30
-    dependsOn:
-    - Build
-    steps:
-    - template: 'azure-pipelines/azure-test-template.yml'
-      parameters:
-        buildJob: "USER"
+    - job: BuildForSystem # System name for job
+      displayName: Build system installer # Display name for job
+      pool: # Which DevOps Agent the job uses, for msi-builds windows OS is required. If access to ALMP Azure resources is needed, the pool must be self-hosted
+        name: Azure Pipelines # Pool name
+        vmImage: 'windows-latest' # virtual machine image/OS
+      timeoutInMinutes: 25 # Timeout
+      steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
+      - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
+        parameters: # Parameters the job needs
+          pythonVersion: "3.12"
+          MsiTargetType: "system" # User or system
 
-  - job: SystemBuildTest
-    displayName: Build system test 
-    pool:
-      name: Azure Pipelines
-      vmImage: 'windows-latest'
-    timeoutInMinutes: 30
-    dependsOn:
-    - Build
-    steps:
-    - template: 'azure-pipelines/azure-test-template.yml'
-      parameters:
-        buildJob: "SYSTEM"
+- stage: MSITest
+  displayName: Test MSI installers
+  dependsOn: MSIBuild
+  trigger: automatic
+  jobs: 
+    - job: UserBuildTest
+      displayName: Build user test 
+      pool:
+        name: Azure Pipelines
+        vmImage: 'windows-latest'
+      timeoutInMinutes: 25
+      steps:
+      - template: 'azure-pipelines/azure-test-template.yml'
+        parameters:
+          buildJob: "BuildForUser"
 
-  - job: TriggerMPA
-    displayName: Trigger MPA-release pipeline
-    pool:
-      name: Azure Pipelines
-      vmImage: 'windows-latest'
-    timeoutInMinutes: 30
-    dependsOn: 
-    - UserBuildTest
-    - SystemBuildTest
-    steps:
-    - template: 'azure-pipelines/MPA-trigger-template.yml'
+    - job: SystemBuildTest
+      displayName: Build system test 
+      pool:
+        name: Azure Pipelines
+        vmImage: 'windows-latest'
+      timeoutInMinutes: 25
+      steps:
+      - template: 'azure-pipelines/azure-test-template.yml'
+        parameters:
+          buildJob: "BuildForSystem"
+
+- stage: Release
+  displayName: Trigger MPA release flows
+  trigger: manual
+  jobs:
+    - job: TriggerMPA
+      displayName: Trigger MPA-release pipeline
+      pool:
+        name: Azure Pipelines
+        vmImage: 'windows-latest'
+      timeoutInMinutes: 15
+      steps:
+      - template: 'azure-pipelines/MPA-trigger-template.yml'
