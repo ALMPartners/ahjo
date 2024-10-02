@@ -1,4 +1,5 @@
-from ahjo.operations.general.scan import is_hetu, valid_search_rules, DEFAULT_SCAN_RULES
+import pytest
+from ahjo.operations.general.scan import AhjoScan, DEFAULT_SCAN_RULES
 
 VALID_HETUS = [
     "010105A991P","140892-944N","140892-9296","151188-983Y",
@@ -31,28 +32,40 @@ INVALID_FILEPATHS = [
     ("database/data/dmx.DimTest.sql", [r"^database/data/dm\..*"]),
 ]
 
-def test_is_hetu_should_return_true_for_valid_hetu():
-    for hetu in VALID_HETUS:
-        assert is_hetu(hetu) is True
+class TestAhjoScan():
 
-def test_is_hetu_should_return_false_for_invalid_hetu():
-    for hetu in INVALID_HETUS:
-        assert is_hetu(hetu) is False
+    @pytest.fixture(scope='function', autouse=True)
+    def ahjo_upgrade_setup(self):
+        self.ahjo_scan = AhjoScan()
+        yield
 
-def test_valid_search_rules_should_return_true_for_valid_search_rules():
-    assert valid_search_rules(DEFAULT_SCAN_RULES) is True
+    def test_is_hetu_should_return_true_for_valid_hetu(self):
+        for hetu in VALID_HETUS:
+            assert self.ahjo_scan.is_hetu(hetu) is True
 
-def test_valid_search_rules_should_raise_error_if_input_not_list():
-    try:
-        valid_search_rules("not a list")
-    except Exception as err:
-        assert type(err) == TypeError
+    def test_is_hetu_should_return_false_for_invalid_hetu(self):
+        for hetu in INVALID_HETUS:
+            assert self.ahjo_scan.is_hetu(hetu) is False
 
-def test_valid_search_rules_should_return_false_for_empty_search_rules():
-    assert valid_search_rules([]) is False
+    def test_valid_search_rules_should_return_true_for_valid_search_rules(self):
+        self.ahjo_scan.search_rules = DEFAULT_SCAN_RULES
+        assert self.ahjo_scan.valid_search_rules() is True
 
-def test_valid_search_rules_should_return_false_for_none_search_rules():
-    assert valid_search_rules(None) is False
+    def test_valid_search_rules_should_raise_error_if_input_not_list(self):
+        self.ahjo_scan.search_rules = "not a list"
+        try:
+            self.ahjo_scan.valid_search_rules()
+        except Exception as err:
+            assert type(err) == TypeError
 
-def test_valid_search_rules_should_return_false_for_invalid_type():
-    assert	valid_search_rules(123) is False
+    def test_valid_search_rules_should_return_false_for_empty_search_rules(self):
+        self.ahjo_scan.search_rules = []
+        assert self.ahjo_scan.valid_search_rules() is False
+
+    def test_valid_search_rules_should_return_false_for_none_search_rules(self):
+        self.ahjo_scan.search_rules = None
+        assert self.ahjo_scan.valid_search_rules() is False
+
+    def test_valid_search_rules_should_return_false_for_invalid_type(self):
+        self.ahjo_scan.search_rules = 123
+        assert self.ahjo_scan.valid_search_rules() is False
