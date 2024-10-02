@@ -8,7 +8,7 @@
 '''
 import argparse
 import sys
-from ahjo.operations.general.scan import scan_project, initialize_scan_config
+from ahjo.operations.general.scan import AhjoScan
 from ahjo.interface_methods import load_yaml_conf
 from ahjo.logging import setup_ahjo_logger
 
@@ -27,12 +27,19 @@ def main():
     quiet_mode = args.quiet
     ignore_config_path = args.ignore_config
     rules_config_path = args.search_rules
+    scan_config = load_yaml_conf(rules_config_path)
+
+    ahjo_scan = AhjoScan(
+        scan_staging_area = True if args.stage else False,
+        search_rules = scan_config,
+        log_additional_info = False if quiet_mode else True,
+        ignore_config_path = ignore_config_path,
+        scan_rules_file = rules_config_path
+    )
 
     if args.init:
-        initialize_scan_config(scan_ignore_file = ignore_config_path, scan_rules_file = rules_config_path)
+        ahjo_scan.initialize_scan_config()
         sys.exit(0)
-
-    scan_config = load_yaml_conf(rules_config_path)
 
     if not scan_config:
         logger.error("Failed to load scan rules.")
@@ -41,13 +48,8 @@ def main():
     if not quiet_mode:
         logger.info("Scanning files...")
 
-    matches = scan_project(**{
-        "scan_staging_area": True if args.stage else False,
-        "search_rules": scan_config,
-        "log_additional_info": False if quiet_mode else True,
-        "ignore_config_path": ignore_config_path
-    })
-
+    matches = ahjo_scan.scan_project()
+    
     sys.exit(1) if (len(matches) > 0 if matches else False) else sys.exit(0)
 
 if __name__ == '__main__':

@@ -44,7 +44,7 @@ from ahjo.operations.general.db_info import (
 )
 
 from ahjo.operations.general.scan import (
-    scan_project
+    AhjoScan
 )
 
 from ahjo.operations.general.db_tester import (
