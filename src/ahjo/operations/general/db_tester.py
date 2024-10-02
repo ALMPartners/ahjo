@@ -150,20 +150,25 @@ class DatabaseTester:
 
                     new_row.append(col)
 
-                # reorder the columns
-                new_row = []
-                for col in col_ordering:
-                    try:
-                        swap_indx = output_columns.index(col)
-                    except Exception as e:
-                        logger.error(f"Column '{col}' not found in the output columns: {output_columns}")
-                        raise e
-                    new_row.append(row[swap_indx])
+                # Reorder the columns if the col_ordering is given 
+                # and all the columns are in the output_columns
+                if isinstance(col_ordering, list) and all(col in output_columns for col in col_ordering):
+                    new_row = []
+                    for col in col_ordering:
+                        try:
+                            swap_indx = output_columns.index(col)
+                        except Exception as e:
+                            logger.error(f"Column '{col}' not found in the output columns: {output_columns}")
+                            raise e
+                        new_row.append(row[swap_indx])
 
                 new_rows.append(new_row)
 
             # Header row to human friendly format
-            new_rows[0] = [col.replace("_", " ").title() for col in new_rows[0]]
+            if isinstance(new_rows[0], list):
+                for header_i, col in enumerate(new_rows[0]):
+                    if isinstance(col, str):
+                        new_rows[0][header_i] = col.replace("_", " ").title()
 
             # Add final row with the number of tests passed
             if result_col_exists:

@@ -361,7 +361,7 @@ def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw:
 
 @rearrange_params({"engine": "connectable"})
 def execute_files_in_transaction(connectable: Union[Engine, Connection, Session], files: list, scripting_variables: dict = None, 
-        include_headers: bool = False, commit_transaction: bool = True) -> List[Iterable]:
+        include_headers: bool = False, commit_transaction: bool = True) -> dict:
     """Execute SQL scripts from list of files in transaction. 
     Rollback if any of the batches fail.
     
@@ -378,8 +378,13 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     commit_transaction
         Indicator to commit transaction after execution.
         Parameter is ignored if connectable is Engine.
+
+    Returns
+    -------
+    script_output
+        Dictionary with file names as keys and output as values.
     """
-    script_output = []
+    script_output = {}
     dialect_name = get_dialect_name(connectable)
     connectable_type = type(connectable)
     connection_obj = connectable.connect() if connectable_type == Engine else connectable
@@ -402,7 +407,9 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
                     continue
                 else:
                     succeeded_files.append(file)
-                    script_output.append(results)
+                    if file not in script_output:
+                        script_output[file] = []
+                    script_output[file].extend(results)
                     loop_files.remove(file)
                     errors.pop(file, None)
             if n_files == len(succeeded_files):

@@ -178,8 +178,8 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
                 commit_transaction = commit_transaction
             )
             if display_output:
-                for result in output:
-                    logger.info(format_to_table(result))
+                for filepath in output.keys():
+                    logger.info(format_to_table(output[filepath]))
 
         return output
 
