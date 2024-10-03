@@ -14,12 +14,6 @@ except:
 
 logger = getLogger('ahjo')
 
-import plotly.graph_objects as go
-import networkx as nx
-
-import plotly.graph_objects as go
-import networkx as nx
-
 def plot_dependency_graph(G, layout: str = "spring_layout"):
     """Plot a dependency graph with Plotly.
 
