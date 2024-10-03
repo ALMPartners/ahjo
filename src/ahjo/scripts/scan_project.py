@@ -23,6 +23,7 @@ def main():
         help="Hide additional status messages and show only the scan matches (if found). This option is used by the pre-commit hook."
     )
     parser.add_argument("-in", "--init", action="store_true", required=False, help="Initialize config files for scan rules and ignored scan results.")
+    parser.add_argument("-ai", "--add-results-to-ignore", action="store_true", required=False, help="Add found scan results to ignore config file.", default=False)
     args = parser.parse_args()
     quiet_mode = args.quiet
     ignore_config_path = args.ignore_config
@@ -34,7 +35,8 @@ def main():
         search_rules = scan_config,
         log_additional_info = False if quiet_mode else True,
         ignore_config_path = ignore_config_path,
-        scan_rules_file = rules_config_path
+        scan_rules_file = rules_config_path,
+        add_results_to_ignore = args.add_results_to_ignore
     )
 
     if args.init:
@@ -49,7 +51,7 @@ def main():
         logger.info("Scanning files...")
 
     matches = ahjo_scan.scan_project()
-    
+
     sys.exit(1) if (len(matches) > 0 if matches else False) else sys.exit(0)
 
 if __name__ == '__main__':

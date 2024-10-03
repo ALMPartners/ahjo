@@ -595,6 +595,7 @@ ahjo-upgrade -v v3.1.0
 | `--stage` | `-st` | Scan files in git staging area instead of working directory. | No | `False` |
 | `--ignore-config` | `-ig` | Path to YAML file that defines the ignore rules. | No | `./ahjo_scan_ignore.yaml` |
 | `--init` | `-in` | Initialize config files for scan rules and ignored scan results. | No | `False` |
+| `--add-results-to-ignore` | `-ai` | Add found scan results to ignore config file. | No | `False` |
 
 The search rules are defined as a list of dictionaries. Each dictionary contains a search rule name, a list of file paths to be searched and parameters for the search rule. It is also possible to define a custom regex pattern for the search rule instead of using predefined search rules. The regex pattern is defined as a string in the `pattern` parameter.
 
@@ -654,6 +655,9 @@ Below is an example of ignore results file:
   rules:
     - sql_object_modification
 ```
+
+## Adding scan results to ignore file
+Using `--add-results-to-ignore` or -`ai` flag, the found scan results can be added to the ignore file. The flag can be used to add all found scan results to the ignore file. If the found scan results already exist in the ignore file, they are not added again.
 
 ## Scan as a pre-commit hook
 Ahjo scan command can be used as a pre-commit hook to prevent committing files that contain e.g. sensitive information or illegal database object modifications.

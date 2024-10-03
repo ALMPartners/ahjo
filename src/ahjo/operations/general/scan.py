@@ -49,7 +49,8 @@ class AhjoScan:
     """
 
     def __init__(self, scan_staging_area: bool = False, search_rules: list = DEFAULT_SCAN_RULES, 
-        log_additional_info: bool = True, ignore_config_path: str = "ahjo_scan_ignore.yaml", scan_rules_file: str = "ahjo_scan_rules.yaml"):
+        log_additional_info: bool = True, ignore_config_path: str = "ahjo_scan_ignore.yaml", scan_rules_file: str = "ahjo_scan_rules.yaml",
+        add_results_to_ignore: bool = False):
         """ Constructor for AhjoScan class. 
 
         Parameters
@@ -64,13 +65,15 @@ class AhjoScan:
             Log scan status info. This is disabled when running in quiet mode (e.g. pre-commit hook).
         ignore_config_path
             Path to the file containing ignored results.
-        
+        add_results_to_ignore
+            Add found scan results to ignore config file.
         """
         self.scan_staging_area = scan_staging_area
         self.search_rules = search_rules
         self.log_additional_info = log_additional_info
         self.ignore_config_path = ignore_config_path
         self.scan_rules_file = scan_rules_file
+        self.add_results_to_ignore = add_results_to_ignore
         self.matches = None
 
 
@@ -258,8 +261,12 @@ class AhjoScan:
                     n_matches += 1
 
         self.log_scan_results(matches, n_matches, str(datetime.now() - start_time), n_ignored)
+        matches_found = n_matches > 0
         if self.log_additional_info:
-            self.log_scan_status_info(n_matches > 0)
+            self.log_scan_status_info(matches_found)
+
+        if self.add_results_to_ignore and matches_found:
+            self.add_results_to_ignore_list(matches, ignored_items)
 
         return matches
 
@@ -500,3 +507,29 @@ class AhjoScan:
             logger.debug(f"Ignored matches file not found: {file_path}")
 
         return ignored_items
+    
+
+    def add_results_to_ignore_list(self, matches: dict, ignored_items: dict) -> None:
+        """ Add scan results to ignored list. 
+        
+        Parameters
+        ----------
+        matches
+            Dictionary containing matches for each file and search rule.
+        ignore_config_path
+            Path to the file containing ignored results.
+        """
+        for file in matches:
+            if file not in ignored_items:
+                ignored_items[file] = {}
+                ignored_items[file]["matches"] = []
+                ignored_items[file]["rules"] = []
+            for search_rule in matches[file]:
+                if search_rule not in ignored_items[file]["rules"]:
+                    ignored_items[file]["rules"].append(search_rule)
+                for match in matches[file][search_rule]:
+                    if match not in ignored_items[file]["matches"]:
+                        ignored_items[file]["matches"].append(match)
+        with open(self.ignore_config_path, "w") as stream:
+            yaml.dump([{**{"file_path": file}, **ignored_items[file]} for file in ignored_items], stream, default_flow_style=False, sort_keys=False)
+        logger.info(f"Results added to ignored list: {self.ignore_config_path}")
