@@ -523,13 +523,10 @@ class AhjoScan:
             if file not in ignored_items:
                 ignored_items[file] = {}
                 ignored_items[file]["matches"] = []
-                ignored_items[file]["rules"] = []
             for search_rule in matches[file]:
-                if search_rule not in ignored_items[file]["rules"]:
-                    ignored_items[file]["rules"].append(search_rule)
                 for match in matches[file][search_rule]:
                     if match not in ignored_items[file]["matches"]:
-                        ignored_items[file]["matches"].append(match)
+                        ignored_items[file]["matches"].append(match.strip())
         with open(self.ignore_config_path, "w") as stream:
             yaml.dump([{**{"file_path": file}, **ignored_items[file]} for file in ignored_items], stream, default_flow_style=False, sort_keys=False)
         logger.info(f"Results added to ignored list: {self.ignore_config_path}")
