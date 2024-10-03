@@ -48,14 +48,9 @@ build_exe_options = {
 # Installable distribution options
 installer_type = os.getenv(MSI_TARGET_TYPE_ENV_VAR, "user").strip().lower()
 installer_type_suffix = "system" if installer_type == "system" else "user"
-target_name = "AHJO-%s-%s-%s.msi" % (
-    version,
-    get_platform(),
-    installer_type_suffix.upper(),
-)
+
 bdist_msi_options = {
     "all_users": installer_type == "system",
-    "target_name": target_name,
     "upgrade_code": upgrade_code,
     "add_to_path": True,
     "initial_target_dir": "[%s]\%s\%s" % (programfiles_dir, author, name),

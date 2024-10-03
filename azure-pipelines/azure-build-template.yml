@@ -21,6 +21,7 @@ steps:
       pip install -r ./msi_build_requirements.txt
       export AHJO_MSI_TARGET_TYPE=${{parameters.MsiTargetType}}
       python ./msi_build.py bdist_msi  
+      for file in dist/*.msi; do mv "$file" "${file%.msi}-${AHJO_MSI_TARGET_TYPE}.msi"; done
     displayName: "Build release artefacts"
 
   - task: DotNetCoreCLI@2
@@ -31,7 +32,7 @@ steps:
     displayName: Install AzureSignTool
 
   - bash: |
-      AzureSignTool sign -kvu "$(kvURI)" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
+      AzureSignTool sign -d "Ahjo" -kvu "$(kvURI)" -kvi $(ApplicationId) -kvt $(TenantId) -kvs $(ClientSecret) -kvc $(certName) -tr "http://ts.ssl.com" -td sha256 D:/a/1/s/dist/*.msi
     displayName: Sign all msi-files in artefacts-directory
 
   - task: PublishPipelineArtifact@1
