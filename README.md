@@ -346,7 +346,7 @@ The name and schema of the table are defined in *test_table_name* and *test_tabl
 Creates a view for displaying test action results. The columns of the view are the same as the columns of the table where the results are saved.
 The name and schema of the view are defined in *test_view_name* and *test_view_schema*.
 
-## plot-dependency-graph
+## plot-dependencies
 Parse the SQL files in the project and create a dependency graph of the database objects. 
 Plots the graph with plotly. Optionally, use `--files` to parameter define which files are used in the action.
 
