@@ -475,11 +475,6 @@ def plot_dependencies(context, **kwargs):
     G.remove_nodes_from(list(nx.isolates(G)))
     layout = cl_layout[0].lower() if cl_layout is not None else "spring_layout"
 
-    op.plot_dependency_graph(
-        G,
-        layout = cl_layout[0].lower() if cl_layout is not None else "spring_layout"
-    )
-
     op.plot_dependency_graph(G, layout = layout)
 
 create_multiaction(
