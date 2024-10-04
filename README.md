@@ -19,7 +19,7 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 * [PyYAML](https://pypi.org/project/PyYAML/)
 * [lark](https://pypi.org/project/lark/)
 
-## Platform-specific
+## Extras
 
 ### mssql
 * [pyodbc](https://pypi.org/project/pyodbc/)
