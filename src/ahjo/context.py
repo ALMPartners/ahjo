@@ -137,12 +137,24 @@ class Context:
 
 
     def get_command_line_args(self) -> dict:
+        """ Get all command line arguments. """
         return self.command_line_args
 
 
     def get_command_line_arg(self, key: str) -> Any:
+        """ Get command line argument value by key. 
+            Return None if not found.
+        """
+        logger.debug('get_command_line_arg is deprecated. Use get_cli_arg instead.')
         return self.command_line_args.get(key, None)
 
+
+    def get_cli_arg(self, key: str) -> Union[str, list, None]:
+        """ Get command line argument value by key. 
+            Return None if not found. If there is only one value, return the value. Otherwise return the list.
+        """
+        cli_args = self.command_line_args.get(key, None)
+        return cli_args[0] if isinstance(cli_args, list) and len(cli_args) == 1 else cli_args
 
     def set_enable_transaction(self, enable_transaction: bool):
         self.enable_transaction = enable_transaction

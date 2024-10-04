@@ -117,9 +117,8 @@ def structure(context):
 def deploy(context):
     """(MSSQL) Run 'alembic upgrade head'. Deploy functions, views and prodecures. Update extended properties and Git version."""
     connectable = context.get_connectable()
-    cl_args = context.get_command_line_args()
     
-    if not cl_args.get("skip_alembic_update", False):
+    if not context.get_cli_arg("skip_alembic_update"):
         op.upgrade_db_to_latest_alembic_version(
             context.config_filename,
             connection = context.get_connection() if type(connectable) == Connection else None
@@ -129,7 +128,7 @@ def deploy(context):
     op.deploy_sqlfiles(context.get_connectable(), "./database/views/", "Deploying views")
     op.deploy_sqlfiles(context.get_connectable(), "./database/procedures/", "Deploying procedures")
 
-    if not cl_args.get("skip_git_update", False):
+    if not context.get_cli_arg("skip_git_update"):
         op.update_git_version(
             context.get_connectable(),
             context.configuration.get('git_table_schema', 'dbo'),
@@ -138,7 +137,7 @@ def deploy(context):
             git_version_info_path = context.configuration.get('git_version_info_path')
         )
 
-    if not cl_args.get("skip_metadata_update", False):
+    if not context.get_cli_arg("skip_metadata_update"):
         op.update_db_object_properties(
                 context.get_connectable(),
                 context.configuration.get('metadata_allowed_schemas')
@@ -148,19 +147,19 @@ def deploy(context):
 @action(affects_database=True, dependencies=['init'])
 def deploy_files(context, **kwargs):
     """(MSSQL) Run 'alembic upgrade head' Deploy files. Update Git version."""
-    cl_args = context.get_command_line_args()
-    deploy_files = cl_args.get("files", [])
 
-    if not (isinstance(deploy_files, list) and len(deploy_files) > 0):
-        logger.warning('Check argument: "files".')
+    deploy_files = context.get_cli_arg("files")
+
+    if deploy_files is None:
+        logger.warning("No files to deploy. Check the 'files' argument.")
         return
 
-    if not cl_args.get("skip_alembic_update", False):
+    if not context.get_cli_arg("skip_alembic_update"):
         op.upgrade_db_to_latest_alembic_version(context.config_filename)
 
     op.deploy_sqlfiles(context.get_connectable(), deploy_files, "Deploying sql files")
 
-    if not cl_args.get("skip_git_update", False):
+    if not context.get_cli_arg("skip_git_update"):
         op.update_git_version(
             context.get_connectable(),
             context.configuration.get('git_table_schema', 'dbo'),
@@ -182,12 +181,11 @@ def assembly(context):
 @action(affects_database=True, dependencies=['deploy'])
 def data(context):
     """Insert data."""
-    cl_args = context.get_command_line_args()
     engine = context.get_engine()
     connectable = context.get_connectable()
     deploy_args = [connectable, "./database/data/", "Inserting data"]
     deploy_mssql_sqlfiles(*deploy_args) if engine.name == "mssql" else op.deploy_sqlfiles(*deploy_args)
-    if not cl_args.get("skip_git_update", False):
+    if not context.get_cli_arg("skip_git_update"):
         op.update_git_version(
             connectable,
             context.configuration.get('git_table_schema', 'dbo'),
@@ -464,9 +462,8 @@ def update_db_obj_prop(context):
 @action()
 def plot_dependencies(context, **kwargs):
     """(MSSQL) Plot dependency graph."""
-    cl_args = context.get_command_line_args()
-    deploy_files = cl_args.get("files", [])
-    cl_layout = cl_args.get("layout")
+    deploy_files = context.get_cli_arg("files")
+    cl_layout = context.get_cli_arg("layout")
 
     if not (isinstance(deploy_files, list) and len(deploy_files) > 0):
         deploy_files = ["./database/functions/", "./database/procedures/", "./database/views/", "./database/tables/"]
@@ -476,6 +473,7 @@ def plot_dependencies(context, **kwargs):
     layout = cl_layout[0].lower() if cl_layout is not None else "spring_layout"
 
     op.plot_dependency_graph(G, layout = layout)
+
 
 create_multiaction(
     "create-users-roles-and-permissions", 

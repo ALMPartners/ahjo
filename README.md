@@ -218,8 +218,6 @@ The rest of the optional parameters are listed below.
 | `--skip-alembic-update` | `-sa` | Skip running alembic migrations. | `False` |
 | `--skip-git-update` | `-sg` | Skip updating current git version to git version table. | `False` |
 
-
-
 It is also possible to pass custom command-line arguments and their values to actions. 
 
 For example, to pass a custom argument `--example-arg` with values `x` and `y` to action `example-action`, use the following command:
@@ -229,8 +227,9 @@ ahjo example-action --example-arg x y
 
 In the action, the values of the custom argument can be accessed from the context object:
 ```python
-example_arg_values = context.get_command_line_arg("example-arg") # Returns a list of strings ["x", "y"]
+example_arg_values = context.get_cli_arg("example-arg") # Returns a list of strings ["x", "y"]
 ```
+The `get_cli_arg` method returns a string if the argument has only one value. If the argument has multiple values, it returns a list of strings.
 
 ## Pre-defined actions
 
