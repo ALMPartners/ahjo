@@ -229,7 +229,7 @@ In the action, the values of the custom argument can be accessed from the contex
 ```python
 example_arg_values = context.get_cli_arg("example-arg") # Returns a list of strings ["x", "y"]
 ```
-The `get_cli_arg` method returns a string if the argument has only one value. If the argument has multiple values, it returns a list of strings.
+The `get_cli_arg` method returns a string if the argument has only one value. If the argument has multiple values, it returns a list of strings. If only the argument name is given without values, the method returns `True` by default. This way, it is possible to pass boolean arguments to actions.
 
 ## Pre-defined actions
 

@@ -154,7 +154,15 @@ class Context:
             Return None if not found. If there is only one value, return the value. Otherwise return the list.
         """
         cli_args = self.command_line_args.get(key, None)
-        return cli_args[0] if isinstance(cli_args, list) and len(cli_args) == 1 else cli_args
+        if isinstance(cli_args, list):
+            cli_args_len = len(cli_args)
+            if cli_args_len == 1: # If there is only one value, return only the value
+                return cli_args[0]
+            elif cli_args_len > 1: # If there are multiple values, return the list
+                return cli_args
+            else: # By default, return True if the key exists. This is used for boolean flags (default value is True)
+                return True
+        return cli_args
 
     def set_enable_transaction(self, enable_transaction: bool):
         self.enable_transaction = enable_transaction
