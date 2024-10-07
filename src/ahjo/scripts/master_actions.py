@@ -464,10 +464,8 @@ def plot_dependencies(context, **kwargs):
     """(MSSQL) Plot dependency graph."""
     deploy_files = context.get_cli_arg("files")
     cl_layout = context.get_cli_arg("layout")
-
-    if not (isinstance(deploy_files, list) and len(deploy_files) > 0):
+    if isinstance(deploy_files, list) and len(deploy_files) == 0:
         deploy_files = ["./database/functions/", "./database/procedures/", "./database/views/", "./database/tables/"]
-
     G = op.create_dependency_graph(deploy_files)
     G.remove_nodes_from(list(nx.isolates(G)))
     layout = cl_layout[0].lower() if cl_layout is not None else "spring_layout"
