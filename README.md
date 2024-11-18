@@ -69,6 +69,8 @@ This assumes you have cloned the source code repository and have it open in a sh
 
 Create a new, empty build venv and install build requirements into it.
 
+**Notice:** at the time of writing this (11/2024), [the latest stable cx_freeze version](https://cx-freeze.readthedocs.io/en/stable) (7.2.5) **does not support Python 3.13** yet. As soon as new cx_freeze version with Python 3.13 support is released, it should be taken in to use.
+
 ```
 python -m venv venv_msi_build
 .\venv_msi_build\Scripts\Activate.ps1 
