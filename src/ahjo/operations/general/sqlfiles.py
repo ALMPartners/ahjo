@@ -78,7 +78,7 @@ def sql_files_found(data_src: Union[str, list]):
 @rearrange_params({"engine": "connectable"})
 def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str, list], message: str, display_output: bool = False, 
         scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False, 
-        sort_files: bool = True):
+        sort_files: bool = False, dirs_to_sort: list = ["views", "tables", "functions"]) -> dict:
     """Run every SQL script file found in given directory/filelist and print the executed file names.
 
     If any file in directory/filelist cannot be deployed after multiple tries, raise an exeption and
@@ -110,8 +110,10 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         Indicator to commit transaction after execution. Default is False.
     sort_files
         Parse SQL files to find dependencies between them and deploy the files in topological order (mssql only).
-        Only views and tables are sorted based on dependencies.
-
+        This feature is currently in testing phase so it's turned off by default.
+    dirs_to_sort
+        List of directories to sort based on dependencies. Valid values: 'views', 'tables', 'functions', 'procedures'.
+        
     Returns
     -------
     output
@@ -124,6 +126,8 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
     RuntimeError
         If any of the files in given directory/filelist fail to deploy.
     """
+    sorting_supported_dirs = {"views", "tables", "functions", "procedures"}
+
     with OperationManager(message):
 
         connectable_type = type(connectable)
@@ -134,19 +138,25 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         n_files = len(files)
         error_msg = None
         if n_files == 0: return False
-        max_loop = 1 if sort_files else n_files
-        
+        dirs_to_sort = [dir_name for dir_name in dirs_to_sort if dir_name in sorting_supported_dirs]
+        data_src_dir = None
+
+        max_loop = n_files
+        if sort_files and path.isdir(data_src):
+            data_src_dir = path.basename(data_src)
+            if data_src_dir in sorting_supported_dirs:
+                max_loop = 1
+            
         # Sort views and tables based on dependencies to avoid errors related to missing objects (mssql only)
-        if sort_files and re.search(r"views|tables", data_src, re.IGNORECASE):
+        if sort_files and data_src_dir in dirs_to_sort:
             try:
-                object_type = "view" if re.search(r"views", data_src, re.IGNORECASE) else "table"
-                files = topological_sort(files, object_types = [object_type])
+                files = topological_sort(files, object_types = [data_src_dir[:-1]])
             except:
                 logger.warning("Failed to sort files based on dependencies.")
                 logger.warning("Files are executed in the order they are found.")
                 max_loop = n_files
 
-        # Set transaction scope to 'files' if not set by user and connectable is not Engine.
+        # Set transaction scope to 'files' if not set by user and connectable is not Engine
         transaction_scope = "files" if (enable_transaction is None and connectable_type is not Engine) else transaction_scope
 
         if transaction_scope != "files":
@@ -334,7 +344,8 @@ def find_dependencies(sql_script: str, object_types: list) -> list:
         "table": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
         "procedure": re.compile(r'\bEXEC\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
         "view": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "partition": re.compile(r'\bAS\s+PARTITION\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?')
+        "partition": re.compile(r'\bAS\s+PARTITION\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
+        "function": re.compile(r'([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\((.*?)\)')
     }
     
     for pattern in object_types:

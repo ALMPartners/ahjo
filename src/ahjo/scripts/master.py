@@ -6,6 +6,7 @@
 import argparse
 import sys
 import importlib
+import traceback
 
 from ahjo.action import execute_action, list_actions, import_actions, action_affects_db, DEFAULT_ACTIONS_SRC
 from ahjo.context import config_is_valid, Context
@@ -109,6 +110,7 @@ def main():
     if len(args.files) > 0 : kwargs['files'] = args.files
     if len(args.object_type) > 0 : kwargs['object_type'] = args.object_type[0]
     if non_interactive : kwargs['skip_confirmation'] = True
+    error_msg = None
 
     try:
         execute_action(
@@ -117,10 +119,14 @@ def main():
         )
         action_succeeded = True
     except Exception:
+        error_msg = traceback.format_exc()
         if enable_db_logging:
             context.connection = None
             context.engine = None
             context.set_connectable("engine")
+
+    if error_msg:
+        logger.error(str(error_msg))
 
     if enable_db_logging:
         for handler in logger.handlers:
