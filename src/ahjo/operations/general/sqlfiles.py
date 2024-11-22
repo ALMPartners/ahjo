@@ -78,7 +78,7 @@ def sql_files_found(data_src: Union[str, list]):
 @rearrange_params({"engine": "connectable"})
 def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str, list], message: str, display_output: bool = False, 
         scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False, 
-        sort_files: bool = False, dirs_to_sort: list = ["views", "tables", "functions"]) -> dict:
+        sort_files: bool = False) -> dict:
     """Run every SQL script file found in given directory/filelist and print the executed file names.
 
     If any file in directory/filelist cannot be deployed after multiple tries, raise an exeption and
@@ -110,9 +110,8 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         Indicator to commit transaction after execution. Default is False.
     sort_files
         Parse SQL files to find dependencies between them and deploy the files in topological order (mssql only).
+        Files under directories 'views', 'tables' and 'functions' are sorted based on dependencies.
         This feature is currently in testing phase so it's turned off by default.
-    dirs_to_sort
-        List of directories to sort based on dependencies. Valid values: 'views', 'tables', 'functions', 'procedures'.
         
     Returns
     -------
@@ -126,7 +125,11 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
     RuntimeError
         If any of the files in given directory/filelist fail to deploy.
     """
-    sorting_supported_dirs = {"views", "tables", "functions", "procedures"}
+    # Directories containing objects that support optimized deployment (i.e max_loop can be set to 1)
+    optimization_supported_dirs = {"views", "tables", "functions", "procedures"}
+
+    # List of directories to sort based on dependencies
+    dirs_to_sort = ["views", "tables", "functions"]
 
     with OperationManager(message):
 
@@ -138,13 +141,13 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         n_files = len(files)
         error_msg = None
         if n_files == 0: return False
-        dirs_to_sort = [dir_name for dir_name in dirs_to_sort if dir_name in sorting_supported_dirs]
+        dirs_to_sort = [dir_name for dir_name in dirs_to_sort if dir_name in optimization_supported_dirs]
         data_src_dir = None
 
         max_loop = n_files
         if sort_files and path.isdir(data_src):
             data_src_dir = path.basename(data_src)
-            if data_src_dir in sorting_supported_dirs:
+            if data_src_dir in optimization_supported_dirs:
                 max_loop = 1
             
         # Sort views and tables based on dependencies to avoid errors related to missing objects (mssql only)
