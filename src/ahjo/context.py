@@ -150,10 +150,28 @@ class Context:
 
 
     def get_cli_arg(self, key: str) -> Union[str, list, None]:
-        """ Get command line argument value by key. 
-            Return None if not found. If there is only one value, return the value. Otherwise return the list.
+        """ Get command line argument value by key.
+
+        Arguments:
+        ----------
+        key : str
+            Key of the command line argument
+        
+        Returns:
+        --------
+        Union[str, list, None]
+            Value of the command line argument.
         """
+        # Reserved keys are not custom command line arguments
+        reserved_keys = {"action", "config_filename", "files", "object_type", "non_interactive", "skip_metadata_update", "skip_git_update", "skip_alembic_update"}
+
+        # Get the value of the key from the command line arguments
         cli_args = self.command_line_args.get(key, None)
+
+        # If the key is reserved, return the value as is
+        if key in reserved_keys:
+            return cli_args
+        
         if isinstance(cli_args, list):
             cli_args_len = len(cli_args)
             if cli_args_len == 1: # If there is only one value, return only the value

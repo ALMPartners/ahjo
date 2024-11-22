@@ -39,7 +39,7 @@ def sql_files_found(data_src: Union[str, list]):
         List of SQL script file paths.
     """
     files = []
-    data_src_len = len(data_src)
+    data_src_len = len(data_src) if isinstance(data_src, list) or isinstance(data_src, str) else 0
 
     if isinstance(data_src, str) and data_src_len > 0:
 
