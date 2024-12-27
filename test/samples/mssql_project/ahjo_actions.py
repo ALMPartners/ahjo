@@ -1,6 +1,6 @@
 from ahjo.action import action, registered_actions
 
-@action("test-action-import", False)
+@action(connection_required=False)
 def test_action_import(context):
     """Example/test function for custom actions."""
     print("test works, action imported")

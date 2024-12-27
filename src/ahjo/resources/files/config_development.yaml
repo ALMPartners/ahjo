@@ -14,7 +14,7 @@ BACKEND:
   sql_driver: ODBC Driver 18 for SQL Server
   sql_dialect: mssql+pyodbc
   target_server_hostname: localhost
-  target_database_name: DB_NAME
+  target_database_name: AHJO
   # ----------------------------
   # -- Optional configuration --
   # ----------------------------
@@ -33,8 +33,8 @@ BACKEND:
   ## Credentials for database connection.
   ## Storing credentials to files is not secure, and not recommended in a production environment!
   ## The files for usernames and passwords should be different, or commented out for no password saving.
-  #username_file: C:\Hash\username_ahjo.txt
-  #password_file: C:\Hash\password_ahjo.txt
+  username_file: C:\Hash\username_ahjo.txt
+  password_file: C:\Hash\password_ahjo.txt
   ## Authentication type to Azure AD.
   ## Possible values: "ActiveDirectoryPassword", "ActiveDirectoryInteractive", 
   ## "ActiveDirectoryIntegrated", "AzureIdentity".

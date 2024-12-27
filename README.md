@@ -381,7 +381,7 @@ Below is an example of config file (in both JSONC and YAML format) and a cheat s
         //Database connection information
         "sql_port": 1433,
         "sql_driver": "ODBC Driver 18 for SQL Server",
-        "target_database_name": "PROJECTX",
+        "target_database_name": "DB_NAME",
         "target_server_hostname": "localhost",
         // Database file location
         "database_data_path": "/var/opt/mssql/data/PROJECTX.mdf",

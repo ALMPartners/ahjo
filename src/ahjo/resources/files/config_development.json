@@ -8,6 +8,12 @@
         "sql_driver": "ODBC Driver 18 for SQL Server",
         "sql_dialect": "mssql+pyodbc",
         "target_server_hostname": "localhost",
-        "target_database_name": "DB NAME"
+        "target_database_name": "AHJO",
+        "sqla_url_query_map": {
+            "TrustServerCertificate": "yes", 
+            "Encrypt": "yes"
+        },
+        "username_file": "C:\\Hash\\username_ahjo.txt",
+        "password_file": "C:\\Hash\\password_ahjo.txt"
     }
 }
