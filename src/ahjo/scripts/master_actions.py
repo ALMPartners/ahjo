@@ -437,7 +437,7 @@ def version(context):
     )
     op.print_alembic_version(
         context.get_connectable(),
-        context.configuration['alembic_version_table']
+        context.configuration.get("alembic_version_table", "alembic_version")
     )
 
 
@@ -447,7 +447,7 @@ def update_file_obj_prop(context):
     op.update_file_object_properties(
         context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
-        )
+    )
 
 
 @action(affects_database=True, dependencies=["deploy"])
@@ -456,7 +456,7 @@ def update_db_obj_prop(context):
     op.update_db_object_properties(
         context.get_connectable(),
         context.configuration.get('metadata_allowed_schemas')
-        )
+    )
 
 
 @action()
