@@ -1,4 +1,4 @@
-""" Ahjo MSI installer builder"""
+"""Ahjo MSI installer builder"""
 
 import sys
 import os
@@ -42,7 +42,7 @@ build_exe_options = {
     "excludes": ["tkinter", "pip", "setuptools"],
     "includes": ["pyodbc"],
     "include_msvcr": True,  # Include the Microsoft Visual C runtime files without needing the redistributable package installed
-    "include_files": include_files
+    "include_files": include_files,
 }
 
 # Installable distribution options
@@ -61,60 +61,60 @@ options = {"build_exe": build_exe_options, "bdist_msi": bdist_msi_options}
 base = "Win32GUI" if sys.platform == "win32" else None
 icon = "icon.ico"
 
-ahjo_exe_prefix = "ahjo" 
+ahjo_exe_prefix = "ahjo"
 
 ahjo_main_exe = Executable(
     "src/ahjo/scripts/master.py",
-    target_name=f"{ahjo_exe_prefix}.exe", 
+    target_name=f"{ahjo_exe_prefix}.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_init_project_exe = Executable(
     "src/ahjo/scripts/init_project.py",
-    target_name=f"{ahjo_exe_prefix}-init-project.exe", 
+    target_name=f"{ahjo_exe_prefix}-init-project.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_multi_project_build_exe = Executable(
     "src/ahjo/scripts/multi_project_build.py",
-    target_name=f"{ahjo_exe_prefix}-multi-project-build.exe", 
+    target_name=f"{ahjo_exe_prefix}-multi-project-build.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_upgrade_exe = Executable(
     "src/ahjo/scripts/upgrade_project.py",
-    target_name=f"{ahjo_exe_prefix}-upgrade.exe", 
+    target_name=f"{ahjo_exe_prefix}-upgrade.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_scan_exe = Executable(
     "src/ahjo/scripts/scan_project.py",
-    target_name=f"{ahjo_exe_prefix}-scan.exe", 
+    target_name=f"{ahjo_exe_prefix}-scan.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_install_git_hook_exe = Executable(
     "src/ahjo/scripts/install_git_hook.py",
-    target_name=f"{ahjo_exe_prefix}-install-git-hook.exe", 
+    target_name=f"{ahjo_exe_prefix}-install-git-hook.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_config_exe = Executable(
     "src/ahjo/scripts/config.py",
-    target_name=f"{ahjo_exe_prefix}-config.exe", 
+    target_name=f"{ahjo_exe_prefix}-config.exe",
     base=None,
     icon=icon,
 )
 
 ahjo_alembic_api_exe = Executable(
     "src/ahjo/scripts/alembic_api.py",
-    target_name="alembic-api.exe", 
+    target_name="alembic-api.exe",
     base=None,
     icon=icon,
 )
@@ -128,13 +128,13 @@ setup(
     description=description,
     options=options,
     executables=[
-        ahjo_main_exe, 
-        ahjo_init_project_exe, 
-        ahjo_multi_project_build_exe, 
-        ahjo_upgrade_exe, 
+        ahjo_main_exe,
+        ahjo_init_project_exe,
+        ahjo_multi_project_build_exe,
+        ahjo_upgrade_exe,
         ahjo_scan_exe,
         ahjo_install_git_hook_exe,
         ahjo_config_exe,
-        ahjo_alembic_api_exe
+        ahjo_alembic_api_exe,
     ],
 )

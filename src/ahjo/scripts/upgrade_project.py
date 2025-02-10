@@ -3,9 +3,9 @@
 # Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-'''
-    Ahjo upgrade-project command entrypoint.
-'''
+"""
+Ahjo upgrade-project command entrypoint.
+"""
 
 import argparse
 import sys
@@ -22,18 +22,36 @@ print(line)
 print(info_msg)
 print(line)
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("config_filename", help="Configuration filename.", type=str, nargs="?")
-    parser.add_argument("-v", "--version", type=str, help="Version to upgrade to.", required=False)
-    parser.add_argument('-ni', '--non-interactive', action='store_true', help='Optional parameter to run ahjo in a non-interactive mode', required=False)
-    parser.add_argument("-p", "--plot", action="store_true", help="Plot the database schema.", required=False, default=False)
+    parser.add_argument(
+        "config_filename", help="Configuration filename.", type=str, nargs="?"
+    )
+    parser.add_argument(
+        "-v", "--version", type=str, help="Version to upgrade to.", required=False
+    )
+    parser.add_argument(
+        "-ni",
+        "--non-interactive",
+        action="store_true",
+        help="Optional parameter to run ahjo in a non-interactive mode",
+        required=False,
+    )
+    parser.add_argument(
+        "-p",
+        "--plot",
+        action="store_true",
+        help="Plot the database schema.",
+        required=False,
+        default=False,
+    )
     args = parser.parse_args()
 
     config_filename = get_config_path(args.config_filename)
     config_dict = load_conf(config_filename)
     non_interactive = args.non_interactive
-    if not config_is_valid(config_dict, non_interactive = non_interactive):
+    if not config_is_valid(config_dict, non_interactive=non_interactive):
         sys.exit(1)
 
     # Create context
@@ -42,19 +60,23 @@ def main():
 
     if context.configuration.get("connect_resiliently", True):
         test_connection(
-            engine = context.get_engine(),
-            retry_attempts = context.configuration.get("connect_retry_count", 20),
-            retry_interval = context.configuration.get("connect_retry_interval", 10)
+            engine=context.get_engine(),
+            retry_attempts=context.configuration.get("connect_retry_count", 20),
+            retry_interval=context.configuration.get("connect_retry_interval", 10),
         )
 
     # Setup logger
     enable_db_logging = context.configuration.get("enable_database_logging", False)
     try:
         logger = setup_ahjo_logger(
-            enable_database_log = enable_db_logging,
-            enable_windows_event_log = context.configuration.get("windows_event_log", False),
-            enable_sqlalchemy_log = context.configuration.get("enable_sqlalchemy_logging", False),
-            context = context
+            enable_database_log=enable_db_logging,
+            enable_windows_event_log=context.configuration.get(
+                "windows_event_log", False
+            ),
+            enable_sqlalchemy_log=context.configuration.get(
+                "enable_sqlalchemy_logging", False
+            ),
+            context=context,
         )
     except Exception as e:
         print(f"Error setting up logger: {str(e)}")
@@ -65,10 +87,10 @@ def main():
         print_db_collation(context)
 
     ahjo_upgrade = AhjoUpgrade(
-        config_filename = config_filename,
-        context = context,
-        version = args.version,
-        skip_confirmation = non_interactive
+        config_filename=config_filename,
+        context=context,
+        version=args.version,
+        skip_confirmation=non_interactive,
     )
     upgrade_succeeded = ahjo_upgrade.upgrade()
 
@@ -86,6 +108,6 @@ def main():
 
     sys.exit(0) if upgrade_succeeded else sys.exit(1)
 
-    
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

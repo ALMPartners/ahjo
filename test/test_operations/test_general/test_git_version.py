@@ -9,7 +9,7 @@ from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.sql import text
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def disable_git_setup_and_teardown():
     """Overwrite PATH variable.
     Works in WIN to 'disable' Git.
@@ -20,26 +20,36 @@ def disable_git_setup_and_teardown():
     environ["PATH"] = path_var
 
 
-def test_update_git_version_should_skip_when_no_git(disable_git_setup_and_teardown, caplog):
-    git.update_git_version(None, 'dbo', 'git_version', 'repository')
-    assert "Failed to retrieve Git commit. See log for detailed error message." in caplog.text
+def test_update_git_version_should_skip_when_no_git(
+    disable_git_setup_and_teardown, caplog
+):
+    git.update_git_version(None, "dbo", "git_version", "repository")
+    assert (
+        "Failed to retrieve Git commit. See log for detailed error message."
+        in caplog.text
+    )
 
 
 @pytest.mark.git
 def test_update_git_version_should_skip_when_no_connection(caplog):
-    git.update_git_version(None, 'dbo', 'git_version', 'repository')
-    assert "Failed to update Git version table. See log for detailed error message." in caplog.text
+    git.update_git_version(None, "dbo", "git_version", "repository")
+    assert (
+        "Failed to update Git version table. See log for detailed error message."
+        in caplog.text
+    )
 
 
 @pytest.mark.mssql
-class TestWithSQLServer():
+class TestWithSQLServer:
 
-    @pytest.fixture(scope='function', autouse=True)
-    def git_version_mssql_setup_and_teardown(self, ahjo_config, mssql_sample, mssql_engine):
+    @pytest.fixture(scope="function", autouse=True)
+    def git_version_mssql_setup_and_teardown(
+        self, ahjo_config, mssql_sample, mssql_engine
+    ):
         config = ahjo_config(mssql_sample)
-        self.git_table = config['git_table']
-        self.git_table_schema = config['git_table_schema']
-        self.sample_repository = config['url_of_remote_git_repository']
+        self.git_table = config["git_table"]
+        self.git_table_schema = config["git_table_schema"]
+        self.sample_repository = config["url_of_remote_git_repository"]
         current_dir = path.dirname(path.realpath(__file__))
         self.git_version_info_path = path.join(current_dir, "test_git_version.json")
         self.engine = mssql_engine
@@ -47,13 +57,18 @@ class TestWithSQLServer():
         with self.engine.connect() as connection:
             connection.execution_options(isolation_level="AUTOCOMMIT")
             with connection.begin():
-                connection.execute(text(f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}"))
+                connection.execute(
+                    text(
+                        f"DROP TABLE IF EXISTS {self.git_table_schema}.{self.git_table}"
+                    )
+                )
 
     def reflected_git_table(self):
         return Table(
-            self.git_table, MetaData(),
+            self.git_table,
+            MetaData(),
             autoload_with=self.engine,
-            schema=self.git_table_schema
+            schema=self.git_table_schema,
         )
 
     def test_git_version_table_should_not_exist(self):
@@ -63,10 +78,10 @@ class TestWithSQLServer():
     def git_version_table_should_exist(self):
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]
-        assert 'Repository' in git_version_table_columns
-        assert 'Branch' in git_version_table_columns
-        assert 'Commit' in git_version_table_columns
-        assert 'Timestamp' in git_version_table_columns     
+        assert "Repository" in git_version_table_columns
+        assert "Branch" in git_version_table_columns
+        assert "Commit" in git_version_table_columns
+        assert "Timestamp" in git_version_table_columns
 
     def get_commit_info_from_git_table(self):
         git_version_table = self.reflected_git_table()
@@ -76,8 +91,9 @@ class TestWithSQLServer():
                     git_version_table.c.Repository,
                     git_version_table.c.Branch,
                     git_version_table.c.Commit,
-                    git_version_table.c.Timestamp
-                ))
+                    git_version_table.c.Timestamp,
+                )
+            )
             return result.fetchall()[0]
 
     def assert_git_version_table_results(self, row, repository, branch, commit):
@@ -93,42 +109,64 @@ class TestWithSQLServer():
 
     @pytest.mark.git
     def test_git_version_table_should_exist_after_update_using_json_version_info(self):
-        git.update_git_version(self.engine, self.git_table_schema, self.git_table, 
-                                repository=None, git_version_info_path=self.git_version_info_path)
+        git.update_git_version(
+            self.engine,
+            self.git_table_schema,
+            self.git_table,
+            repository=None,
+            git_version_info_path=self.git_version_info_path,
+        )
         self.git_version_table_should_exist()
 
     @pytest.mark.git
     def test_git_version_table_should_store_commit_after_update(self):
         git.update_git_version(self.engine, self.git_table_schema, self.git_table)
         self.assert_git_version_table_results(
-            self.get_commit_info_from_git_table(), 
-            check_output(["git", "remote", "get-url", "origin"]).decode('utf-8').strip(), 
-            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip(), 
-            check_output(["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
+            self.get_commit_info_from_git_table(),
+            check_output(["git", "remote", "get-url", "origin"])
+            .decode("utf-8")
+            .strip(),
+            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip(),
+            check_output(["git", "describe", "--always", "--tags"])
+            .decode("utf-8")
+            .strip(),
         )
 
     @pytest.mark.git
-    def test_git_version_table_should_store_commit_after_update_using_json_version_info(self):
-        git.update_git_version(self.engine, self.git_table_schema, 
-                                self.git_table, repository=None, 
-                                git_version_info_path=self.git_version_info_path)
+    def test_git_version_table_should_store_commit_after_update_using_json_version_info(
+        self,
+    ):
+        git.update_git_version(
+            self.engine,
+            self.git_table_schema,
+            self.git_table,
+            repository=None,
+            git_version_info_path=self.git_version_info_path,
+        )
         git_version_info = load_conf(self.git_version_info_path)
         self.assert_git_version_table_results(
             self.get_commit_info_from_git_table(),
             git_version_info["repository"],
             git_version_info["branch"],
-            git_version_info["commit"]
+            git_version_info["commit"],
         )
 
     @pytest.mark.git
     def test_git_version_table_should_store_repository_from_ahjo_config(self):
-        git.update_git_version(self.engine, self.git_table_schema,
-                               self.git_table, self.sample_repository)
+        git.update_git_version(
+            self.engine, self.git_table_schema, self.git_table, self.sample_repository
+        )
         self.assert_git_version_table_results(
             self.get_commit_info_from_git_table(),
             self.sample_repository,
-            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip(),
-            check_output(["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
+            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip(),
+            check_output(["git", "describe", "--always", "--tags"])
+            .decode("utf-8")
+            .strip(),
         )
 
     @pytest.mark.git
@@ -139,56 +177,63 @@ class TestWithSQLServer():
         """
         metadata = MetaData()
         existing_git_version_table = Table(
-            self.git_table, metadata,
-            Column('Repository', String(50), primary_key=True),
-            Column('Branch', String(50), primary_key=True),
-            Column('Commit_hash', String(50)),
-            schema=self.git_table_schema
+            self.git_table,
+            metadata,
+            Column("Repository", String(50), primary_key=True),
+            Column("Branch", String(50), primary_key=True),
+            Column("Commit_hash", String(50)),
+            schema=self.git_table_schema,
         )
         metadata.create_all(self.engine)
         insert = existing_git_version_table.insert().values(
-            Repository="ahjo",
-            Branch="dev",
-            Commit_hash="commit"
-            )
+            Repository="ahjo", Branch="dev", Commit_hash="commit"
+        )
         with self.engine.begin() as connection:
             connection.execute(insert)
         git.update_git_version(self.engine, self.git_table_schema, self.git_table)
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]
-        assert 'Commit' in git_version_table_columns
+        assert "Commit" in git_version_table_columns
 
     @pytest.mark.git
-    def test_git_version_table_should_add_timestamp_column_if_not_previously_existed(self):
+    def test_git_version_table_should_add_timestamp_column_if_not_previously_existed(
+        self,
+    ):
         metadata = MetaData()
         existing_git_version_table = Table(
-            self.git_table, metadata,
-            Column('Repository', String(50), primary_key=True),
-            Column('Branch', String(50), primary_key=True),
-            Column('Commit', String(50)),
-            schema=self.git_table_schema
+            self.git_table,
+            metadata,
+            Column("Repository", String(50), primary_key=True),
+            Column("Branch", String(50), primary_key=True),
+            Column("Commit", String(50)),
+            schema=self.git_table_schema,
         )
         metadata.create_all(self.engine)
         insert = existing_git_version_table.insert().values(
-            Repository="ahjo",
-            Branch="dev",
-            Commit="commit"
+            Repository="ahjo", Branch="dev", Commit="commit"
         )
         with self.engine.begin() as connection:
             connection.execute(insert)
         git.update_git_version(self.engine, self.git_table_schema, self.git_table)
         git_version_table = self.reflected_git_table()
         git_version_table_columns = [col.name for col in git_version_table.c]
-        assert 'Timestamp' in git_version_table_columns
+        assert "Timestamp" in git_version_table_columns
 
     @pytest.mark.git
     def test_correct_git_version_should_be_printed(self, caplog):
-        git.update_git_version(self.engine, self.git_table_schema,
-                               self.git_table, self.sample_repository)
-        git_branch = check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip()
-        git_commit = check_output(
-            ["git", "describe", "--always", "--tags"]).decode('utf-8').strip()
+        git.update_git_version(
+            self.engine, self.git_table_schema, self.git_table, self.sample_repository
+        )
+        git_branch = (
+            check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip()
+        )
+        git_commit = (
+            check_output(["git", "describe", "--always", "--tags"])
+            .decode("utf-8")
+            .strip()
+        )
         caplog.set_level(logging.INFO)
         git.print_git_version(self.engine, self.git_table_schema, self.git_table)
         log_output = caplog.text

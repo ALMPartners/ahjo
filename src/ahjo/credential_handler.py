@@ -10,7 +10,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Tuple, Union
 
-logger = getLogger('ahjo')
+logger = getLogger("ahjo")
 
 
 def obfuscate_credentials(credentials: Tuple[str, str]) -> Tuple[str, str]:
@@ -23,8 +23,7 @@ def obfuscate_credentials(credentials: Tuple[str, str]) -> Tuple[str, str]:
 
 
 def deobfuscate_credentials(credentials: Tuple[str, str]) -> Tuple[str, str]:
-    """Reverse of obfuscate_credentials.
-    """
+    """Reverse of obfuscate_credentials."""
     username, obfuscated_password = credentials
     password = b64decode(obfuscated_password.encode()).decode()
     return username, password
@@ -40,7 +39,7 @@ def lookup_from_file(key: str, filename: str) -> Union[str, None]:
     with open(filename, "r") as f:
         for line in f:
             try:
-                linekey, val = line.split('=', 1)
+                linekey, val = line.split("=", 1)
                 if linekey == key:
                     return val
             except:
@@ -55,10 +54,16 @@ def store_to_file(key: str, val: str, filename: str):
     if not Path(filename).parent.exists():
         Path(filename).parent.mkdir(parents=True, exist_ok=True)
     with open(filename, "a+") as f:
-        f.writelines(str(key)+'='+str(val))
+        f.writelines(str(key) + "=" + str(val))
 
 
-def get_credentials(usrn_file_path: str = None, pw_file_path: str = None, cred_key: str = 'cred', usrn_prompt: str = "Username: ", pw_prompt: str = "Password: ") -> Tuple[str, str]:
+def get_credentials(
+    usrn_file_path: str = None,
+    pw_file_path: str = None,
+    cred_key: str = "cred",
+    usrn_prompt: str = "Username: ",
+    pw_prompt: str = "Password: ",
+) -> Tuple[str, str]:
     """Retrieves credentials or asks for them.
     The credentials are stored in a global variable.
 
@@ -84,7 +89,7 @@ def get_credentials(usrn_file_path: str = None, pw_file_path: str = None, cred_k
     """
     global cred_dict
 
-    if 'cred_dict' not in globals():
+    if "cred_dict" not in globals():
         cred_dict = {}
 
     if cred_key not in cred_dict:
@@ -96,17 +101,16 @@ def get_credentials(usrn_file_path: str = None, pw_file_path: str = None, cred_k
             else:
                 logger.info("Credentials are not yet defined.")
                 logger.info(
-                    f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}")
+                    f"The credentials will be stored in files {usrn_file_path} and {pw_file_path}"
+                )
                 username = input(usrn_prompt)
-                new_password = getpass.getpass(pw_prompt) if pw_prompt else ''
-                username, password = obfuscate_credentials(
-                    (username, new_password))
+                new_password = getpass.getpass(pw_prompt) if pw_prompt else ""
+                username, password = obfuscate_credentials((username, new_password))
                 store_to_file(cred_key, username, usrn_file_path)
                 store_to_file(cred_key, password, pw_file_path)
         else:
             username = input(usrn_prompt)
-            new_password = getpass.getpass(pw_prompt) if pw_prompt else ''
-            username, password = obfuscate_credentials(
-                (username, new_password))
+            new_password = getpass.getpass(pw_prompt) if pw_prompt else ""
+            username, password = obfuscate_credentials((username, new_password))
         cred_dict[cred_key] = (username, password)
     return deobfuscate_credentials(cred_dict[cred_key])

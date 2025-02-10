@@ -4,20 +4,22 @@ from os import chdir, getcwd
 
 
 @pytest.mark.mssql
-class TestDBConnectionWithSQLServer():
+class TestDBConnectionWithSQLServer:
 
-    @pytest.fixture(scope='function', autouse=True)
-    def test_connection_mssql_setup_and_teardown(self, mssql_sample, mssql_engine, ahjo_context):
+    @pytest.fixture(scope="function", autouse=True)
+    def test_connection_mssql_setup_and_teardown(
+        self, mssql_sample, mssql_engine, ahjo_context
+    ):
 
         old_cwd = getcwd()
         chdir(mssql_sample)
         self.engine = mssql_engine
         self.context = ahjo_context(mssql_sample)
-      
+
         yield
 
         chdir(old_cwd)
-    
+
     def test_connection_should_succeed(self):
         assert sqla_utils.test_connection(self.engine)
 
@@ -28,7 +30,7 @@ class TestDBConnectionWithSQLServer():
     def test_try_sqla_connection_should_succeed(self):
         result = sqla_utils.try_sqla_connection(self.engine)
         assert result[0] == 0 and result[1] == None
-    
+
     def test_connection_should_fail(self):
         assert sqla_utils.test_connection(None) == False
 

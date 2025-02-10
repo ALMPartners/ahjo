@@ -1,19 +1,20 @@
 import logging
 import re
 
+
 class DatabaseFormatter(logging.Formatter):
-    """ Formatter for database logging. """
+    """Formatter for database logging."""
 
     def __init__(self):
-        """ Constructor for DatabaseFormatter class. """
+        """Constructor for DatabaseFormatter class."""
         super().__init__()
 
     def format(self, record):
-        """ Format the log record. 
+        """Format the log record.
 
         Arguments:
         -----------
-        record (LogRecord): 
+        record (LogRecord):
             The log record to be formatted.
 
         Returns:
@@ -29,9 +30,9 @@ class DatabaseFormatter(logging.Formatter):
             # remove timestamp from the start of message
             if len(message) > 20 and message.startswith("[") and message[20] == "]":
                 return re.sub(r"^([\[]).*?([\]])", "", str(message)).lstrip()
-            
+
         if hasattr(record, "record_class") and record.record_class == "deployment":
-            #return f"File {message} deploy completed"
+            # return f"File {message} deploy completed"
             return f"Deployment of {message} completed"
 
         return message

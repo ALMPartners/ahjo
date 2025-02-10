@@ -4,11 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-    Module for SQL Server script file deploy.
+Module for SQL Server script file deploy.
 """
 
 import ahjo.operations as op
-from ahjo.operations.tsql.set_statements import xact_abort_and_nocount_decorator as xact_abort_and_nocount
+from ahjo.operations.tsql.set_statements import (
+    xact_abort_and_nocount_decorator as xact_abort_and_nocount,
+)
+
 
 @xact_abort_and_nocount
 def deploy_mssql_sqlfiles(engine, data_src, message):

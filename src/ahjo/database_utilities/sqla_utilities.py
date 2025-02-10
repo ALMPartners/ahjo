@@ -3,8 +3,7 @@
 # Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-"""Utility functions for sqlalchemy
-"""
+"""Utility functions for sqlalchemy"""
 import time
 from ahjo.interface_methods import rearrange_params
 from logging import getLogger
@@ -12,8 +11,17 @@ from os import path
 from re import DOTALL, sub
 from typing import Iterable, List, Union
 from traceback import format_exc
-from pyparsing import (Combine, LineStart, Literal, QuotedString, Regex,
-                       restOfLine, CaselessKeyword, Word, nums)
+from pyparsing import (
+    Combine,
+    LineStart,
+    Literal,
+    QuotedString,
+    Regex,
+    restOfLine,
+    CaselessKeyword,
+    Word,
+    nums,
+)
 from sqlalchemy import create_engine, inspect, event
 from sqlalchemy.engine import Engine, Connection, make_url, engine_from_config
 from sqlalchemy.engine.url import URL
@@ -22,12 +30,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.schema import DDLElement
 from sqlalchemy.sql import table, text
 
-logger = getLogger('ahjo')
-MASTER_DB = {'mssql+pyodbc': 'master', 'postgresql': 'postgres'}
+logger = getLogger("ahjo")
+MASTER_DB = {"mssql+pyodbc": "master", "postgresql": "postgres"}
 
 # Disable pyodbc pooling (https://docs.sqlalchemy.org/en/20/dialects/mssql.html#pyodbc-pooling-connection-close-behavior)
 try:
     import pyodbc
+
     pyodbc.pooling = False
 except:
     pyodbc = None
@@ -49,14 +58,16 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     sqlalchemy.engine.url.URL
         Connection url for sqlalchemy/alembic.
     """
-    azure_auth = conn_info.get('azure_auth')
-    driver = conn_info.get('driver')
-    username = conn_info.get('username')
-    password = conn_info.get('password')
-    dialect = conn_info.get('dialect')
-    host = conn_info.get('host')
-    port = conn_info.get('port')
-    database = MASTER_DB.get(dialect) if use_master_db is True else conn_info.get('database')
+    azure_auth = conn_info.get("azure_auth")
+    driver = conn_info.get("driver")
+    username = conn_info.get("username")
+    password = conn_info.get("password")
+    dialect = conn_info.get("dialect")
+    host = conn_info.get("host")
+    port = conn_info.get("port")
+    database = (
+        MASTER_DB.get(dialect) if use_master_db is True else conn_info.get("database")
+    )
     sqlalchemy_url = conn_info.get("sqlalchemy_url")
     sqla_url_query_map = conn_info.get("sqla_url_query_map")
     query = {}
@@ -64,40 +75,38 @@ def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
     if sqlalchemy_url is not None:
         sqlalchemy_url_obj = make_url(sqlalchemy_url)
         if use_master_db is True:
-            sqlalchemy_url_obj = sqlalchemy_url_obj.set(database = database)
+            sqlalchemy_url_obj = sqlalchemy_url_obj.set(database=database)
         return sqlalchemy_url_obj
 
     if isinstance(driver, str):
         query["driver"] = driver
 
     if azure_auth is not None:
-         # Azure Identity authentication
+        # Azure Identity authentication
         if azure_auth.lower() == "azureidentity":
             return URL.create(
-                drivername = dialect,
-                host = host,
-                port = port,
-                database = database,
-                query = query
+                drivername=dialect, host=host, port=port, database=database, query=query
             )
         query["authentication"] = azure_auth
 
     # Bring connection attributes from sqla_url_query_map
-    if bool(sqla_url_query_map): 
+    if bool(sqla_url_query_map):
         query.update(sqla_url_query_map)
 
     return URL.create(
-        drivername = dialect,
-        username = username,
-        password = password,
-        host = host,
-        port = port,
-        database = database,
-        query = query
+        drivername=dialect,
+        username=username,
+        password=password,
+        host=host,
+        port=port,
+        database=database,
+        query=query,
     )
 
 
-def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs) -> Engine:
+def create_sqlalchemy_engine(
+    sqlalchemy_url: URL, token: bytes = None, **kwargs
+) -> Engine:
     """Create a new SQL Alchemy engine.
 
     Arguments
@@ -117,20 +126,29 @@ def create_sqlalchemy_engine(sqlalchemy_url: URL, token: bytes = None, **kwargs)
     engine = create_engine(sqlalchemy_url, **kwargs)
 
     if token is not None:
+
         @event.listens_for(engine, "do_connect")
         def provide_token(dialect, conn_rec, cargs, cparams):
-            SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
-            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "") # remove the "Trusted_Connection" parameter that SQLAlchemy adds
-            cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token} # apply it to keyword arguments
+            SQL_COPT_SS_ACCESS_TOKEN = (
+                1256  # Connection option for access tokens, as defined in msodbcsql.h
+            )
+            cargs[0] = cargs[0].replace(
+                ";Trusted_Connection=Yes", ""
+            )  # remove the "Trusted_Connection" parameter that SQLAlchemy adds
+            cparams["attrs_before"] = {
+                SQL_COPT_SS_ACCESS_TOKEN: token
+            }  # apply it to keyword arguments
 
     db_logger_handler = get_db_logger_handler()
     if db_logger_handler is not None:
         return add_db_logger_listeners_to_engine(engine, db_logger_handler)
-        
+
     return engine
 
 
-def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object) -> Engine:
+def add_db_logger_listeners_to_engine(
+    engine: Engine, db_logger_handler: object
+) -> Engine:
     """Add database logger listeners to engine.
 
     Arguments
@@ -151,7 +169,7 @@ def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object)
     def receive_connect(dbapi_connection, connection_record):
         db_logger_handler.set_lock(True)
 
-    @event.listens_for(engine, 'engine_disposed')
+    @event.listens_for(engine, "engine_disposed")
     def receive_engine_disposed(engine):
         db_logger_handler.set_lock(False)
 
@@ -159,8 +177,8 @@ def add_db_logger_listeners_to_engine(engine: Engine, db_logger_handler: object)
 
 
 def get_db_logger_handler() -> object:
-    """ Return database logger handler (if exists).
-    
+    """Return database logger handler (if exists).
+
     Returns
     -------
     ahjo.logging.db_handler.DatabaseHandler
@@ -171,9 +189,11 @@ def get_db_logger_handler() -> object:
             return handler
 
 
-def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: int = 10) -> bool:
-    """ Test database connection with retry attempts.
-    
+def test_connection(
+    engine: Engine, retry_attempts: int = 20, retry_interval: int = 10
+) -> bool:
+    """Test database connection with retry attempts.
+
     Arguments
     ---------
     engine
@@ -189,7 +209,7 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
         True if connection is successful, False otherwise.
     """
     connection_status = None
-    
+
     try:
         dialect_name = get_dialect_name(engine)
     except:
@@ -220,8 +240,8 @@ def test_connection(engine: Engine, retry_attempts: int = 20, retry_interval: in
 
 
 def try_sqla_connection(engine: Engine) -> int:
-    """ Test SQL Alchemy connection.
-    
+    """Test SQL Alchemy connection.
+
     Arguments
     ---------
     engine
@@ -246,9 +266,9 @@ def try_sqla_connection(engine: Engine) -> int:
 
 
 def try_pyodbc_connection(engine: Engine) -> int:
-    """ Test pyodbc connection. 
+    """Test pyodbc connection.
     This can be useful for Azure SQL databases that are not always immediately available.
-    
+
     Arguments
     ---------
     engine
@@ -269,7 +289,9 @@ def try_pyodbc_connection(engine: Engine) -> int:
     except Exception as e:
         error_str = str(e)
         if error_str.startswith("(pyodbc.OperationalError) ('08001'"):
-            error_msg = "Client unable to establish connection (ODBC error code: 08001)."
+            error_msg = (
+                "Client unable to establish connection (ODBC error code: 08001)."
+            )
             connection_status = -1
         elif error_str.startswith("(pyodbc.Error) ('HY000'"):
             error_msg = "Database is not currently available (ODBC error code: HY000)."
@@ -282,8 +304,13 @@ def try_pyodbc_connection(engine: Engine) -> int:
 
 
 @rearrange_params({"engine": "connectable"})
-def execute_query(connectable: Union[Engine, Connection, Session], query: str, variables: Union[dict, list, tuple] = None, 
-        isolation_level: str = 'AUTOCOMMIT', include_headers: bool = False) -> List[Iterable]:
+def execute_query(
+    connectable: Union[Engine, Connection, Session],
+    query: str,
+    variables: Union[dict, list, tuple] = None,
+    isolation_level: str = "AUTOCOMMIT",
+    include_headers: bool = False,
+) -> List[Iterable]:
     """Execute query with chosen isolation level.
 
     Arguments
@@ -305,30 +332,36 @@ def execute_query(connectable: Union[Engine, Connection, Session], query: str, v
     list
         Query output as list. If query returns no output, empty list is returned.
     """
-    if type(connectable) == Engine: 
+    if type(connectable) == Engine:
         connection_obj = connectable.connect()
         connection_obj.execution_options(isolation_level=isolation_level)
     else:
         connection_obj = connectable
-    
+
     if variables is not None and isinstance(variables, (dict, list, tuple)):
         if isinstance(variables, (list, tuple)):
             query, variables = _create_sql_construct(query, variables)
         result_set = connection_obj.execute(text(query), variables)
     else:
-        result_set = connection_obj.execute(text(query)) if isinstance(query, str) else connection_obj.execute(query)
+        result_set = (
+            connection_obj.execute(text(query))
+            if isinstance(query, str)
+            else connection_obj.execute(query)
+        )
     query_output = []
     if result_set.returns_rows:
         if include_headers is True:
             query_output.append(list(result_set.keys()))
         query_output.extend([row for row in result_set])
-    if type(connectable) == Engine: 
+    if type(connectable) == Engine:
         connection_obj.commit()
         connection_obj.close()
     return query_output
 
 
-def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw: bool = False):
+def execute_try_catch(
+    engine: Engine, query: str, variables: dict = None, throw: bool = False
+):
     """Execute query with try catch.
     If throw is set to True, raise error in case query execution fails.
 
@@ -347,11 +380,15 @@ def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw:
         trans = connection.begin()
         try:
             if variables is not None and isinstance(variables, (dict, list, tuple)):
-                if isinstance(variables, (list, tuple)): 
+                if isinstance(variables, (list, tuple)):
                     query, variables = _create_sql_construct(query, variables)
                 connection.execute(text(query), variables)
             else:
-                connection.execute(text(query)) if isinstance(query, str) else connection.execute(query)
+                (
+                    connection.execute(text(query))
+                    if isinstance(query, str)
+                    else connection.execute(query)
+                )
             trans.commit()
         except:
             trans.rollback()
@@ -360,11 +397,16 @@ def execute_try_catch(engine: Engine, query: str, variables: dict = None, throw:
 
 
 @rearrange_params({"engine": "connectable"})
-def execute_files_in_transaction(connectable: Union[Engine, Connection, Session], files: list, scripting_variables: dict = None, 
-        include_headers: bool = False, commit_transaction: bool = True) -> dict:
-    """Execute SQL scripts from list of files in transaction. 
+def execute_files_in_transaction(
+    connectable: Union[Engine, Connection, Session],
+    files: list,
+    scripting_variables: dict = None,
+    include_headers: bool = False,
+    commit_transaction: bool = True,
+) -> dict:
+    """Execute SQL scripts from list of files in transaction.
     Rollback if any of the batches fail.
-    
+
     Arguments
     ---------
     connectable
@@ -387,7 +429,9 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     script_output = {}
     dialect_name = get_dialect_name(connectable)
     connectable_type = type(connectable)
-    connection_obj = connectable.connect() if connectable_type == Engine else connectable
+    connection_obj = (
+        connectable.connect() if connectable_type == Engine else connectable
+    )
     succeeded_files = []
     errors = {}
     n_files = len(files)
@@ -396,14 +440,22 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     try:
         for _ in range(n_files):
             for file in loop_files:
-                if file not in looped_files: 
-                    logger.info(path.basename(file), extra={"record_class": "deployment"})
+                if file not in looped_files:
+                    logger.info(
+                        path.basename(file), extra={"record_class": "deployment"}
+                    )
                 looped_files.add(file)
                 batches = _file_to_batches(dialect_name, file, scripting_variables)
                 try:
-                    results = _execute_batches(connection_obj, batches, include_headers=include_headers, commit_transaction=False, rollback_on_error=False)
+                    results = _execute_batches(
+                        connection_obj,
+                        batches,
+                        include_headers=include_headers,
+                        commit_transaction=False,
+                        rollback_on_error=False,
+                    )
                 except:
-                    errors[file] = '\n------\n' + format_exc()
+                    errors[file] = "\n------\n" + format_exc()
                     continue
                 else:
                     succeeded_files.append(file)
@@ -416,10 +468,10 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
                 break
         if n_files != len(succeeded_files):
             error_msg = "Failed to deploy files."
-            error_msg = error_msg + '\nSee log for error details.'
+            error_msg = error_msg + "\nSee log for error details."
             for fail_object, fail_messages in errors.items():
-                logger.debug(f'----- Error for object {fail_object} -----')
-                logger.debug(''.join(fail_messages))
+                logger.debug(f"----- Error for object {fail_object} -----")
+                logger.debug("".join(fail_messages))
             raise Exception(error_msg)
     except:
         connection_obj.rollback()
@@ -431,10 +483,12 @@ def execute_files_in_transaction(connectable: Union[Engine, Connection, Session]
     return script_output
 
 
-def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> List[Iterable]:
-    """Drop SQL scripts from list of files in transaction. 
+def drop_files_in_transaction(
+    connection: Connection, drop_queries: dict
+) -> List[Iterable]:
+    """Drop SQL scripts from list of files in transaction.
     Rollback if any of the batches fail.
-    
+
     Arguments
     ---------
     connection
@@ -447,7 +501,7 @@ def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> Lis
     try:
         for file in files:
             logger.info(path.basename(file))
-            results = execute_query(connection, query = drop_queries[file])
+            results = execute_query(connection, query=drop_queries[file])
             script_output.append(results)
     except:
         connection.rollback()
@@ -457,8 +511,14 @@ def drop_files_in_transaction(connection: Connection, drop_queries: dict) -> Lis
 
 
 @rearrange_params({"engine": "connectable"})
-def execute_from_file(connectable: Union[Engine, Connection, Session], file_path: str, scripting_variables: dict = None, include_headers: bool = False, 
-        file_transaction: bool = False, commit_transaction: bool = False) -> List[Iterable]:
+def execute_from_file(
+    connectable: Union[Engine, Connection, Session],
+    file_path: str,
+    scripting_variables: dict = None,
+    include_headers: bool = False,
+    file_transaction: bool = False,
+    commit_transaction: bool = False,
+) -> List[Iterable]:
     """Open file containing raw SQL and execute in batches.
     File is must be UTF-8 or UTF-8 with BOM.
 
@@ -489,12 +549,12 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
     list
         Query output as list. If query returns no output, empty list is returned.
     """
-    
+
     connectable_type = type(connectable)
     if connectable_type == Engine:
         connection_obj = connectable.connect()
         if not file_transaction:
-            connection_obj.execution_options(isolation_level='AUTOCOMMIT')
+            connection_obj.execution_options(isolation_level="AUTOCOMMIT")
     else:
         connection_obj = connectable
 
@@ -504,7 +564,12 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
 
     if file_transaction:
         try:
-            script_output = _execute_batches(connection_obj, batches, include_headers=include_headers, commit_transaction=False)
+            script_output = _execute_batches(
+                connection_obj,
+                batches,
+                include_headers=include_headers,
+                commit_transaction=False,
+            )
         except:
             connection_obj.rollback()
             connection_obj.close()
@@ -512,7 +577,12 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
         if commit_transaction or connectable_type == Engine:
             connection_obj.commit()
     else:
-        script_output = _execute_batches(connection_obj, batches, include_headers=include_headers, commit_transaction=commit_transaction)
+        script_output = _execute_batches(
+            connection_obj,
+            batches,
+            include_headers=include_headers,
+            commit_transaction=commit_transaction,
+        )
 
     if connectable_type == Engine:
         connection_obj.close()
@@ -523,11 +593,13 @@ def execute_from_file(connectable: Union[Engine, Connection, Session], file_path
 def _file_to_batches(dialect_name, file_path, scripting_variables):
     """Open file containing raw SQL and split into batches."""
     try:
-        with open(file_path, 'r', encoding='utf-8-sig', errors='strict') as f:
+        with open(file_path, "r", encoding="utf-8-sig", errors="strict") as f:
             sql = f.read()
     except ValueError as err:
-        raise ValueError(f'File {file_path} is not UTF-8 or UTF-8 BOM encoded!') from err
-    
+        raise ValueError(
+            f"File {file_path} is not UTF-8 or UTF-8 BOM encoded!"
+        ) from err
+
     dialect = get_dialect_patterns(dialect_name)
     if scripting_variables:
         sql = _insert_script_variables(dialect, sql, scripting_variables)
@@ -536,8 +608,13 @@ def _file_to_batches(dialect_name, file_path, scripting_variables):
 
 
 @rearrange_params({"engine": "connectable"})
-def _execute_batches(connectable: Union[Connection, Session], batches: list, include_headers: bool = False, 
-        commit_transaction: bool = True, rollback_on_error: bool = True):
+def _execute_batches(
+    connectable: Union[Connection, Session],
+    batches: list,
+    include_headers: bool = False,
+    commit_transaction: bool = True,
+    rollback_on_error: bool = True,
+):
     """Execute batches of SQL statements."""
     connectable_type = type(connectable)
     script_output = []
@@ -545,26 +622,35 @@ def _execute_batches(connectable: Union[Connection, Session], batches: list, inc
 
         if not batch:
             continue
-        batch = sub(':', r'\:', batch)
+        batch = sub(":", r"\:", batch)
 
         if connectable_type == Session or connectable_type == Connection:
             try:
-                script_output = _execute_batch(connectable, batch, script_output, include_headers = include_headers)
+                script_output = _execute_batch(
+                    connectable, batch, script_output, include_headers=include_headers
+                )
             except:
-                if rollback_on_error: 
+                if rollback_on_error:
                     connectable.rollback()
                     connectable.close()
                 raise
             if commit_transaction:
                 connectable.commit()
         else:
-            script_output = _execute_batch(connectable, batch, script_output, include_headers = include_headers)
+            script_output = _execute_batch(
+                connectable, batch, script_output, include_headers=include_headers
+            )
 
     return script_output
 
 
 @rearrange_params({"engine": "connectable"})
-def _execute_batch(connectable: Union[Connection, Session], batch: str, script_output: list, include_headers: bool = False):
+def _execute_batch(
+    connectable: Union[Connection, Session],
+    batch: str,
+    script_output: list,
+    include_headers: bool = False,
+):
     """Execute batch of SQL statements."""
     result_set = connectable.execute(text(batch))
     if result_set.returns_rows:
@@ -574,17 +660,19 @@ def _execute_batch(connectable: Union[Connection, Session], batch: str, script_o
     return script_output
 
 
-def _insert_script_variables(dialect_patterns: dict, sql: str, scripting_variables: dict):
+def _insert_script_variables(
+    dialect_patterns: dict, sql: str, scripting_variables: dict
+):
     """Insert scripting variables into SQL,
     use pattern according to dialect."""
     for variable_name, variable_value in scripting_variables.items():
-        pattern = dialect_patterns.get('script_variable_pattern', '{}')
+        pattern = dialect_patterns.get("script_variable_pattern", "{}")
         sql = sql.replace(pattern.format(variable_name), variable_value)
     return sql
 
 
 def _create_sql_construct(query: str, variables: Union[list, tuple]):
-    """Create a SQL statement construct. 
+    """Create a SQL statement construct.
     Bind variables into SQL string from list/tuple."""
     variables_dict = {}
     for var in variables:
@@ -601,10 +689,10 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
     If no batch separator given or no batch separator instance
     found in SQL, do not split SQL.
     """
-    batch_separator = dialect_patterns.get('batch_separator')
-    one_line_comment = dialect_patterns.get('one_line_comment')
-    multiline_comment = dialect_patterns.get('multiline_comment')
-    quoted_strings = dialect_patterns.get('quoted_strings')
+    batch_separator = dialect_patterns.get("batch_separator")
+    one_line_comment = dialect_patterns.get("one_line_comment")
+    multiline_comment = dialect_patterns.get("multiline_comment")
+    quoted_strings = dialect_patterns.get("quoted_strings")
     # if no batch separator given, return
     if not batch_separator:
         return [sql]
@@ -619,7 +707,7 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
 
     # Override default behavior of converting tabs to spaces before parsing the input string
     sql_batch.parseWithTabs()
-    
+
     scan_matches = list(sql_batch.scanString(sql))
     # if no batch separator instance found in SQL, return
     if not scan_matches:
@@ -632,11 +720,11 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
             count = 1
         for _ in range(0, count):
             if i == 0:
-                batches.append(sql[:scan_matches[i][1]])
+                batches.append(sql[: scan_matches[i][1]])
             else:
-                batches.append(sql[scan_matches[i-1][2]:scan_matches[i][1]])
-    batches.append(sql[scan_matches[-1][2]:])
-    
+                batches.append(sql[scan_matches[i - 1][2] : scan_matches[i][1]])
+    batches.append(sql[scan_matches[-1][2] :])
+
     return batches
 
 
@@ -648,7 +736,7 @@ def get_dialect_name(connectable: Union[Engine, Connection, Session]) -> str:
         dialect_name = connectable.bind.dialect.name
     elif connectable_type == Connection:
         dialect_name = connectable.dialect.name
-    else: # Engine
+    else:  # Engine
         dialect_name = connectable.name
     return dialect_name
 
@@ -662,13 +750,13 @@ def get_schema_names(connectable: Union[Engine, Connection]) -> List[str]:
 
 
 def database_exists(engine: Engine):
-    """ Test database connection. 
-    
+    """Test database connection.
+
     Arguments
     ---------
     engine
         SQL Alchemy Engine.
-        
+
     Returns
     -------
     bool
@@ -688,48 +776,49 @@ def get_dialect_patterns(dialect_name: str) -> dict:
     """
     # Notice, that if DIALECT_PATTERS is a global variable, pyparsing slows down remarkably.
     DIALECT_PATTERNS = {
-        'mssql': {
-            'quoted_strings': [    # depends on how QUOTED_IDENTIFIER is set
+        "mssql": {
+            "quoted_strings": [  # depends on how QUOTED_IDENTIFIER is set
                 QuotedString("'", escQuote="''", multiline=True),
-                QuotedString('"', escQuote='""', multiline=True)
+                QuotedString('"', escQuote='""', multiline=True),
             ],
-            'one_line_comment': Combine('--' + restOfLine),
-            'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
+            "one_line_comment": Combine("--" + restOfLine),
+            "multiline_comment": Regex(r"/\*.+?\*/", flags=DOTALL),
             # GO must be on its own line
-            'batch_separator': LineStart().leaveWhitespace() + ( ( CaselessKeyword('GO') + Word(nums) ) | CaselessKeyword('GO') ),
-            'script_variable_pattern': '$({})'
+            "batch_separator": LineStart().leaveWhitespace()
+            + ((CaselessKeyword("GO") + Word(nums)) | CaselessKeyword("GO")),
+            "script_variable_pattern": "$({})",
         },
-        'postgresql': {    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
-            'quoted_strings': [
+        "postgresql": {  # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
+            "quoted_strings": [
                 QuotedString("'", escQuote="''", multiline=True),
-                QuotedString('$$', multiline=True)    # TODO: dollar quote with tag
+                QuotedString("$$", multiline=True),  # TODO: dollar quote with tag
             ],
-            'one_line_comment': Combine('--' + restOfLine),
-            'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
-            'batch_separator': Literal(';'),
-            'script_variable_pattern': ':{}'
+            "one_line_comment": Combine("--" + restOfLine),
+            "multiline_comment": Regex(r"/\*.+?\*/", flags=DOTALL),
+            "batch_separator": Literal(";"),
+            "script_variable_pattern": ":{}",
         },
-        'sqlite': {    # https://sqlite.org/lang.html
-            'quoted_strings': [QuotedString("'", escQuote="''", multiline=True)],
-            'one_line_comment': Combine('--' + restOfLine),
-            'multiline_comment': Regex(r'/\*.+?\*/', flags=DOTALL),
-            'batch_separator': Literal(';')
-        }
+        "sqlite": {  # https://sqlite.org/lang.html
+            "quoted_strings": [QuotedString("'", escQuote="''", multiline=True)],
+            "one_line_comment": Combine("--" + restOfLine),
+            "multiline_comment": Regex(r"/\*.+?\*/", flags=DOTALL),
+            "batch_separator": Literal(";"),
+        },
     }
     return DIALECT_PATTERNS.get(dialect_name, {})
 
 
-# SQLAlchemy view creation 
+# SQLAlchemy view creation
 # source: https://github.com/sqlalchemy/sqlalchemy/wiki/Views
 class CreateView(DDLElement):
-    def __init__(self, name, selectable, schema = None):
+    def __init__(self, name, selectable, schema=None):
         self.name = name
         self.selectable = selectable
         self.schema = schema
 
 
 class DropView(DDLElement):
-    def __init__(self, name, schema = None):
+    def __init__(self, name, schema=None):
         self.name = name
         self.schema = schema
 
@@ -737,14 +826,16 @@ class DropView(DDLElement):
 @compiler.compiles(CreateView)
 def _create_view(element, compiler, **kw):
     return "CREATE VIEW %s AS %s" % (
-        (element.schema + '.' if element.schema else '') + element.name,
+        (element.schema + "." if element.schema else "") + element.name,
         compiler.sql_compiler.process(element.selectable, literal_binds=True),
     )
 
 
 @compiler.compiles(DropView)
 def _drop_view(element, compiler, **kw):
-    return "DROP VIEW %s" % ((element.schema + '.' if element.schema else '') + element.name)
+    return "DROP VIEW %s" % (
+        (element.schema + "." if element.schema else "") + element.name
+    )
 
 
 def view_exists(ddl, target, connection, **kw):
@@ -755,8 +846,8 @@ def view_doesnt_exist(ddl, target, connection, **kw):
     return not view_exists(ddl, target, connection, **kw)
 
 
-def view(name, metadata, selectable, schema = None):
-    t = table(name, schema = schema)
+def view(name, metadata, selectable, schema=None):
+    t = table(name, schema=schema)
     t._columns._populate_separate_keys(
         col._make_proxy(t) for col in selectable.selected_columns
     )
@@ -764,9 +855,13 @@ def view(name, metadata, selectable, schema = None):
     event.listen(
         metadata,
         "after_create",
-        CreateView(name, selectable, schema = schema).execute_if(callable_=view_doesnt_exist),
+        CreateView(name, selectable, schema=schema).execute_if(
+            callable_=view_doesnt_exist
+        ),
     )
     event.listen(
-        metadata, "before_drop", DropView(name, schema = schema).execute_if(callable_=view_exists)
+        metadata,
+        "before_drop",
+        DropView(name, schema=schema).execute_if(callable_=view_exists),
     )
     return t

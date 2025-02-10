@@ -25,29 +25,35 @@ PROJECT_STRUCTURE = {
         "versions": {"alembic_dummy": "resources/files/alembic_dummy"},
         "env.py": "resources/files/env.py",
         "README": "empty file",
-        "script.py.mako": "resources/files/script.py.mako"
+        "script.py.mako": "resources/files/script.py.mako",
     },
     "database": {
         "data": {
-            "testdata": {"schema.tableName.sql": "resources/sql/templates/schema.tableName.sql"}
+            "testdata": {
+                "schema.tableName.sql": "resources/sql/templates/schema.tableName.sql"
+            }
         },
         "assemblies": {},
-        "functions": {"schema.functionName.sql": "resources/sql/templates/schema.functionName.sql"},
+        "functions": {
+            "schema.functionName.sql": "resources/sql/templates/schema.functionName.sql"
+        },
         "permissions": {
             "add_users_to_db_roles.sql": "resources/sql/templates/add_users_to_db_roles.sql",
             "create_db_roles.sql": "resources/sql/templates/create_db_roles.sql",
             "create_db_users.sql": "resources/sql/templates/create_db_users.sql",
-            "grant_db_permissions.sql": "resources/sql/templates/grant_db_permissions.sql"
+            "grant_db_permissions.sql": "resources/sql/templates/grant_db_permissions.sql",
         },
-        "procedures": {"schema.procedureName.sql": "resources/sql/templates/schema.procedureName.sql"},
+        "procedures": {
+            "schema.procedureName.sql": "resources/sql/templates/schema.procedureName.sql"
+        },
         "clr-procedures": {},
-        "views":  {"schema.viewName.sql": "resources/sql/templates/schema.viewName.sql"},
-        "tests": {}
+        "views": {"schema.viewName.sql": "resources/sql/templates/schema.viewName.sql"},
+        "tests": {},
     },
     ".gitignore": "resources/files/.gitignore",
     "ahjo_actions.py": "resources/files/ahjo_actions.py",
     "alembic.ini": "resources/files/alembic.ini",
-    "README.md": "empty file"
+    "README.md": "empty file",
 }
 
 
@@ -58,12 +64,12 @@ def create_local_config_base(config_filename: str):
     Local config file is used in development environment to store Django
     related passwords, secrets and all stuff which aren't suitable for versioning.
     """
-    with OperationManager('Initializing local config file'):
+    with OperationManager("Initializing local config file"):
         if not Path(config_filename).is_file():
             print("File not found: " + config_filename)
             return
-        config_data = load_conf(config_filename, key='')
-        local_path = config_data.get('LOCAL', None)
+        config_data = load_conf(config_filename, key="")
+        local_path = config_data.get("LOCAL", None)
         if not local_path:
             print("Local config not defined in {}".format(config_filename))
             return
@@ -72,16 +78,21 @@ def create_local_config_base(config_filename: str):
             return
         if isinstance(local_path, str):
             try:
-                local_conf_dict = filter_nested_dict(config_data, '$')
-                with open(local_path, 'w+', encoding='utf-8') as file:
+                local_conf_dict = filter_nested_dict(config_data, "$")
+                with open(local_path, "w+", encoding="utf-8") as file:
                     json.dump(local_conf_dict, file)
-                print('Local config file created')
+                print("Local config file created")
             except Exception as err:
-                print('Problem creating local config file: {}'.format(err))
+                print("Problem creating local config file: {}".format(err))
 
 
-def create_new_project(project_name: str, init_location: str, message: str, project_config_format: str = "yaml"):
-    '''Create project root directory and call populate_project.'''
+def create_new_project(
+    project_name: str,
+    init_location: str,
+    message: str,
+    project_config_format: str = "yaml",
+):
+    """Create project root directory and call populate_project."""
     with OperationManager(message):
 
         if project_config_format not in ["jsonc", "json", "yaml"]:
@@ -90,24 +101,26 @@ def create_new_project(project_name: str, init_location: str, message: str, proj
 
         project_root = path.join(init_location, project_name)
         if path.exists(project_root):
-            print(f'Folder {project_root} already exists. Terminating.')
+            print(f"Folder {project_root} already exists. Terminating.")
             return
         makedirs(project_root)
- 
-        PROJECT_STRUCTURE[f"config_development.{project_config_format}"] = f"resources/files/config_development.{project_config_format}"
+
+        PROJECT_STRUCTURE[f"config_development.{project_config_format}"] = (
+            f"resources/files/config_development.{project_config_format}"
+        )
         populate_project(project_root, PROJECT_STRUCTURE)
-        print(f'Project {project_root} created.')
+        print(f"Project {project_root} created.")
 
 
 def populate_project(root_path: str, dir_dict: str):
-    '''Recursively create given file structure to root location.'''
+    """Recursively create given file structure to root location."""
     for key in dir_dict:
         object_path = path.join(root_path, key)
         if isinstance(dir_dict[key], dict):
             makedirs(object_path)
             populate_project(object_path, dir_dict[key])
         elif isinstance(dir_dict[key], str):
-            if dir_dict[key] == 'empty file':
-                open(object_path, 'a').close()
+            if dir_dict[key] == "empty file":
+                open(object_path, "a").close()
             else:
                 copyfile(path.join(AHJO_PATH, dir_dict[key]), object_path)

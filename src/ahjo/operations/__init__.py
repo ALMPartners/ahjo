@@ -4,8 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-"""Pre-defined logged scripts for various uses.
-"""
+"""Pre-defined logged scripts for various uses."""
 from ahjo.operations.general import (
     upgrade_db_to_latest_alembic_version,
     downgrade_db_to_alembic_base,
@@ -21,7 +20,7 @@ from ahjo.operations.general import (
     upgrade,
     alembic_command,
     create_dependency_graph,
-    plot_dependency_graph
+    plot_dependency_graph,
 )
 
 from ahjo.operations.tsql import (
@@ -30,5 +29,5 @@ from ahjo.operations.tsql import (
     create_db_permissions,
     create_db_structure,
     update_file_object_properties,
-    update_db_object_properties
+    update_db_object_properties,
 )

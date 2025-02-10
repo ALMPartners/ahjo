@@ -15,16 +15,23 @@ from traceback import format_exc
 from typing import Any, Callable, Union
 
 from ahjo.interface_methods import rearrange_params
-from ahjo.database_utilities import execute_from_file, execute_try_catch, execute_files_in_transaction, drop_files_in_transaction, get_dialect_name
+from ahjo.database_utilities import (
+    execute_from_file,
+    execute_try_catch,
+    execute_files_in_transaction,
+    drop_files_in_transaction,
+    get_dialect_name,
+)
 from ahjo.interface_methods import format_to_table
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.orm import Session
 
-logger = getLogger('ahjo')
+logger = getLogger("ahjo")
+
 
 def sql_files_found(data_src: Union[str, list]):
-    """ Find all SQL files in given path or file list. 
+    """Find all SQL files in given path or file list.
     If given path is a single file, return a list containing the file.
 
     Parameters
@@ -32,19 +39,21 @@ def sql_files_found(data_src: Union[str, list]):
     data_src
         If data_src is string: path of directory holding the SQL script files. Can be also a single file.
         If data_src is list: list of filepaths referencing to the SQL scripts.
-    
+
     Returns
     -------
     files
         List of SQL script file paths.
     """
     files = []
-    data_src_len = len(data_src) if isinstance(data_src, list) or isinstance(data_src, str) else 0
+    data_src_len = (
+        len(data_src) if isinstance(data_src, list) or isinstance(data_src, str) else 0
+    )
 
     if isinstance(data_src, str) and data_src_len > 0:
 
         # Check if data_src is a single sql file
-        if data_src.endswith('.sql'):
+        if data_src.endswith(".sql"):
             if not Path(data_src).is_file():
                 logger.warning("File not found: " + data_src)
                 return files
@@ -53,21 +62,25 @@ def sql_files_found(data_src: Union[str, list]):
         if not Path(data_src).is_dir():
             logger.warning("Directory not found: " + data_src)
             return files
-        
-        files = [path.join(data_src, f) for f in listdir(data_src) if f.endswith('.sql')]
+
+        files = [
+            path.join(data_src, f) for f in listdir(data_src) if f.endswith(".sql")
+        ]
 
     elif isinstance(data_src, list):
 
         invalid_params = []
         for arg in data_src:
-            if arg.endswith('.sql'):
+            if arg.endswith(".sql"):
                 files.append(arg)
             elif Path(arg).is_dir():
-                files.extend([path.join(arg, f) for f in listdir(arg) if f.endswith('.sql')])
+                files.extend(
+                    [path.join(arg, f) for f in listdir(arg) if f.endswith(".sql")]
+                )
             else:
                 invalid_params.append(arg)
         if len(invalid_params) == data_src_len:
-            logger.warning("SQL file(s) not found from: " + ' '.join(invalid_params))
+            logger.warning("SQL file(s) not found from: " + " ".join(invalid_params))
 
     else:
         logger.warning("Parameter 'data_src' should be non-empty string or list.")
@@ -76,9 +89,17 @@ def sql_files_found(data_src: Union[str, list]):
 
 
 @rearrange_params({"engine": "connectable"})
-def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str, list], message: str, display_output: bool = False, 
-        scripting_variables: dict = None, enable_transaction: bool = None, transaction_scope: str = None, commit_transaction: bool = False, 
-        sort_files: bool = False) -> dict:
+def deploy_sqlfiles(
+    connectable: Union[Engine, Connection],
+    data_src: Union[str, list],
+    message: str,
+    display_output: bool = False,
+    scripting_variables: dict = None,
+    enable_transaction: bool = None,
+    transaction_scope: str = None,
+    commit_transaction: bool = False,
+    sort_files: bool = False,
+) -> dict:
     """Run every SQL script file found in given directory/filelist and print the executed file names.
 
     If any file in directory/filelist cannot be deployed after multiple tries, raise an exeption and
@@ -100,7 +121,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
     enable_transaction
         Indicator to run script in transaction.
     transaction_scope
-        Transaction scope for SQL script execution. 
+        Transaction scope for SQL script execution.
         Possible values: 'files', 'file'.
         If 'files', all the files are executed in one transaction.
         If 'file', every file is executed in separate transaction.
@@ -112,7 +133,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         Parse SQL files to find dependencies between them and deploy the files in topological order (mssql only).
         Files under directories 'views', 'tables' and 'functions' are sorted based on dependencies.
         This feature is currently in testing phase so it's turned off by default.
-        
+
     Returns
     -------
     output
@@ -136,12 +157,21 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
         connectable_type = type(connectable)
         check_connectable_type(connectable, "deploy_sqlfiles")
         dialect_name = get_dialect_name(connectable)
-        sort_files = True if sort_files and isinstance(data_src, str) and dialect_name == "mssql" else False
+        sort_files = (
+            True
+            if sort_files and isinstance(data_src, str) and dialect_name == "mssql"
+            else False
+        )
         files = sql_files_found(data_src)
         n_files = len(files)
         error_msg = None
-        if n_files == 0: return False
-        dirs_to_sort = [dir_name for dir_name in dirs_to_sort if dir_name in optimization_supported_dirs]
+        if n_files == 0:
+            return False
+        dirs_to_sort = [
+            dir_name
+            for dir_name in dirs_to_sort
+            if dir_name in optimization_supported_dirs
+        ]
         data_src_dir = None
 
         max_loop = n_files
@@ -149,46 +179,51 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
             data_src_dir = path.basename(data_src)
             if data_src_dir in optimization_supported_dirs:
                 max_loop = 1
-            
+
         # Sort views and tables based on dependencies to avoid errors related to missing objects (mssql only)
         if sort_files and data_src_dir in dirs_to_sort:
             try:
-                files = topological_sort(files, object_types = [data_src_dir[:-1]])
+                files = topological_sort(files, object_types=[data_src_dir[:-1]])
             except:
                 logger.warning("Failed to sort files based on dependencies.")
                 logger.warning("Files are executed in the order they are found.")
                 max_loop = n_files
 
         # Set transaction scope to 'files' if not set by user and connectable is not Engine
-        transaction_scope = "files" if (enable_transaction is None and connectable_type is not Engine) else transaction_scope
+        transaction_scope = (
+            "files"
+            if (enable_transaction is None and connectable_type is not Engine)
+            else transaction_scope
+        )
 
         if transaction_scope != "files":
             failed, output = sql_file_loop(
-                deploy_sql_from_file, 
+                deploy_sql_from_file,
                 connectable,
-                display_output, 
-                scripting_variables, 
+                display_output,
+                scripting_variables,
                 True if enable_transaction and transaction_scope == "file" else False,
                 True if connectable_type is Engine else commit_transaction,
-                file_list = files,
-                max_loop = max_loop
+                file_list=files,
+                max_loop=max_loop,
             )
 
             if len(failed) > 0:
                 error_msg = "Failed to deploy the following files:\n{}".format(
-                    '\n'.join(failed.keys()))
-                error_msg = error_msg + '\nSee log for error details.'
+                    "\n".join(failed.keys())
+                )
+                error_msg = error_msg + "\nSee log for error details."
                 for fail_object, fail_messages in failed.items():
-                    logger.debug(f'----- Error for object {fail_object} -----')
-                    logger.debug(''.join(fail_messages))
+                    logger.debug(f"----- Error for object {fail_object} -----")
+                    logger.debug("".join(fail_messages))
                 raise RuntimeError(error_msg)
         else:
             output = execute_files_in_transaction(
-                connectable, 
-                files, 
-                scripting_variables = scripting_variables, 
+                connectable,
+                files,
+                scripting_variables=scripting_variables,
                 include_headers=True,
-                commit_transaction = commit_transaction
+                commit_transaction=commit_transaction,
             )
             if display_output:
                 for filepath in output.keys():
@@ -198,7 +233,7 @@ def deploy_sqlfiles(connectable: Union[Engine, Connection], data_src: Union[str,
 
 
 def topological_sort(files: list, object_types: list = None) -> list:
-    '''Sort files based on their dependencies.
+    """Sort files based on their dependencies.
 
     Parameters
     ----------
@@ -211,15 +246,17 @@ def topological_sort(files: list, object_types: list = None) -> list:
     -------
     sorted_files
         List of file paths sorted based on dependencies.
-    '''
+    """
     G = create_dependency_graph(files, object_types)
     sorted_files = list(reversed(list(nx.topological_sort(G))))
-                
+
     return sorted_files
 
 
-def create_dependency_graph(data_src: Union[str, list], object_types: list = None) -> object:
-    '''Create dependency graph based on SQL script files.
+def create_dependency_graph(
+    data_src: Union[str, list], object_types: list = None
+) -> object:
+    """Create dependency graph based on SQL script files.
 
     Parameters
     ----------
@@ -227,7 +264,7 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
         If data_src is string: path of directory holding the SQL script files. Can be also a single file.
         If data_src is list: list of filepaths referencing to the SQL scripts.
     object_types
-        List of object types to parse for dependencies. 
+        List of object types to parse for dependencies.
         Valid object types: 'table', 'view', 'procedure', 'function', 'trigger', 'index', 'partition'.
         By default all object types are included.
 
@@ -235,25 +272,39 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
     -------
     G
         NetworkX DiGraph object.
-    '''
+    """
     G = nx.DiGraph()
     files = sql_files_found(data_src)
     objects_to_files = {}
     file_strs = {}
-    object_types_whitelist = ["table", "view", "procedure", "function", "trigger", "index", "partition"]
+    object_types_whitelist = [
+        "table",
+        "view",
+        "procedure",
+        "function",
+        "trigger",
+        "index",
+        "partition",
+    ]
 
     try:
         # Select only valid object types
         if object_types is not None:
-            object_types = [object_type for object_type in object_types if object_type in object_types_whitelist]
+            object_types = [
+                object_type
+                for object_type in object_types
+                if object_type in object_types_whitelist
+            ]
             if len(object_types) == 0:
-                raise ValueError("Invalid object types. Valid object types: 'table', 'view', 'procedure', 'function', 'trigger', 'index', 'partition'")
+                raise ValueError(
+                    "Invalid object types. Valid object types: 'table', 'view', 'procedure', 'function', 'trigger', 'index', 'partition'"
+                )
         else:
             object_types = object_types_whitelist
 
         for file_path in files:
 
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 sql_script_str = file.read()
 
             sql_script_str = remove_comments_from_sql_string(sql_script_str)
@@ -273,12 +324,17 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
             if n_created_objects > 1:
                 created_object_type = "multiple"
 
-            G.add_node(file_path, object_type = "file", objects = created_objects, created_object_type = created_object_type)
-        
+            G.add_node(
+                file_path,
+                object_type="file",
+                objects=created_objects,
+                created_object_type=created_object_type,
+            )
+
         for file_path in files:
 
             file_dependencies = find_dependencies(file_strs[file_path], object_types)
-            
+
             for file_object in file_dependencies:
                 if file_object not in objects_to_files:
                     continue
@@ -292,7 +348,7 @@ def create_dependency_graph(data_src: Union[str, list], object_types: list = Non
 
 def find_created_objects(sql_script: str, object_types: list) -> dict:
     """Find all created objects in SQL script.
-    
+
     Parameters
     ----------
     sql_script
@@ -309,11 +365,19 @@ def find_created_objects(sql_script: str, object_types: list) -> dict:
     object_patterns = {
         "table": re.compile(r"\bCREATE\s+TABLE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
         "view": re.compile(r"\bCREATE\s+VIEW\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "procedure": re.compile(r"\bCREATE\s+PROCEDURE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "function": re.compile(r"\bCREATE\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "trigger": re.compile(r"\bCREATE\s+TRIGGER\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
+        "procedure": re.compile(
+            r"\bCREATE\s+PROCEDURE\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE
+        ),
+        "function": re.compile(
+            r"\bCREATE\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE
+        ),
+        "trigger": re.compile(
+            r"\bCREATE\s+TRIGGER\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE
+        ),
         "index": re.compile(r"\bCREATE\s+INDEX\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE),
-        "partition": re.compile(r"\bCREATE\s+PARTITION\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE)
+        "partition": re.compile(
+            r"\bCREATE\s+PARTITION\s+FUNCTION\s+([a-zA-Z0-9_\[\]\.]+)", re.IGNORECASE
+        ),
     }
     created_objects = {}
 
@@ -321,14 +385,14 @@ def find_created_objects(sql_script: str, object_types: list) -> dict:
     for object_type in object_types:
         pattern = object_patterns[object_type]
         matches = pattern.findall(sql_script)
-        matches = [match.replace('[', '').replace(']', '') for match in matches]
+        matches = [match.replace("[", "").replace("]", "") for match in matches]
         created_objects[object_type] = matches
 
     return created_objects
 
 
 def find_dependencies(sql_script: str, object_types: list) -> list:
-    """ Find all object dependencies in SQL script. 
+    """Find all object dependencies in SQL script.
 
     Parameters
     ----------
@@ -344,13 +408,21 @@ def find_dependencies(sql_script: str, object_types: list) -> list:
     """
     dependencies = []
     patterns = {
-        "table": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "procedure": re.compile(r'\bEXEC\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "view": re.compile(r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "partition": re.compile(r'\bAS\s+PARTITION\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?'),
-        "function": re.compile(r'([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\((.*?)\)')
+        "table": re.compile(
+            r"\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?"
+        ),
+        "procedure": re.compile(
+            r"\bEXEC\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?"
+        ),
+        "view": re.compile(
+            r"\b(?:FROM|JOIN|INTO|UPDATE|DELETE FROM)\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?"
+        ),
+        "partition": re.compile(
+            r"\bAS\s+PARTITION\s+(?:\[?([a-zA-Z0-9_]+)\]?\.)?\[?([a-zA-Z0-9_]+)\]?"
+        ),
+        "function": re.compile(r"([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\((.*?)\)"),
     }
-    
+
     for pattern in object_types:
 
         if pattern not in patterns:
@@ -366,14 +438,14 @@ def find_dependencies(sql_script: str, object_types: list) -> list:
             else:
                 object_name = match[1]
 
-            object_name = object_name.replace('[', '').replace(']', '')
+            object_name = object_name.replace("[", "").replace("]", "")
             dependencies.append(object_name)
 
     return dependencies
 
 
-def remove_comments_from_sql_string(sql_string: str): 
-    '''Remove comments from SQL string.
+def remove_comments_from_sql_string(sql_string: str):
+    """Remove comments from SQL string.
 
     Parameters
     ----------
@@ -384,15 +456,20 @@ def remove_comments_from_sql_string(sql_string: str):
     -------
     sql_string
         SQL string without comments.
-    '''
+    """
     # Remove comments from SQL string
-    sql_string = re.sub(r'/\*.*?\*/', '', sql_string, flags=re.DOTALL)
-    sql_string = re.sub(r'--.*', '', sql_string)
+    sql_string = re.sub(r"/\*.*?\*/", "", sql_string, flags=re.DOTALL)
+    sql_string = re.sub(r"--.*", "", sql_string)
     return sql_string
 
 
 @rearrange_params({"engine": "connectable"})
-def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: str, data_src: Union[str, list], message: str):
+def drop_sqlfile_objects(
+    connectable: Union[Engine, Connection],
+    object_type: str,
+    data_src: Union[str, list],
+    message: str,
+):
     """Drop all the objects created in SQL script files of an directory.
 
     The naming of the files should be consistent!
@@ -415,27 +492,30 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
         If any of the files in given directory/filelist fail to drop after multiple tries.
     """
     with OperationManager(message):
-   
+
         error_msg = None
         connectable_type = type(connectable)
         check_connectable_type(connectable, "drop_sqlfile_objects")
 
         files = sql_files_found(data_src)
         n_files = len(files)
-        if n_files == 0: return False
+        if n_files == 0:
+            return False
 
         if connectable_type == Engine:
             failed, _ = sql_file_loop(
-                drop_sql_from_file, 
+                drop_sql_from_file,
                 connectable,
-                object_type, 
-                file_list = files, 
-                max_loop = n_files
+                object_type,
+                file_list=files,
+                max_loop=n_files,
             )
             if len(failed) > 0:
-                error_msg = "Failed to drop the following files:\n{}".format('\n'.join(failed.keys()))
+                error_msg = "Failed to drop the following files:\n{}".format(
+                    "\n".join(failed.keys())
+                )
                 for fail_messages in failed.values():
-                    error_msg = error_msg + ''.join(fail_messages)
+                    error_msg = error_msg + "".join(fail_messages)
         else:
             try:
                 drop_queries = {}
@@ -451,9 +531,15 @@ def drop_sqlfile_objects(connectable: Union[Engine, Connection], object_type: st
 
 
 @rearrange_params({"engine": "connectable"})
-def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Session], display_output: bool, scripting_variables: dict, 
-        file_transaction: bool = False, commit_transaction: bool = True) -> list:
-    '''Run single SQL script file.
+def deploy_sql_from_file(
+    file: str,
+    connectable: Union[Engine, Connection, Session],
+    display_output: bool,
+    scripting_variables: dict,
+    file_transaction: bool = False,
+    commit_transaction: bool = True,
+) -> list:
+    """Run single SQL script file.
 
     Print output as formatted table.
 
@@ -475,14 +561,14 @@ def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Sessi
     output
         Query output as list. If query returns no output, empty list is returned.
 
-    '''
+    """
     output = execute_from_file(
         connectable,
         file_path=file,
         scripting_variables=scripting_variables,
         include_headers=True,
         file_transaction=file_transaction,
-        commit_transaction=commit_transaction
+        commit_transaction=commit_transaction,
     )
     logger.info(path.basename(file), extra={"record_class": "deployment"})
     if display_output:
@@ -492,7 +578,7 @@ def deploy_sql_from_file(file: str, connectable: Union[Engine, Connection, Sessi
 
 
 def drop_sql_from_file(file: str, engine: Engine, object_type: str):
-    '''Run DROP OBJECT command for object in SQL script file.
+    """Run DROP OBJECT command for object in SQL script file.
 
     The drop command is based on object type and file name.
 
@@ -504,25 +590,27 @@ def drop_sql_from_file(file: str, engine: Engine, object_type: str):
         SQL Alchemy engine.
     object_type
         Type of database object.
-    '''
-    execute_try_catch(engine, query = drop_sql_query(file, object_type))
+    """
+    execute_try_catch(engine, query=drop_sql_query(file, object_type))
 
 
 def drop_sql_query(file, object_type):
-    parts = path.basename(file).split('.')
+    parts = path.basename(file).split(".")
     # SQL files are assumed to be named in format: schema.object.sql
     # The only exception is assemblies. Assemblies don't have schema.
-    if object_type == 'ASSEMBLY':
+    if object_type == "ASSEMBLY":
         object_name = parts[0]
     else:
         if len(parts) != 3:
-            raise RuntimeError(f'File {file} not in <schema.object.sql> format.')
-        object_name = parts[0] + '.' + parts[1]
+            raise RuntimeError(f"File {file} not in <schema.object.sql> format.")
+        object_name = parts[0] + "." + parts[1]
     return f"DROP {object_type} {object_name}"
 
 
-def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_loop: int = 10) -> dict:
-    '''Loop copy of file_list maximum max_loop times and execute the command to every file in
+def sql_file_loop(
+    command: Callable[..., Any], *args: Any, file_list: list, max_loop: int = 10
+) -> dict:
+    """Loop copy of file_list maximum max_loop times and execute the command to every file in
     copy of file_list. If command succeeds, drop the the file from copy of file_list. If command
     fails, keep the file in copy of file_list and execute the command again in next loop.
 
@@ -546,7 +634,7 @@ def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_
         Dictionary with file names as keys and error messages as values.
     outputs
         outputs: Dictionary with file names as keys and output as values.
-    '''
+    """
     copy_list = file_list.copy()
     copy_list_loop = copy_list.copy()
     errors = defaultdict(set)
@@ -558,7 +646,7 @@ def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_
                 copy_list.remove(file)
                 outputs[file] = output
             except:
-                error_str = '\n------\n' + format_exc()
+                error_str = "\n------\n" + format_exc()
                 errors[file].add(error_str)
         copy_list_loop = copy_list.copy()
     if len(copy_list) > 0:
@@ -568,6 +656,10 @@ def sql_file_loop(command: Callable[..., Any], *args: Any, file_list: list, max_
 
 def check_connectable_type(connectable, func_name):
     connectable_type = type(connectable)
-    if not (connectable_type is Engine or connectable_type is Session or connectable_type is Connection):
+    if not (
+        connectable_type is Engine
+        or connectable_type is Session
+        or connectable_type is Connection
+    ):
         error_msg = f"First parameter of function '{func_name}' should be instance of sqlalchemy Engine or Connection. Check your custom actions!"
         raise ValueError(error_msg)

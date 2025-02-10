@@ -13,7 +13,6 @@ from ahjo.operation_manager import OperationManager
 
 
 def create_db_structure(conn_info: dict):
-    """Create DB structure, that is schemas, tables and constraints.
-    """
-    with OperationManager('Creating structure'):
-        invoke_sqlcmd(conn_info, infile='database/create_db_structure.sql')
+    """Create DB structure, that is schemas, tables and constraints."""
+    with OperationManager("Creating structure"):
+        invoke_sqlcmd(conn_info, infile="database/create_db_structure.sql")

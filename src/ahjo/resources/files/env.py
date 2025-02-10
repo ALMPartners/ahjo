@@ -9,7 +9,11 @@ from alembic import context
 from sqlalchemy import MetaData
 from sqlalchemy.orm import declarative_base
 
-from ahjo.database_utilities import create_conn_info, create_sqlalchemy_url, create_sqlalchemy_engine
+from ahjo.database_utilities import (
+    create_conn_info,
+    create_sqlalchemy_url,
+    create_sqlalchemy_engine,
+)
 from ahjo.interface_methods import load_conf
 
 # Import from project root
@@ -21,16 +25,16 @@ config = context.config
 
 # Configure logging for alembic
 # Do not disable existing loggers!
-# If existing loggers are disabled --> Ahjo's loggers will be disabled after upgrade. 
+# If existing loggers are disabled --> Ahjo's loggers will be disabled after upgrade.
 fileConfig(config.config_file_name, disable_existing_loggers=False)
-logger = getLogger('alembic.env.py')
+logger = getLogger("alembic.env.py")
 
 # Load project config file (config_development.json)
-main_config_path = context.get_x_argument(as_dictionary=True).get('main_config')
+main_config_path = context.get_x_argument(as_dictionary=True).get("main_config")
 if main_config_path is None:
     logger.info('No extra alembic argument "-x main_config=config.file" given.')
     main_config_path = input("Module configuration file path: ")
-logger.info(f'Main config file: {main_config_path}')
+logger.info(f"Main config file: {main_config_path}")
 
 main_config = load_conf(main_config_path)
 
@@ -45,13 +49,15 @@ version_table = main_config.get("alembic_version_table", "alembic_version")
 
 ###################################################################
 
-meta = MetaData(naming_convention={
+meta = MetaData(
+    naming_convention={
         "ix": "ix_%(column_0_label)s",
         "uq": "uq_%(table_name)s_%(column_0_name)s",
         "ck": "ck_%(table_name)s_%(constraint_name)s",
         "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-        "pk": "pk_%(table_name)s"
-      })
+        "pk": "pk_%(table_name)s",
+    }
+)
 Base = declarative_base(metadata=meta)
 
 # add your model's MetaData object here
@@ -80,7 +86,10 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=create_sqlalchemy_url(conn_info), target_metadata=target_metadata, literal_binds=True)
+        url=create_sqlalchemy_url(conn_info),
+        target_metadata=target_metadata,
+        literal_binds=True,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -93,32 +102,32 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connection = config.attributes.get('connection', None)
+    connection = config.attributes.get("connection", None)
 
-    if connection is None: # Create engine
+    if connection is None:  # Create engine
 
         connectable = create_sqlalchemy_engine(
-            create_sqlalchemy_url(conn_info), 
-            token = conn_info.get("token"),
-            **conn_info.get("sqla_engine_params")
+            create_sqlalchemy_url(conn_info),
+            token=conn_info.get("token"),
+            **conn_info.get("sqla_engine_params"),
         )
         with connectable.connect() as connection:
             context.configure(
                 connection=connection,
                 target_metadata=target_metadata,
                 version_table_schema=version_table_schema,
-                version_table=version_table
+                version_table=version_table,
             )
             with context.begin_transaction():
                 context.run_migrations()
 
-    else: # Use existing connection
+    else:  # Use existing connection
 
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             version_table_schema=version_table_schema,
-            version_table=version_table
+            version_table=version_table,
         )
         context.run_migrations()
 

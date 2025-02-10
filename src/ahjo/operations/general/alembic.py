@@ -20,11 +20,24 @@ from alembic import command
 from alembic.config import Config
 
 ALEMBIC_API_COMMANDS = {
-    "check", "upgrade", "downgrade", "current", "history", "heads", "branches", "stamp", 
-    "revision", "edit", "ensure_version", "init", "list_templates", "merge", "show"
+    "check",
+    "upgrade",
+    "downgrade",
+    "current",
+    "history",
+    "heads",
+    "branches",
+    "stamp",
+    "revision",
+    "edit",
+    "ensure_version",
+    "init",
+    "list_templates",
+    "merge",
+    "show",
 }
 
-logger = getLogger('ahjo')
+logger = getLogger("ahjo")
 
 
 def alembic_config(config_filename: str, connection: Connection = None) -> Config:
@@ -38,33 +51,38 @@ def alembic_config(config_filename: str, connection: Connection = None) -> Confi
     This way Alembic will use Ahjo's loggers and project's configurations
     when running Alembic operations.
     """
-    config = Config('alembic.ini')
+    config = Config("alembic.ini")
     main_section = config.config_ini_section
     # main section options are set when main section is read
     config.get_section(main_section)
     config.cmd_opts = Namespace(x=["main_config=" + config_filename])
     if connection:
         config.attributes["connection"] = connection
-    config.config_file_name = path.join(
-        AHJO_PATH, 'resources/logger_alembic.ini')
+    config.config_file_name = path.join(AHJO_PATH, "resources/logger_alembic.ini")
     return config
 
 
-def alembic_command(config_filename: str, command_name: str, connection: Connection = None, *args, **kwargs):
-    """ Wrapper for alembic API commands. 
-    
+def alembic_command(
+    config_filename: str,
+    command_name: str,
+    connection: Connection = None,
+    *args,
+    **kwargs,
+):
+    """Wrapper for alembic API commands.
+
     Arguments
     ---------
     config_filename : str
         Path to the project's configuration file.
     command_name : str
-        Alembic API command to run. 
+        Alembic API command to run.
         Command names can be found from https://alembic.sqlalchemy.org/en/latest/api/commands.html.
     connection : Connection
         SQL Alchemy Connection object.
     *args, **kwargs
         Arguments to pass to the Alembic command.
-    
+
     Raises
     ------
     ValueError
@@ -74,39 +92,45 @@ def alembic_command(config_filename: str, command_name: str, connection: Connect
         raise ValueError(f"Command {command_name} not in Alembic API commands.")
     with OperationManager(f"Running Alembic command: {command_name}"):
         getattr(command, command_name)(
-            config = alembic_config(
-                config_filename, 
-                connection = connection
-            ),
-            *args, 
-            **kwargs
+            config=alembic_config(config_filename, connection=connection),
+            *args,
+            **kwargs,
         )
 
 
-def upgrade_db_to_latest_alembic_version(config_filename: str, connection: Connection = None):
+def upgrade_db_to_latest_alembic_version(
+    config_filename: str, connection: Connection = None
+):
     """Run Alembic 'upgrade head' in the same python-process
     by calling Alembic's API.
     """
     with OperationManager("Running all upgrade migrations"):
-        command.upgrade(alembic_config(config_filename, connection = connection), 'head')
+        command.upgrade(alembic_config(config_filename, connection=connection), "head")
 
 
 def downgrade_db_to_alembic_base(config_filename: str, connection: Connection = None):
     """Run Alembic 'downgrade base' in the same python-process
     by calling Alembic's API.
     """
-    with OperationManager('Downgrading to base'):
-        command.downgrade(alembic_config(config_filename, connection = connection), 'base')
+    with OperationManager("Downgrading to base"):
+        command.downgrade(
+            alembic_config(config_filename, connection=connection), "base"
+        )
 
 
 @rearrange_params({"engine": "connectable"})
-def print_alembic_version(connectable: Union[Engine, Connection], alembic_version_table: str):
+def print_alembic_version(
+    connectable: Union[Engine, Connection], alembic_version_table: str
+):
     """Print last deployed revision number from Alembic version table."""
-    with OperationManager('Checking Alembic version from database'):
+    with OperationManager("Checking Alembic version from database"):
         alembic_version_query = f"SELECT * FROM {alembic_version_table}"
         try:
-            alembic_version = execute_query(connectable, query=alembic_version_query)[0][0]
+            alembic_version = execute_query(connectable, query=alembic_version_query)[
+                0
+            ][0]
             logger.info("Alembic version: " + alembic_version)
         except IndexError:
             logger.info(
-                f"Table {alembic_version_table} is empty. No deployed revisions.")
+                f"Table {alembic_version_table} is empty. No deployed revisions."
+            )

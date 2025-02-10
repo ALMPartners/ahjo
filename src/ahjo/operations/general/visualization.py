@@ -3,7 +3,7 @@
 # Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-""" Module for visualization operations. """
+"""Module for visualization operations."""
 import networkx as nx
 from logging import getLogger
 
@@ -12,7 +12,8 @@ try:
 except:
     go = None
 
-logger = getLogger('ahjo')
+logger = getLogger("ahjo")
+
 
 def plot_dependency_graph(G, layout: str = "spring_layout"):
     """Plot a dependency graph with Plotly.
@@ -88,28 +89,29 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
 
         fig.add_trace(
             go.Scatter(
-                x = edge_x, y = edge_y,
-                mode = "lines",
-                line = dict(width = 0.1, color = "black"),
-                hoverinfo = "none",
-                showlegend = False,
-                line_shape = "linear"
+                x=edge_x,
+                y=edge_y,
+                mode="lines",
+                line=dict(width=0.1, color="black"),
+                hoverinfo="none",
+                showlegend=False,
+                line_shape="linear",
             )
         )
 
         fig.add_trace(
             go.Scatter(
-                x = node_x,
-                y = node_y,
-                mode = "markers",
-                text = node_hover_text,
-                hoverinfo = "text",
-                textposition = "top center",
-                marker = dict(
-                    color = [list(set(node_color)).index(x) for x in node_color],
-                    size = node_size,
-                    line = dict(width = 2, color = "black")
-                )
+                x=node_x,
+                y=node_y,
+                mode="markers",
+                text=node_hover_text,
+                hoverinfo="text",
+                textposition="top center",
+                marker=dict(
+                    color=[list(set(node_color)).index(x) for x in node_color],
+                    size=node_size,
+                    line=dict(width=2, color="black"),
+                ),
             )
         )
 
@@ -117,22 +119,26 @@ def plot_dependency_graph(G, layout: str = "spring_layout"):
             x0, y0 = pos[edge[0]]
             x1, y1 = pos[edge[1]]
             fig.add_annotation(
-                x = x1, y = y1,
-                ax = x0, ay = y0,
-                xref = "x", yref = "y",
-                axref = "x", ayref = "y",
-                showarrow = True,
-                arrowhead = 5,
-                arrowsize = 2,
-                arrowcolor = "black"
+                x=x1,
+                y=y1,
+                ax=x0,
+                ay=y0,
+                xref="x",
+                yref="y",
+                axref="x",
+                ayref="y",
+                showarrow=True,
+                arrowhead=5,
+                arrowsize=2,
+                arrowcolor="black",
             )
 
         fig.update_layout(
-            title = "Dependency Graph",
-            showlegend = False,
-            hovermode = "closest",
-            xaxis = dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis = dict(showgrid=False, zeroline=False, showticklabels=False)
+            title="Dependency Graph",
+            showlegend=False,
+            hovermode="closest",
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         )
 
         fig.show()

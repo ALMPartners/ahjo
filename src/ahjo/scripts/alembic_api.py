@@ -20,5 +20,5 @@ print(line)
 print(info_msg)
 print(line)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

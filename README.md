@@ -5,7 +5,7 @@ Ahjo Framework
 
 # <u>Description</u>
 
-Ahjo is a database project framework and a deployment script. It is made to unify database project deployment and development practices and to give basic tooling for such projects. 
+Ahjo is a database project framework and a deployment script. It is made to unify database project deployment and development practices and to give basic tooling for such projects.
 
 Ahjo provides a base scripts for database deployment with simple commands ("actions"), and the possibility to define custom actions for project's special needs. The scripts are designed to reduce accidental operations to production environments. The actions and their parts are logged by Ahjo.
 
@@ -30,6 +30,12 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 ### visualizations
 * [plotly](https://pypi.org/project/plotly/)
 
+### dev
+* [black](https://pypi.org/project/black/)
+* [pre-commit](https://pypi.org/project/pre-commit/)
+* [pytest](https://pypi.org/project/pytest/)
+* [tox](https://pypi.org/project/tox/)
+
 # <u>Install Guide</u>
 
 ## Install Guide 1 - PyPI
@@ -50,7 +56,7 @@ pip install ahjo[mssql]
 2. Install with pip
 
 
-    - Use `-e` flag to install package in develop mode. 
+    - Use `-e` flag to install package in develop mode.
 
 ```
 cd .\ahjo
@@ -60,6 +66,15 @@ pip install [-e] .[mssql,azure]
 ## Available platform tags
 - `mssql` - Microsoft SQL Server
 - `azure` - Microsoft Azure SQL Database
+- `visualizations` - Database object dependency visualization
+- `dev` - Development dependencies
+
+## Development tooling
+Install development dependencies (e.g. automatic code formatting with `black`) with the following command:
+```bash
+pip install -e .[dev]
+pre-commit install
+```
 
 ## Install Guide 3 - MSI installation package
 
@@ -73,7 +88,7 @@ Create a new, empty build venv and install build requirements into it.
 
 ```
 python -m venv venv_msi_build
-.\venv_msi_build\Scripts\Activate.ps1 
+.\venv_msi_build\Scripts\Activate.ps1
 pip install -r .\msi_build_requirements.txt
 ```
 
@@ -87,7 +102,7 @@ With the build venv active, build the MSI package with the following command.
 python .\msi_build.py bdist_msi
 ```
 
-Find the built MSI installation package under (automatically created) `dist` directory. 
+Find the built MSI installation package under (automatically created) `dist` directory.
 
 ### Installing the MSI package
 
@@ -220,7 +235,7 @@ The rest of the optional parameters are listed below.
 | `--skip-alembic-update` | `-sa` | Skip running alembic migrations. | `False` |
 | `--skip-git-update` | `-sg` | Skip updating current git version to git version table. | `False` |
 
-It is also possible to pass custom command-line arguments and their values to actions. 
+It is also possible to pass custom command-line arguments and their values to actions.
 
 For example, to pass a custom argument `--example-arg` with values `x` and `y` to action `example-action`, use the following command:
 ```bash
@@ -248,7 +263,7 @@ Creates database structure, that is schemas, tables and constraints. Primary met
 Runs alembic migrations, creates views, procedures and functions. First, runs *alembic upgrade head*. Second, creates functions, views and procedures by executing all SQL files under directories *./database/functions*, *./database/views* and *./database/procedures*. Third, attempts to update documented extended properties to database. Finally, updates current GIT version (`git describe`) to GIT version table.
 
 ## deploy-files
-Runs *alembic upgrade head*, creates database objects by executing all SQL files listed in --files argument and updates current GIT version (`git describe`) to GIT version table. 
+Runs *alembic upgrade head*, creates database objects by executing all SQL files listed in --files argument and updates current GIT version (`git describe`) to GIT version table.
 Example usage: `ahjo deploy-files .\config_development.jsonc --files ./database/procedures/dbo.procedure.sql ./database/functions/dbo.function.sql` .
 
 ## data
@@ -261,7 +276,7 @@ Inserts data for testing into database. Runs all SQL files under *./database/dat
 Runs actions init, deploy, data, testdata and test in order.
 
 ## create-db-roles
-Runs SQL scripts defined in *./database/permissions/create_db_roles.sql* to create database roles. 
+Runs SQL scripts defined in *./database/permissions/create_db_roles.sql* to create database roles.
 To pass scripting variables to the SQL script, define them in the config file under `db_permissions_variables` key (optional).
 
 ## grant-db-permissions
@@ -292,9 +307,9 @@ Prints the alembic- and git-version currently in the database.
 Alembic version is read from *alembic_version_table*. GIT version is read from *git_table*.
 
 ## update-file-obj-prop
-Write database objects and their extended properties (only SQL Server) to JSON files under *./docs/db_objects* directory. 
+Write database objects and their extended properties (only SQL Server) to JSON files under *./docs/db_objects* directory.
 Use *metadata_allowed_schemas* to define which schema-scoped objects are documented.
-The JSON files are named after the object type, for example *procedures.json* or *views.json*. 
+The JSON files are named after the object type, for example *procedures.json* or *views.json*.
 Example of JSON file content:
 ```json
 {
@@ -309,7 +324,7 @@ Example of JSON file content:
 }
 ```
 Each object is represented as a dictionary where the key is the object name and the value is a dictionary of extended properties.
-The dictionary can contain any number of key-value pairs where the key is the name of the extended property and the value is the value of the extended property. 
+The dictionary can contain any number of key-value pairs where the key is the name of the extended property and the value is the value of the extended property.
 If the object type is column, the object name should be in the format: `<schema name>.<table or view name>.<column name>`.
 
 ## update-db-obj-prop
@@ -317,7 +332,7 @@ Update documented extended properties (only SQL Server) from JSON files under *.
 Use *metadata_allowed_schemas* to define which schema-scoped objects are documented.
 The format of the JSON files is the same as defined in [update-file-obj-prop](#update-file-obj-prop).
 
-It is also possible to define default metadata for columns in *./docs/db_objects/columns_default.json* file. 
+It is also possible to define default metadata for columns in *./docs/db_objects/columns_default.json* file.
 So if a table has a column called id, and a default value for the Description for a column called id has been defined in *docs/db_objects/columns_default.json*, that value is used, unless there is a row for that specific table's id column in *docs\db_objects\columns.json*.
 
 To define default metadata for columns, use the following format:
@@ -335,7 +350,7 @@ where the key is the column name and the value is a dictionary of extended prope
 
 ## test
 Runs tests and returns the results.
-Runs all SQL scripts under *./database/tests*. 
+Runs all SQL scripts under *./database/tests*.
 If *save_test_results_to_db* is set to true, saves the results to a table defined in *test_table_name* and *test_table_schema*.
 The columns of the result set should match the columns of the table where the results are saved (only the matching columns are saved to the database - the rest are ignored).
 
@@ -348,7 +363,7 @@ Creates a view for displaying test action results. The columns of the view are t
 The name and schema of the view are defined in *test_view_name* and *test_view_schema*.
 
 ## plot-dependencies
-Parse the SQL files in the project and create a dependency graph of the database objects. 
+Parse the SQL files in the project and create a dependency graph of the database objects.
 Plots the graph with plotly. Optionally, use `--files` to parameter define which files are used in the action.
 
 ## list
@@ -366,7 +381,7 @@ List of available actions
 ```
 
 # <u>Config File</u>
-Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format. Ahjo configs are located in *BACKEND* section of file. 
+Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format. Ahjo configs are located in *BACKEND* section of file.
 Below is an example of config file (in both JSONC and YAML format) and a cheat sheet for config file parameters.
 
 ## JSONC config file
@@ -467,7 +482,7 @@ BACKEND:
 | `connect_retry_interval` | No | Interval between connection retries in seconds. | `int` | `10` |
 
 ## Config conversion
-Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command: 
+Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command:
 ```
 ahjo-config --convert-to <target_format> --config <config_file_path> --output <output_file_path>
 ```
@@ -507,7 +522,7 @@ Ahjo supports authentication with Microsoft Entra / Azure AD. The authentication
 ## Azure-identity
 Instructions for enabling azure identity authentication in ahjo:
 
-1. Install [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) & [azure-identity](https://pypi.org/project/azure-identity/) 
+1. Install [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) & [azure-identity](https://pypi.org/project/azure-identity/)
 2. Set the config variable `azure_authentication` to `AzureIdentity`
 
 Sign in interactively through your browser with the `az login` command.
@@ -521,7 +536,7 @@ To run all selected actions from different projects at once, a single command "a
 ahjo-multi-project-build path/to/config_file.jsonc
 ```
 
-Use `-c` or `--confirm` flag to enable confirmation messages for ahjo actions.  
+Use `-c` or `--confirm` flag to enable confirmation messages for ahjo actions.
 Below is an example of JSONC config file. With the following definition, multi-project-build command executes complete-build actions of three ahjo projects:
 
 ```json
@@ -543,24 +558,24 @@ Below is an example of JSONC config file. With the following definition, multi-p
             "config": "path/to/projects_folder/ahjo_project_2_name/config_development.jsonc",
             "actions": [
                 "complete-build"
-            ]        
+            ]
         },
         "ahjo_project_3_name": {
             "config": "path/to/projects_folder/ahjo_project_3_name/config_development.jsonc",
             "actions": [
                 "complete-build"
-            ]        
+            ]
         }
     }
 }
 ```
 
-Settings under `connection_info` contains database server definitions in the same format as in ahjo project config file (excluding `target_database_name` parameter, which is not used here).  
-Currently in this version ahjo projects should be located under the folder specified in `projects_path` setting.  
-Ahjo project names are listed under `projects` section in run order. In this example, the actions of project `ahjo_project_1_name` are executed first and the actions of project `ahjo_project_3_name` are executed last.  
+Settings under `connection_info` contains database server definitions in the same format as in ahjo project config file (excluding `target_database_name` parameter, which is not used here).
+Currently in this version ahjo projects should be located under the folder specified in `projects_path` setting.
+Ahjo project names are listed under `projects` section in run order. In this example, the actions of project `ahjo_project_1_name` are executed first and the actions of project `ahjo_project_3_name` are executed last.
 The following settings are defined under the name of the ahjo project(s):
 
-`config` - File path to the project-specific config file  
+`config` - File path to the project-specific config file
 `actions` - List of project actions to be executed
 
 
@@ -568,8 +583,8 @@ The following settings are defined under the name of the ahjo project(s):
 Database updates can be run with `ahjo-upgrade` command. The command detects automatically the latest installed git version and runs the required database version updates (in order).
 The upgrade actions are defined in a JSONC file and its location is defined in `upgrade_actions_file` setting in project config file.
 The ahjo actions required for version upgrades are defined with key-value pairs, where key is the git version tag and value is a list of actions.
-The list of actions can contain strings of action names or lists of action names and action parameters. 
-If the action is defined with parameters, the action name is the first item in the list and the parameters are defined as a dictionary in the second item in the list. 
+The list of actions can contain strings of action names or lists of action names and action parameters.
+If the action is defined with parameters, the action name is the first item in the list and the parameters are defined as a dictionary in the second item in the list.
 The dictionary contains the parameters of the action as key-value pairs, where key is the parameter name and value is the parameter value.
 
 Below is an example of upgrade actions file:
@@ -588,7 +603,7 @@ ahjo-upgrade -v v3.1.0
 ```
 
 # <u>Ahjo scan</u>
-`ahjo-scan` command can be used to search for matches with defined search rules from files in the working directory or git staging area. The search results are printed to the console and logged to a file. The command can be used to search e.g. illegal database object modifications, sensitive information or custom regex patterns defined by the user. 
+`ahjo-scan` command can be used to search for matches with defined search rules from files in the working directory or git staging area. The search results are printed to the console and logged to a file. The command can be used to search e.g. illegal database object modifications, sensitive information or custom regex patterns defined by the user.
 
 | Argument  | Shorthand | Description | Required | Default Value |
 | --- | --- | --- | --- | --- |
@@ -626,7 +641,7 @@ The search rules are defined in a YAML file. The file can be initialized with `-
 Here is an example of search rules file:
 ```yaml
 - name: sql_object_modification
-  filepath: 
+  filepath:
     - database/
   object_types:
     - PROCEDURE
@@ -634,11 +649,11 @@ Here is an example of search rules file:
     - dummy
     - utils
 - name: hetu
-  filepath: 
+  filepath:
     - database/
     - alembic/versions/
 - name: select_star # Custom rule
-  filepath: 
+  filepath:
     - database/
   pattern: SELECT \* # This is a regular expression
 ```
@@ -680,7 +695,7 @@ Everything Ahjo prints to console, is also written into log file `ahjo.log` in t
 Ahjo supports database logging. The logging can be enabled by setting `enable_database_logging` to `true` in the config file. The log entries are written into a log table. The name and schema of the log table can be defined in the config file with keys `log_table` and `log_table_schema`. The log table is created automatically if it does not exist.
 
 ### Windows Event Log
-Logging can be done to Windows Event Log by setting `windows_event_log` to `true` in config file. This feature can be utilized for Azure Monitor activities, for example. 
+Logging can be done to Windows Event Log by setting `windows_event_log` to `true` in config file. This feature can be utilized for Azure Monitor activities, for example.
 
 ### SQLAlchemy log
 SQL Alchemy logging can be enabled by setting `enable_sqlalchemy_logging` to `true` in config file. The logging is done to a file named `sqlalchemy.log` in the project root directory. The log files are created automatically if they do not exist.
@@ -696,7 +711,7 @@ Every default Ahjo action and multiaction can be overwritten in project's Ahjo a
         "name": "Example project Ahjo actions (prod)" // Name is used in logging.
     },
     {
-        "source_file": "ahjo_dev_actions.py", 
+        "source_file": "ahjo_dev_actions.py",
         "name": "Example project Ahjo actions (dev)"
     }
 ]

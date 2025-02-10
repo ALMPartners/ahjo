@@ -3,17 +3,21 @@
 # Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-"""Utility functions for executing tsql using sqlcmd.exe
-"""
+"""Utility functions for executing tsql using sqlcmd.exe"""
 from logging import getLogger
 from re import search
 from subprocess import PIPE, Popen, list2cmdline
 from typing import Union
 
-logger = getLogger('ahjo')
+logger = getLogger("ahjo")
 
 
-def invoke_sqlcmd(conn_info: dict, infile: str = None, query: str = None, variable: Union[str, list] = None) -> bytes:
+def invoke_sqlcmd(
+    conn_info: dict,
+    infile: str = None,
+    query: str = None,
+    variable: Union[str, list] = None,
+) -> bytes:
     """Runs a t-sql script or query using sqlcmd.exe
     Prints sql-errors and returns the standard output.
 
@@ -32,10 +36,10 @@ def invoke_sqlcmd(conn_info: dict, infile: str = None, query: str = None, variab
         Takes a list of strings or a string.
     """
     subprocess_args = ["sqlcmd.exe"]
-    server = conn_info.get('server')
-    database = conn_info.get('database')
-    username = conn_info.get('username')
-    password = conn_info.get('password')
+    server = conn_info.get("server")
+    database = conn_info.get("database")
+    username = conn_info.get("username")
+    password = conn_info.get("password")
     subprocess_args += ["-S", server]
     if database is not None:
         subprocess_args += ["-d", str(database)]
@@ -47,7 +51,7 @@ def invoke_sqlcmd(conn_info: dict, infile: str = None, query: str = None, variab
         subprocess_args += ["-i", infile]
     if query is not None:
         subprocess_args += ["-Q", query]
-    subprocess_args += ['-h-1']  # rows per header
+    subprocess_args += ["-h-1"]  # rows per header
     subprocess_args += ["-r0"]  # sql errors to error output
     subprocess_args += ["-f", "65001"]  # codepage UTF-8
     # variables can be given as string or list
@@ -74,7 +78,7 @@ def invoke_sqlcmd(conn_info: dict, infile: str = None, query: str = None, variab
             else:
                 error_msg = error_msg + '\nQuery: "' + query + '"'
         if infile is not None:
-            error_msg = error_msg + '\nFile: ' + infile
+            error_msg = error_msg + "\nFile: " + infile
         raise RuntimeError(error_msg)
     return output
 
@@ -96,7 +100,12 @@ def _add_cmdline_quotes(cmd_str: str) -> str:
     """
     match = search("='[^']*'", cmd_str)
     if match is not None:
-        quoted_cmd_str = cmd_str[:match.start(
-        ) + 1] + '"' + cmd_str[match.start() + 1: match.end()] + '"' + cmd_str[match.end():]
+        quoted_cmd_str = (
+            cmd_str[: match.start() + 1]
+            + '"'
+            + cmd_str[match.start() + 1 : match.end()]
+            + '"'
+            + cmd_str[match.end() :]
+        )
         cmd_str = _add_cmdline_quotes(quoted_cmd_str)
     return cmd_str

@@ -3,12 +3,15 @@
 # Copyright 2019 - 2024 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-"""Utility functions for pyodbc. """
+"""Utility functions for pyodbc."""
 
 from sqlalchemy.engine import Engine, Connection
 from typing import Union
 
-def execute_queries(connectable: Union[Engine, Connection], queries: list, commit: bool = False):
+
+def execute_queries(
+    connectable: Union[Engine, Connection], queries: list, commit: bool = False
+):
     """Execute a list of queries with a cursor.
 
     Arguments
@@ -19,34 +22,44 @@ def execute_queries(connectable: Union[Engine, Connection], queries: list, commi
         List of tuples. Each tuple contains a query and a list of parameters.
     commit
         If True, commit the transaction.
-    
+
     Returns
     -------
     tuple
         Tuple of two lists: results and errors.
     """
-    raw_connection = connectable.raw_connection() if isinstance(connectable, Engine) else connectable.connection
+    raw_connection = (
+        connectable.raw_connection()
+        if isinstance(connectable, Engine)
+        else connectable.connection
+    )
     cursor = raw_connection.cursor()
     results = []
     errors = []
 
     for i in range(len(queries)):
         batch_results, batch_errors = execute_query(
-            cursor, 
-            queries[i][0], 
-            parameters = queries[i][1]
+            cursor, queries[i][0], parameters=queries[i][1]
         )
-        if batch_results: results.extend(batch_results)
-        if batch_errors: errors.extend(batch_errors)
+        if batch_results:
+            results.extend(batch_results)
+        if batch_errors:
+            errors.extend(batch_errors)
 
-    if commit: 
+    if commit:
         cursor.commit()
         cursor.close()
 
     return results, errors
 
 
-def execute_query(cursor: object, query: str, parameters: list = None, commit: bool = False, close: bool = False) -> tuple:
+def execute_query(
+    cursor: object,
+    query: str,
+    parameters: list = None,
+    commit: bool = False,
+    close: bool = False,
+) -> tuple:
     """Execute a query with a cursor.
 
     Arguments
@@ -84,7 +97,9 @@ def execute_query(cursor: object, query: str, parameters: list = None, commit: b
                 errors.append(cursor.fetchall())
             break
 
-    if commit: cursor.commit()
-    if close: cursor.close()
+    if commit:
+        cursor.commit()
+    if close:
+        cursor.close()
 
     return results, errors

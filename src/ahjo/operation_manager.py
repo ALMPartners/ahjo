@@ -9,7 +9,7 @@ from datetime import datetime
 from logging import getLogger
 from traceback import format_exception
 
-logger = getLogger('ahjo')
+logger = getLogger("ahjo")
 
 
 class OperationManager:
@@ -25,13 +25,12 @@ class OperationManager:
 
     def __exit__(self, exc_type, exc_value, traceback):
         if traceback is not None:
-            logger.error(''.join(format_exception(
-                exc_type, exc_value, traceback)))
-        logger.info('------', extra={"record_class": "line"})
+            logger.error("".join(format_exception(exc_type, exc_value, traceback)))
+        logger.info("------", extra={"record_class": "line"})
 
 
 def format_message(mssg: str) -> str:
-    '''Add timestamp before the message.'''
+    """Add timestamp before the message."""
     timestamp = datetime.now()
-    time_string = timestamp.strftime('%Y-%m-%d %H:%M:%S')
-    return '[{}] {}'.format(time_string, mssg)
+    time_string = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    return "[{}] {}".format(time_string, mssg)

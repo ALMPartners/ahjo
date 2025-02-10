@@ -6,22 +6,29 @@ import pytest
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.sql import text
 
-LATEST_REVISION = 'a8877159cdff'   # from sample project
+LATEST_REVISION = "a8877159cdff"  # from sample project
+
 
 @pytest.mark.mssql
-class TestWithSQLServer():
+class TestWithSQLServer:
 
-    @pytest.fixture(scope='function', autouse=True)
-    def alembic_mssql_setup_and_teardown(self, ahjo_config, mssql_sample, mssql_engine, run_alembic_action):
+    @pytest.fixture(scope="function", autouse=True)
+    def alembic_mssql_setup_and_teardown(
+        self, ahjo_config, mssql_sample, mssql_engine, run_alembic_action
+    ):
         self.config = ahjo_config(mssql_sample)
-        self.alembic_table = self.config['alembic_version_table_schema'] + '.' + self.config['alembic_version_table']
-        self.config_filepath = path.join(mssql_sample, 'config_development.json')
+        self.alembic_table = (
+            self.config["alembic_version_table_schema"]
+            + "."
+            + self.config["alembic_version_table"]
+        )
+        self.config_filepath = path.join(mssql_sample, "config_development.json")
         self.engine = mssql_engine
         old_cwd = getcwd()
         chdir(mssql_sample)
         yield
         try:
-            run_alembic_action('downgrade', 'base')
+            run_alembic_action("downgrade", "base")
             query = f"DROP TABLE {self.alembic_table}"
             with self.engine.begin() as connection:
                 connection.execute(text(query))
@@ -44,7 +51,9 @@ class TestWithSQLServer():
             with pytest.raises(ProgrammingError):
                 connection.execute(text(query))
 
-    def test_alembic_version_table_should_contain_latest_revision_after_upgrade_head(self):
+    def test_alembic_version_table_should_contain_latest_revision_after_upgrade_head(
+        self,
+    ):
         alembic.upgrade_db_to_latest_alembic_version(self.config_filepath)
         self.assert_db_revision(LATEST_REVISION)
 
@@ -71,12 +80,25 @@ class TestWithSQLServer():
         alembic.upgrade_db_to_latest_alembic_version(self.config_filepath)
         alembic.downgrade_db_to_alembic_base(self.config_filepath)
         alembic.print_alembic_version(self.engine, self.alembic_table)
-        assert f"Table {self.alembic_table} is empty. No deployed revisions." in caplog.text
+        assert (
+            f"Table {self.alembic_table} is empty. No deployed revisions."
+            in caplog.text
+        )
 
     def test_alembic_command_should_contain_latest_revision_after_upgrade_head(self):
-        alembic.alembic_command(self.config_filepath, "upgrade", connection=self.engine, **{"revision": "head"})
+        alembic.alembic_command(
+            self.config_filepath,
+            "upgrade",
+            connection=self.engine,
+            **{"revision": "head"},
+        )
         self.assert_db_revision(LATEST_REVISION)
 
     def test_alembic_command_should_be_empty_after_downgrade(self):
-        alembic.alembic_command(self.config_filepath, "downgrade", connection=self.engine, **{"revision": "base"})
+        alembic.alembic_command(
+            self.config_filepath,
+            "downgrade",
+            connection=self.engine,
+            **{"revision": "base"},
+        )
         self.assert_db_revision(None)

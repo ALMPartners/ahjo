@@ -3,20 +3,24 @@ import win32evtlog
 import win32evtlogutil
 import re
 
+
 class winEventHandler(Handler):
     """
     Custom logging handler for sending messages to Windows Event Log.
     """
+
     def __init__(self):
         Handler.__init__(self)
-    
+
     def emit(self, x: LogRecord):
         """
         Emit a record.
         """
         # If message is not empty and not only dashes, then send it to Windows Event Log
-        if x.msg and x.msg != '' and not bool(re.search('^[-]*+$', str(x.msg))):
-            msg = re.sub("^([\[]).*?([\]])", "", str(x.msg)).lstrip() # remove timestamps from the start of message
+        if x.msg and x.msg != "" and not bool(re.search("^[-]*+$", str(x.msg))):
+            msg = re.sub(
+                "^([\[]).*?([\]])", "", str(x.msg)
+            ).lstrip()  # remove timestamps from the start of message
             winLevels = {
                 "DEBUG": win32evtlog.EVENTLOG_INFORMATION_TYPE,
                 "INFO": win32evtlog.EVENTLOG_INFORMATION_TYPE,
@@ -26,9 +30,5 @@ class winEventHandler(Handler):
             }
             level = winLevels[x.levelname]
             win32evtlogutil.ReportEvent(
-                x.name,
-                9876,
-                eventCategory=0,
-                eventType=level,
-                strings=[msg]
+                x.name, 9876, eventCategory=0, eventType=level, strings=[msg]
             )
