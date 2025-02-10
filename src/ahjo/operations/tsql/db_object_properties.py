@@ -306,15 +306,33 @@ def update_file_object_properties(connectable: Union[Engine, Connection], schema
         logger.debug(
             f'Fetching extended properties for schemas {", ".join(schema_list)}')
         for object_type in DB_OBJECTS:
-            existing_metadata = query_metadata(
+            existing_db_metadata = query_metadata(
                 connectable,
                 DB_OBJECTS[object_type],
                 schema_list,
                 properties_only=True
             )
             target_file = DB_OBJECTS[object_type]['file']
-            with open(target_file, 'w+', encoding='utf-8', newline='') as f:
-                json.dump(existing_metadata, f, indent=4, ensure_ascii=False)
+            # Compare the existing JSON metadata with fetched metadata from database
+            # => Update the json file only if changes are found
+            diff_found = False
+            try:
+                with open(target_file, "r", encoding="utf8") as d:
+                    existing_json_metadata = json.load(d)
+                    if len(set(existing_json_metadata.keys()) ^ set(existing_db_metadata.keys())) == 0:
+                        for key in existing_json_metadata.keys():
+                            if existing_json_metadata[key] != existing_db_metadata[key]:
+                                diff_found = True
+                    else:
+                        diff_found = True
+            except Exception as err:
+                logger.debug(err, exc_info=1)
+                diff_found = True
+            if diff_found:
+                with open(target_file, 'w+', encoding="utf-8", newline="") as f:
+                    json.dump(existing_db_metadata, f, indent=4, ensure_ascii=False)
+            else:
+                logger.debug(f"Skipping {object_type} metadata file update as no changes were found")
         logger.debug('Extended properties fetched')
 
 
