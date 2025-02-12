@@ -18,7 +18,17 @@ from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from ahjo.operations.general.db_tester import DatabaseTester
 from ahjo.logging import setup_db_logger
-from sqlalchemy import Column, Integer, String, DateTime, func, MetaData, Table, select
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    func,
+    MetaData,
+    Table,
+    select,
+    case,
+)
 from sqlalchemy.sql import text
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import NoSuchTableError
@@ -30,10 +40,11 @@ DEFAULT_TEST_TABLE_COLS = [
     Column("batch_id", Integer),
     Column("start_time", DateTime),
     Column("end_time", DateTime, default=func.now()),
-    Column("test_name", String),
-    Column("issue", String),
-    Column("result", String),
-    Column("test_file", String),
+    Column("test_name", String(255)),
+    Column("issue", String(255)),
+    Column("result", String(255)),
+    Column("test_file", String(255)),
+    Column("datadate", String(10)),
 ]
 
 
@@ -464,7 +475,10 @@ def test(context):
             "save_test_results_to_db", False
         ),
     )
-    db_tester.execute_test_files("./database/tests/")
+    db_tester.execute_test_files(
+        test_folder="./database/tests/",
+        scripting_variables=context.configuration.get("test_variables", None),
+    )
 
 
 @action(affects_database=True, dependencies=["init"])
@@ -517,6 +531,18 @@ def create_test_view(context):
                 test_table.columns.issue.label("issue"),
                 test_table.columns.result.label("result"),
                 test_table.columns.test_file.label("test_file"),
+                case(
+                    (test_table.c.datadate.is_(None), None),
+                    (func.length(test_table.c.datadate) == 10, test_table.c.datadate),
+                    (func.length(test_table.c.datadate) != 8, test_table.c.datadate),
+                    else_=func.concat(
+                        func.left(test_table.c.datadate, 4),
+                        "-",
+                        func.substring(test_table.c.datadate, 5, 2),
+                        "-",
+                        func.right(test_table.c.datadate, 2),
+                    ),
+                ).label("datadate"),
             ),
             schema=view_schema,
         )

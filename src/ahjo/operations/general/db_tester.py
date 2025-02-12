@@ -30,7 +30,8 @@ class DatabaseTester:
         end_time,
         test_name,
         issue,
-        result
+        result,
+        datadate
     FROM @RESULTS
     ORDER BY ID
 
@@ -85,7 +86,12 @@ class DatabaseTester:
         """
         return self.save_test_results_to_db
 
-    def execute_test_files(self, test_folder: str, display_output: bool = True) -> dict:
+    def execute_test_files(
+        self,
+        test_folder: str,
+        display_output: bool = True,
+        scripting_variables: dict = None,
+    ) -> dict:
         """Run the tests in the test folder and optionally save the results to the database.
 
         Arguments:
@@ -94,13 +100,20 @@ class DatabaseTester:
             Folder containing the test files.
         display_output: bool
             If True, the test output is displayed.
+        scripting_variables: dict
+            Dictionary of scripting variables to be used in the test files.
 
         Returns:
         -----------
         dict
             Dict where key is the test file name and value is the test result.
         """
-        file_results = deploy_sqlfiles(self.connectable, test_folder, "Running tests")
+        file_results = deploy_sqlfiles(
+            self.connectable,
+            test_folder,
+            "Running tests",
+            scripting_variables=scripting_variables,
+        )
         if self.save_test_results_to_db:
             self.save_results_to_db(file_results)
         if display_output:
