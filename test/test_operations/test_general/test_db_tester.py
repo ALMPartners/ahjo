@@ -28,10 +28,11 @@ class TestDBTesterWithSQLServer:
             Column("batch_id", Integer),
             Column("start_time", DateTime),
             Column("end_time", DateTime, default=func.now()),
-            Column("test_name", String),
-            Column("issue", String),
-            Column("result", String),
-            Column("test_file", String),
+            Column("test_name", String(255)),
+            Column("issue", String(255)),
+            Column("result", String(255)),
+            Column("test_file", String(255)),
+            Column("datadate", String(10)),
             schema=SCHEMA,
         )
         metadata.create_all(self.engine)
@@ -59,7 +60,14 @@ class TestDBTesterWithSQLServer:
         test_results = self.db_tester.execute_test_files(
             TEST_FILE, display_output=False
         )
-        expected_columns = ["start_time", "end_time", "test_name", "issue", "result"]
+        expected_columns = [
+            "start_time",
+            "end_time",
+            "test_name",
+            "issue",
+            "result",
+            "datadate",
+        ]
         assert test_results[TEST_FILE][0] == expected_columns
 
     def test_db_tester_should_return_datetime_objects(self):
@@ -118,6 +126,7 @@ class TestDBTesterWithSQLServer:
                 and row.test_name == test_results[TEST_FILE][i + 1][2]
                 and row.issue == test_results[TEST_FILE][i + 1][3]
                 and row.result == test_results[TEST_FILE][i + 1][4]
+                and row.datadate == test_results[TEST_FILE][i + 1][5]
             ):
                 all_rows_are_equal = False
                 break
