@@ -13,6 +13,8 @@ from logging import getLogger
 
 import ahjo.operations as op
 import ahjo.database_utilities as du
+import csv
+import datetime
 import networkx as nx
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.interface_methods import format_to_table
@@ -583,6 +585,36 @@ def update_db_obj_prop(context):
     op.update_db_object_properties(
         context.get_connectable(), context.configuration.get("metadata_allowed_schemas")
     )
+
+
+@action(affects_database=True, dependencies=["init"])
+def query(context):
+    """Run a query from the command line and optionally save the result to a csv file.
+    Use -q to pass the query and --csv to save the result to a csv file.
+    If --csv is used without a path, the result is saved to a file named 'query_result_<timestamp>.csv'.
+    """
+    query = context.get_cli_arg("q")
+    write_csv = context.get_cli_arg("csv")
+
+    if query is None:
+        logger.error("No query provided. Use -q to pass the query.")
+        return
+
+    result = du.execute_query(context.get_connectable(), query, include_headers=True)
+    logger.info(format_to_table(result))
+
+    if write_csv:
+
+        if isinstance(write_csv, bool):
+            csv_path = (
+                f"query_result_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"
+            )
+        else:
+            csv_path = write_csv
+
+        with open(csv_path, "w", newline="") as file:
+            writer = csv.writer(file, delimiter=";")
+            writer.writerows(result)
 
 
 @action()
