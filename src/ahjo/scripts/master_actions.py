@@ -15,6 +15,7 @@ import ahjo.operations as op
 import ahjo.database_utilities as du
 import networkx as nx
 from ahjo.action import action, create_multiaction, registered_actions
+from ahjo.interface_methods import format_to_table
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from ahjo.operations.general.db_tester import DatabaseTester
 from ahjo.logging import setup_db_logger
@@ -582,6 +583,24 @@ def update_db_obj_prop(context):
     op.update_db_object_properties(
         context.get_connectable(), context.configuration.get("metadata_allowed_schemas")
     )
+
+
+@action()
+def test_connection(context):
+    """(MSSQL) Test database connection & display connection information."""
+    result = du.execute_query(
+        connectable=context.get_connectable(),
+        query="""SELECT
+            SUSER_NAME() AS login_name,
+            HOST_NAME() AS client_host,
+            DB_NAME() AS current_database,
+            SERVERPROPERTY('ProductVersion') AS sql_version,
+            SERVERPROPERTY('Edition') AS sql_edition
+        """,
+        include_headers=True,
+    )
+    result[0] = [header.replace("_", " ").title() for header in result[0]]
+    logger.info(format_to_table(result))
 
 
 @action()
