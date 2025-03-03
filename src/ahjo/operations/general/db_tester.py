@@ -152,6 +152,10 @@ class DatabaseTester:
                 )
                 logger.info("", extra={"record_class": "skip_db_record"})
 
+            if len(output) == 0:
+                logger.debug(f"No output from the test file {filepath}")
+                continue
+
             output_columns = output[0]
             cols_to_skip_indices = [
                 i for i, col in enumerate(output_columns) if col in cols_to_skip
