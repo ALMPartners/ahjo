@@ -59,13 +59,18 @@ jobs:
         python -m venv ahjovenv
         source ahjovenv/bin/activate
         python -m pip install --upgrade pip
-        pip install .
-        pip install pyodbc pytest pytest-azurepipelines
+        pip install -e .[mssql,azure]
+        pip install pyodbc pytest pytest-azurepipelines pytest-cov
       displayName: Install ahjo pip-package
 
     - bash: |
         set -ex
         source ahjovenv/bin/activate
         cd /home/vsts/work/1/s
-        pytest --mssql_host localhost --mssql_port 1433 --mssql_username sa --mssql_password SALA_kala12 -m "not nopipeline" --test-run-title="Ahjo SQL self-tests"
+        pytest --mssql_host localhost --mssql_port 1433 --mssql_username sa --mssql_password SALA_kala12 -m "not nopipeline" --test-run-title="Ahjo SQL self-tests" --cov=src --cov-report=html --cov-branch
       displayName: Run ahjo
+      
+    - task: PublishCodeCoverageResults@2
+      inputs:
+        summaryFileLocation: '$(Build.SourcesDirectory)/coverage.xml'
+      displayName: 'Publish code coverage results to ADO GUI'
