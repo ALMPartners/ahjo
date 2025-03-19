@@ -588,33 +588,43 @@ def update_db_obj_prop(context):
 
 
 @action(affects_database=True, dependencies=["init"])
-def query(context):
-    """Run a query from the command line and optionally save the result to a csv file.
-    Use -q to pass the query and --csv to save the result to a csv file.
-    If --csv is used without a path, the result is saved to a file named 'query_result_<timestamp>.csv'.
+def to_csv(context):
+    """Run a query from file, command line argument or table name and save the result to a csv file.
+    Use --query to pass the query from cli, --filepath to pass a file path to a file containing a query or --table and --schema to pass a table name.
+    If no output path is provided, the file will be saved to the current working directory with a timestamp.
     """
-    query = context.get_cli_arg("q")
-    write_csv = context.get_cli_arg("csv")
+    query = context.get_cli_arg("query")
+    file = context.get_cli_arg("filepath")
+    schema_name = context.get_cli_arg("schema")
+    table_name = context.get_cli_arg("table")
+    output_path = context.get_cli_arg("output")
+    connectable = context.get_connectable()
 
-    if query is None:
-        logger.error("No query provided. Use -q to pass the query.")
+    if file:
+        result = du.execute_from_file(connectable, file, include_headers=True)
+    elif query:
+        result = du.execute_query(connectable, query, include_headers=True)
+    elif table_name:
+        schema_name = schema_name if schema_name else "dbo"
+        result = du.execute_query(
+            connectable,
+            f"SELECT * FROM {schema_name}.{table_name}",
+            include_headers=True,
+        )
+    else:
+        logger.error(
+            """No query, file or table provided. Use --query to pass the query from cli, --file to pass a file path or --table to pass a table name."""
+        )
         return
 
-    result = du.execute_query(context.get_connectable(), query, include_headers=True)
-    logger.info(format_to_table(result))
+    if output_path is None:
+        output_path = (
+            f"query_result_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"
+        )
 
-    if write_csv:
-
-        if isinstance(write_csv, bool):
-            csv_path = (
-                f"query_result_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"
-            )
-        else:
-            csv_path = write_csv
-
-        with open(csv_path, "w", newline="") as file:
-            writer = csv.writer(file, delimiter=";")
-            writer.writerows(result)
+    with open(output_path, "w", newline="") as file:
+        writer = csv.writer(file, delimiter=";")
+        writer.writerows(result)
 
 
 @action()

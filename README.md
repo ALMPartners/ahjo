@@ -366,6 +366,11 @@ The name and schema of the view are defined in *test_view_name* and *test_view_s
 Parse the SQL files in the project and create a dependency graph of the database objects.
 Plots the graph with plotly. Optionally, use `--files` to parameter define which files are used in the action.
 
+## to-csv
+Runs sql query from a file or command line argument and saves the results to a CSV file. Can also be used to fetch data from a given table/view and save it to a CSV file.
+Use `--query` to pass the query as a command line argument or `--filepath` to pass the path to a file containing the query or `--table` and `--schema` to pass the name of the table/view to fetch data from.
+Use `--output` to define the path where the CSV file is saved. If the path is not defined, the file is saved to the working directory with the name `query_result_<timestamp>.csv`.
+
 ## list
 You can view all available actions and their descriptions with command `ahjo list`.
 ```
