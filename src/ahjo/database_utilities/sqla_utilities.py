@@ -21,6 +21,9 @@ from pyparsing import (
     CaselessKeyword,
     Word,
     nums,
+    White,
+    Optional,
+    ParserElement,
 )
 from sqlalchemy import create_engine, inspect, event
 from sqlalchemy.engine import Engine, Connection, make_url, engine_from_config
@@ -40,6 +43,8 @@ try:
     pyodbc.pooling = False
 except:
     pyodbc = None
+
+ParserElement.set_default_whitespace_chars("")
 
 
 def create_sqlalchemy_url(conn_info: dict, use_master_db: bool = False) -> URL:
@@ -784,8 +789,12 @@ def get_dialect_patterns(dialect_name: str) -> dict:
             "one_line_comment": Combine("--" + restOfLine),
             "multiline_comment": Regex(r"/\*.+?\*/", flags=DOTALL),
             # GO must be on its own line
-            "batch_separator": LineStart().leaveWhitespace()
-            + ((CaselessKeyword("GO") + Word(nums)) | CaselessKeyword("GO")),
+            "batch_separator": (
+                LineStart()
+                + Optional(White())
+                + CaselessKeyword("GO")
+                + Optional(White() + Word(nums))
+            ).set_parse_action(lambda t: "".join(t).strip().split()),
             "script_variable_pattern": "$({})",
         },
         "postgresql": {  # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
