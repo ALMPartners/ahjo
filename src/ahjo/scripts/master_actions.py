@@ -600,12 +600,20 @@ def to_csv(context):
     output_path = context.get_cli_arg("output")
     connectable = context.get_connectable()
 
-    if file:
+    if (
+        (file and query)
+        or (file and table_name and schema_name)
+        or (query and table_name and schema_name)
+    ):
+        logger.error(
+            """Too many arguments. Use --query to pass the query from cli, --filepath to pass a file path or --table and --schema to pass a table name."""
+        )
+        return
+    elif file:
         result = du.execute_from_file(connectable, file, include_headers=True)
     elif query:
         result = du.execute_query(connectable, query, include_headers=True)
-    elif table_name:
-        schema_name = schema_name if schema_name else "dbo"
+    elif table_name and schema_name:
         result = du.execute_query(
             connectable,
             f"SELECT * FROM {schema_name}.{table_name}",
@@ -613,7 +621,7 @@ def to_csv(context):
         )
     else:
         logger.error(
-            """No query, file or table provided. Use --query to pass the query from cli, --file to pass a file path or --table to pass a table name."""
+            """No query, file or table provided. Use --query to pass the query from cli, --filepath to pass a file path or --table and --schema to pass a table name."""
         )
         return
 
