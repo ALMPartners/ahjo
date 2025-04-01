@@ -5,6 +5,7 @@
 
 """Module for database tests related operations."""
 
+import sys
 from ahjo.operations.general.sqlfiles import deploy_sqlfiles
 from ahjo.interface_methods import format_to_table
 from typing import Union
@@ -91,6 +92,7 @@ class DatabaseTester:
         test_folder: str,
         display_output: bool = True,
         scripting_variables: dict = None,
+        exit_on_failure: bool = False,
     ) -> dict:
         """Run the tests in the test folder and optionally save the results to the database.
 
@@ -102,6 +104,8 @@ class DatabaseTester:
             If True, the test output is displayed.
         scripting_variables: dict
             Dictionary of scripting variables to be used in the test files.
+        exit_on_failure: bool
+            If True, the script exits with code 1 if any test fails.
 
         Returns:
         -----------
@@ -114,19 +118,27 @@ class DatabaseTester:
             "Running tests",
             scripting_variables=scripting_variables,
         )
+
         if self.save_test_results_to_db:
             self.save_results_to_db(file_results)
+
+        parsed_results, any_failed = self.parse_test_results(file_results)
+
         if display_output:
-            self.display_test_results(file_results)
+            self.display_test_results(parsed_results)
+
+        if exit_on_failure and any_failed:
+            sys.exit(1)
+
         return file_results
 
-    def display_test_results(
+    def parse_test_results(
         self,
         file_results: dict,
         cols_to_skip: list = ["start_time", "end_time"],
         col_ordering: list = ["ID", "issue", "test_name", "result"],
-    ):
-        """Default method to display the test results.
+    ) -> dict:
+        """Parse the test results from deploy_sqlfiles function.
 
         Arguments:
         -----------
@@ -136,25 +148,35 @@ class DatabaseTester:
             List of column names to skip from the output.
         col_ordering: list
             List of column names to order the output.
+
+        Returns:
+        -----------
+        dict
+            Dict where key is the test file name and value is the parsed test result.
+        any_failed: bool
+            If True, at least one test failed.
         """
 
         # Default column name and value for the test results
         # This is used to count the number of tests passed
         result_col_name = "result"
         result_passed_str = "OK"
-        n_files = len(file_results)
+        parsed_results = {}
+        any_failed = False
 
         for filepath, output in file_results.items():
-
-            if n_files > 1:
-                logger.info(
-                    f"Test file: {filepath}", extra={"record_class": "skip_db_record"}
-                )
-                logger.info("", extra={"record_class": "skip_db_record"})
 
             if len(output) == 0:
                 logger.debug(f"No output from the test file {filepath}")
                 continue
+
+            parsed_results[filepath] = {
+                "test_results": None,
+                "result_col_exists": None,
+                "n_tests": None,
+                "n_passed": 0,
+                "n_failed": 0,
+            }
 
             output_columns = output[0]
             cols_to_skip_indices = [
@@ -162,8 +184,10 @@ class DatabaseTester:
             ]
             new_rows = []
             result_col_exists = True if result_col_name in output_columns else False
+            parsed_results[filepath]["result_col_exists"] = result_col_exists
             n_tests_passed = 0
             n_tests = len(output) - 1
+            parsed_results[filepath]["n_tests"] = n_tests
 
             for row in output:
 
@@ -178,6 +202,7 @@ class DatabaseTester:
                         and col.lower() == result_passed_str.lower()
                     ):
                         n_tests_passed += 1
+                        parsed_results[filepath]["n_passed"] += 1
 
                     new_row.append(col)
 
@@ -209,12 +234,40 @@ class DatabaseTester:
             if result_col_exists:
                 new_rows.append(["", "", "TOTAL", f"{n_tests_passed}/{n_tests} PASSED"])
 
-            logger.info(
-                format_to_table(new_rows), extra={"record_class": "skip_db_record"}
-            )
+            parsed_results[filepath]["test_results"] = new_rows
 
             if result_col_exists and n_tests_passed != n_tests:
-                n_failed_tests = n_tests - n_tests_passed
+                parsed_results[filepath]["n_failed"] = n_tests - n_tests_passed
+                if not any_failed:
+                    any_failed = True
+
+        return parsed_results, any_failed
+
+    def display_test_results(self, file_results: dict):
+        """Default method to display the test results.
+
+        Arguments:
+        -----------
+        file_results: dict
+            Dict where key is the test file name and value is the test result.
+        """
+        n_files = len(file_results)
+        for filepath, output in file_results.items():
+
+            results = output["test_results"]
+            result_col_exists = output["result_col_exists"]
+            n_failed_tests = output["n_failed"]
+
+            if n_files > 1:
+                logger.info(
+                    f"Test file: {filepath}", extra={"record_class": "skip_db_record"}
+                )
+                logger.info("", extra={"record_class": "skip_db_record"})
+
+            logger.info(
+                format_to_table(results), extra={"record_class": "skip_db_record"}
+            )
+            if result_col_exists and n_failed_tests > 0:
                 tests_str = "tests" if n_failed_tests > 1 else "test"
                 logger.warning(f"Warning: {n_failed_tests} {tests_str} failed!")
                 logger.info("", extra={"record_class": "skip_db_record"})

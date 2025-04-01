@@ -479,6 +479,7 @@ BACKEND:
 | `save_test_results_to_db` | No | Save test action results to database table. | `boolean` | `false` |
 | `test_table_schema` | No | Schema of the table where test action results are saved. | `str` | `"dbo"` |
 | `test_table_name` | No | Name of the table where test action results are saved. | `str` | `"ahjo_tests"` |
+| `exit_on_test_failure` | No | Return exit code 1 if any ahjo test fails. | `boolean` | `false` |
 | `create_test_table_if_not_exists` | No | Create test table if it does not exist. | `boolean` | `true` |
 | `test_view_name` | No | Name of the view that is used to display test action results. | `str` | `"vwAhjoTests"` |
 | `test_view_schema` | No | Schema of the view that is used to display test action results. | `str` | `"dbo"` |

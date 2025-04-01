@@ -481,6 +481,7 @@ def test(context):
     db_tester.execute_test_files(
         test_folder="./database/tests/",
         scripting_variables=context.configuration.get("test_variables", None),
+        exit_on_failure=context.configuration.get("exit_on_test_failure", False),
     )
 
 

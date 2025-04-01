@@ -158,3 +158,18 @@ class TestDBTesterWithSQLServer:
             result = connection.execute(reflected_table.select())
             rows = result.fetchall()
         assert len(rows) == 0
+
+    def test_db_tester_should_exit_if_exit_on_test_failure_is_true(self):
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            self.db_tester.execute_test_files(
+                TEST_FILE, display_output=False, exit_on_failure=True
+            )
+        assert pytest_wrapped_e.type == SystemExit
+        assert pytest_wrapped_e.value.code == 1
+
+    def test_db_tester_should_not_exit_if_exit_on_test_failure_is_false(self):
+        try:
+            self.db_tester.execute_test_files(TEST_FILE, display_output=False)
+        except SystemExit as e:
+            pytest.fail(f"SystemExit raised: {e}")
+        assert True
