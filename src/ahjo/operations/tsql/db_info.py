@@ -26,14 +26,18 @@ def display_db_info(context: Context) -> None:
 
     engine = context.get_engine()
     db_name = context.get_conn_info().get("database")
-    logger.info(format_message("Loading database connection settings"))
+    logger.info(
+        format_message("Loading database connection settings"),
+        extra={"info_type": "header"},
+    )
 
     # Check if the database exists
     if not check_if_db_exists(engine, db_name):
         logger.info(
             format_message(
-                "Skipping database connection test. Database does not exist or connection failed."
-            )
+                "Skipping database collation check. Database does not exist or connection failed."
+            ),
+            extra={"info_type": "header"},
         )
         return
 
@@ -72,8 +76,6 @@ def display_db_info(context: Context) -> None:
             logger.error(
                 f"Warning: Ahjo is configured to use {config_catalog_collation_type_desc} catalog collation setting, but the database setting is {catalog_collation_type_desc}"
             )
-
-    logger.info("")
 
 
 def check_if_db_exists(engine: Engine, db_name: str) -> bool:

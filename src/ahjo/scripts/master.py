@@ -128,9 +128,7 @@ def main():
 
     args_dict.update(rest_args_dict)
 
-    info_msg = (
-        f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
-    )
+    info_msg = f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
     line = "-" * len(info_msg)
     print(line)
     print(info_msg)

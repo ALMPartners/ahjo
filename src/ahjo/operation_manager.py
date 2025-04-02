@@ -21,10 +21,10 @@ class OperationManager:
         self.message = message
 
     def __enter__(self):
-        logger.info(format_message(self.message))
+        logger.info(format_message(self.message), extra={"info_type": "header"})
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logger.info("------", extra={"record_class": "line"})
+        logger.info("", extra={"record_class": "line", "info_type": "header"})
 
 
 def format_message(mssg: str) -> str:

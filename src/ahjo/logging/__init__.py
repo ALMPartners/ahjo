@@ -4,12 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import sys
 import ahjo
 from logging.config import fileConfig, dictConfig
 from logging import getLogger
 from ahjo.context import Context
 from ahjo.logging.db_logger import load_log_table
 from ahjo.database_utilities.sqla_utilities import database_exists
+from ahjo.logging.console_formatter import ConsoleFormatterFactory
 
 
 AHJO_LOG_CONFIG = {
@@ -52,8 +54,12 @@ AHJO_LOG_CONFIG = {
         },
     },
     "formatters": {
-        "formatter_console": {"format": "%(message)s"},
+        "formatter_console": {
+            "()": ConsoleFormatterFactory.get_colored_formatter,
+            "format": "%(message)s",
+        },
         "formatter_alembic_console": {
+            "()": ConsoleFormatterFactory.get_colored_formatter,
             "format": "%(levelname).7s [%(name)s] %(message)s",
             "datefmt": "%H:%M:%S",
         },
@@ -66,6 +72,27 @@ AHJO_LOG_CONFIG = {
         },
     },
 }
+
+
+def set_console_color_formatting(enable_color: bool = True):
+    """Configure the console formatters based on ANSI color support.
+
+    When the console supports ANSI colors, the custom colored formatter factory
+    is used. Otherwise the console formatters fall back to the standard
+    ``logging.Formatter``.
+
+    Parameters:
+    -----------
+    enable_color: bool
+        Whether colored console output is enabled in the configuration.
+    """
+    formatters = AHJO_LOG_CONFIG["formatters"]
+    for formatter_name in ("formatter_console", "formatter_alembic_console"):
+        formatter = formatters[formatter_name]
+        if enable_color:
+            formatter["()"] = ConsoleFormatterFactory.get_colored_formatter
+        else:
+            formatter.pop("()", None)
 
 
 def setup_ahjo_logger(
@@ -92,6 +119,11 @@ def setup_ahjo_logger(
         Logger object for ahjo.
     """
     try:
+        enable_color = True
+        if context is not None:
+            enable_color = context.configuration.get("color_console_logging", True)
+        set_console_color_formatting(enable_color)
+
         # Load root logger configuration
         fileConfig(
             os.path.join(os.path.dirname(ahjo.__file__), "resources/logger_root.ini")

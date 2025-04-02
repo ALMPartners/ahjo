@@ -4,12 +4,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from logging import getLogger
-from re import sub
+from re import sub, compile as re_compile
 from typing import Iterable, List, Union
 from ahjo.config import Config
 
 
 logger = getLogger("ahjo")
+
+# Matches ANSI escape sequences (used to ignore them when measuring widths)
+_ANSI_ESCAPE_RE = re_compile(r"\x1b\[[0-9;]*m")
+
+
+def _visible_len(value: str) -> int:
+    """Return the visible length of ``value`` by stripping ANSI escape codes."""
+    return len(_ANSI_ESCAPE_RE.sub("", value))
 
 
 def load_conf(conf_file: str, key: str = "BACKEND"):
@@ -133,18 +141,23 @@ def remove_special_chars(in_string: str) -> str:
 
 
 def format_to_table(lst_of_iter: List[Iterable]) -> str:
-    """Format list of iterables to nice human-readable table."""
+    """Format list of iterables to nice human-readable table.
+
+    Column widths are computed from the visible length of each cell so that
+    ANSI escape codes (used for colored output) do not break the alignment.
+    """
     if not lst_of_iter:
         return "No output."
     col_widths = [0] * len(lst_of_iter[0])
     for row in lst_of_iter:
         for i, cell in enumerate(row):
-            col_widths[i] = max(col_widths[i], len(str(cell)))
-    col_formats = [f"{{:<{width + 2}}}" for width in col_widths]
+            col_widths[i] = max(col_widths[i], _visible_len(str(cell)))
     formatted_output = ""
     for row in lst_of_iter:
         for i, cell in enumerate(row):
-            formatted_output += col_formats[i].format(str(cell))
+            cell_str = str(cell)
+            padding = col_widths[i] - _visible_len(cell_str) + 2
+            formatted_output += cell_str + " " * padding
         formatted_output += "\n"
     return formatted_output
 

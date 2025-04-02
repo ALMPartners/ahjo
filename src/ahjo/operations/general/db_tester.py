@@ -182,9 +182,8 @@ class DatabaseTester:
             cols_to_skip_indices = [
                 i for i, col in enumerate(output_columns) if col in cols_to_skip
             ]
-            new_rows = []
+            formatted_rows = []
             result_col_exists = True if result_col_name in output_columns else False
-            parsed_results[filepath]["result_col_exists"] = result_col_exists
             n_tests_passed = 0
             n_tests = len(output) - 1
             parsed_results[filepath]["n_tests"] = n_tests
@@ -222,19 +221,41 @@ class DatabaseTester:
                             raise e
                         new_row.append(row[swap_indx])
 
-                new_rows.append(new_row)
+                formatted_rows.append(new_row)
 
             # Header row to human friendly format
-            if isinstance(new_rows[0], list):
-                for header_i, col in enumerate(new_rows[0]):
+            if isinstance(formatted_rows[0], list):
+                for header_i, col in enumerate(formatted_rows[0]):
                     if isinstance(col, str):
-                        new_rows[0][header_i] = col.replace("_", " ").title()
+                        formatted_rows[0][header_i] = col.replace("_", " ").title()
 
-            # Add final row with the number of tests passed
             if result_col_exists:
-                new_rows.append(["", "", "TOTAL", f"{n_tests_passed}/{n_tests} PASSED"])
 
-            parsed_results[filepath]["test_results"] = new_rows
+                n_failed_tests = n_tests - n_tests_passed
+                formatted_rows.append(
+                    ["", "", "TOTAL", f"{n_tests_passed}/{n_tests} PASSED"]
+                )
+
+                # Add color to the whole row based on the test result
+                for row_i, row in enumerate(formatted_rows):
+
+                    if row_i == 0:
+                        continue
+
+                    if row_i == len(formatted_rows) - 1:
+                        row_passed = n_failed_tests == 0
+                    else:
+                        row_passed = any(
+                            isinstance(col, str)
+                            and col.lower() == result_passed_str.lower()
+                            for col in row
+                        )
+
+                    color = "\033[92m" if row_passed else "\033[91m"
+                    for col_i, col in enumerate(row):
+                        row[col_i] = f"{color}{col}\033[0m"
+
+            parsed_results[filepath]["test_results"] = formatted_rows
 
             if result_col_exists and n_tests_passed != n_tests:
                 parsed_results[filepath]["n_failed"] = n_tests - n_tests_passed

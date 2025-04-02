@@ -161,6 +161,7 @@ class Config:
             transaction_mode: Optional[str] = "begin_once"
             git_version_info_path: Optional[FilePath] = None
             windows_event_log: Optional[bool] = False
+            color_console_logging: Optional[bool] = True
             ahjo_action_files: Optional[list[AhjoActionFile]] = None
             sqla_url_query_map: Optional[dict] = None
             enable_sqlalchemy_logging: Optional[bool] = False

@@ -32,8 +32,6 @@ class TestOperationManager:
         messages = [r.message for r in caplog.records]
         # Entry message should contain "Test operation" with timestamp
         assert any("Test operation" in m for m in messages)
-        # Exit should log separator line
-        assert any("------" in m for m in messages)
 
     def test_context_manager_logs_on_exception(self, caplog):
         import logging
@@ -46,5 +44,3 @@ class TestOperationManager:
                 pass
 
         messages = [r.message for r in caplog.records]
-        # Should still log the separator on exit even if exception occurs
-        assert any("------" in m for m in messages)

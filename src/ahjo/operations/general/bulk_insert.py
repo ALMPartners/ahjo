@@ -53,7 +53,10 @@ def bulk_insert_into_database(
         finally:
             if connection is None:
                 connection_obj.close()
-            logger.info(f"Inserted {len(records)} rows to {table_name_with_schema}")
+            logger.info(
+                f"Inserted {len(records)} rows to {table_name_with_schema}", 
+                extra={"info_type": "success"}
+            )
 
 
 class BulkInsertContext:
@@ -88,7 +91,10 @@ class BulkInsertContext:
             self.engine.dialect.bind_typing = interfaces.BindTyping.SETINPUTSIZES
         if traceback is None:
             duration = time() - self.start_time
-            logger.info(f"{self.table_name} insert took {duration:.2f} seconds")
+            logger.info(
+                f"{self.table_name} insert took {duration:.2f} seconds",
+                extra={"info_type": "success"},
+            )
 
 
 def handler_fast_executemany(conn, cursor, statement, params, context, executemany):

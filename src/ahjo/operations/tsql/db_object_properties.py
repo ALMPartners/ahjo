@@ -235,7 +235,8 @@ def update_db_object_properties(
             raise err
         end_time = time.time()
         logger.info(
-            f"Extended properties updated in {end_time - start_time:.2f} seconds"
+            f"Extended properties updated in {end_time - start_time:.2f} seconds",
+            extra={"info_type": "success"},
         )
 
 

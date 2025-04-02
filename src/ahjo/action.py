@@ -264,7 +264,7 @@ def execute_action(
     context: ahjo.context.Context
         Context object. If None, a new one is created.
     """
-    logger.info("------", extra={"record_class": "line"})
+    logger.info("", extra={"record_class": "line"})
     with OperationManager('Starting to execute "' + action_name + '"'):
         if context is None:
             context = Context(config_filename, engine)
