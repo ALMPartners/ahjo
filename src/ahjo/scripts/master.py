@@ -18,7 +18,7 @@ from ahjo.action import (
 from ahjo.context import config_is_valid, Context
 from ahjo.database_utilities.sqla_utilities import test_connection
 from ahjo.interface_methods import get_config_path
-from ahjo.operations.general.db_info import print_db_collation
+from ahjo.operations.tsql.db_info import display_db_info
 from ahjo.logging import setup_ahjo_logger
 
 try:
@@ -115,6 +115,7 @@ def main():
 
     config_path = get_config_path(args.config_filename)
     context = Context(config_path, command_line_args=args_dict)
+    sql_dialect = context.get_conn_info().get("dialect", "mssql+pyodbc")
 
     import_actions(
         ahjo_action_files=context.configuration.get(
@@ -166,10 +167,12 @@ def main():
     if not config_is_valid(config_path, non_interactive=non_interactive):
         sys.exit(1)
 
-    if context.configuration.get("display_db_info", True) and action_affects_db(
-        ahjo_action
+    if (
+        sql_dialect == "mssql+pyodbc"
+        and context.configuration.get("display_db_info", True)
+        and action_affects_db(ahjo_action)
     ):
-        print_db_collation(context)
+        display_db_info(context)
 
     kwargs = {"context": context}
     if len(args.files) > 0:

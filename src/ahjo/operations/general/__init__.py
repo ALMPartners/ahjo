@@ -31,8 +31,6 @@ from ahjo.operations.general.sqlfiles import (
 
 from ahjo.operations.general.upgrade import AhjoUpgrade
 
-from ahjo.operations.general.db_info import print_db_collation
-
 from ahjo.operations.general.scan import AhjoScan
 
 from ahjo.operations.general.db_tester import DatabaseTester

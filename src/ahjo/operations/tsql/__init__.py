@@ -13,4 +13,4 @@ from ahjo.operations.tsql.db_object_properties import (
     update_file_object_properties,
     update_db_object_properties,
 )
-from ahjo.operations.tsql.db_info import print_collation
+from ahjo.operations.tsql.db_info import display_db_info

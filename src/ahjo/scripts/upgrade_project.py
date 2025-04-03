@@ -10,7 +10,7 @@ Ahjo upgrade-project command entrypoint.
 import argparse
 import sys
 from ahjo.operations.general.upgrade import AhjoUpgrade
-from ahjo.operations.general.db_info import print_db_collation
+from ahjo.operations.tsql.db_info import display_db_info
 from ahjo.database_utilities.sqla_utilities import test_connection
 from ahjo.context import Context, config_is_valid
 from ahjo.logging import setup_ahjo_logger
@@ -84,7 +84,7 @@ def main():
 
     # Display database collation
     if context.configuration.get("display_db_info", True):
-        print_db_collation(context)
+        display_db_info(context)
 
     ahjo_upgrade = AhjoUpgrade(
         config_filename=config_filename,
