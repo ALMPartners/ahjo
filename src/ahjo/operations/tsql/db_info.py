@@ -38,8 +38,9 @@ def display_db_info(context: Context) -> None:
         return
 
     try:
-        db_info = get_db_info(engine, db_name)
-        db_info["Server name"] = context.get_conn_info().get("server")
+        db_info = {"Server name": context.get_conn_info().get("server")}
+        fetched_db_info = get_db_info(engine, db_name)
+        db_info = {**db_info, **fetched_db_info}
         server_edition = db_info.get("Server Edition", None)
         collation = db_info.get("Database collation", None)
         catalog_collation_type_desc = db_info.get("Database catalog collation", None)
@@ -99,14 +100,13 @@ def get_db_info(engine: Engine, db_name: str) -> tuple:
     """Get collation information from the database."""
 
     db_info = {
-        "Server name": None,
         "Host name": None,
         "Login name": None,
         "Database": None,
         "Database collation": None,
         "Database catalog collation": None,
         "SQL version": None,
-        "Server Edition": None,
+        "Server edition": None,
     }
 
     try:

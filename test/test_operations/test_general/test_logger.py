@@ -4,7 +4,7 @@ import pytest
 from ahjo.logging import setup_ahjo_logger
 from ahjo.interface_methods import display_message
 from ahjo.operations.general import sqlfiles
-from ahjo.operations.tsql import print_collation
+from ahjo.operations.tsql import display_db_info
 from ahjo.operation_manager import OperationManager
 from ahjo.database_utilities.sqla_utilities import add_db_logger_listeners_to_engine
 from sqlalchemy.sql import text
@@ -120,7 +120,7 @@ class TestDBLoggerWithSQLServer:
         self.empty_log_table()
 
         display_message("Test", use_logger=True)
-        print_collation(self.engine, self.config.get("database"))
+        display_db_info(self.context)
         self.logger.info("Test", extra={"record_class": "line"})
 
         self.flush_handler()
