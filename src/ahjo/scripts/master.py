@@ -29,12 +29,6 @@ except ImportError:
 # Indicator for a frozen executable (e.g. running from an msi installation)
 CX_FROZEN_TAG = " (frozen)" if getattr(sys, "frozen", False) else ""
 
-info_msg = f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
-line = "-" * len(info_msg)
-print(line)
-print(info_msg)
-print(line)
-
 
 def main():
 
@@ -45,6 +39,13 @@ def main():
         help="Path to the project-specific config file. The parameter is optional if the config path is defined in environment variable AHJO_CONFIG_PATH.",
         type=str,
         nargs="?",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        help="Display the version of Ahjo.",
+        action="version",
+        version=f"%(prog)s {AHJO_VERSION}",
     )
     parser.add_argument(
         "--files",
@@ -112,6 +113,14 @@ def main():
                 i += 1
 
     args_dict.update(rest_args_dict)
+
+    info_msg = (
+        f"    Ahjo - Database deployment framework v{AHJO_VERSION}{CX_FROZEN_TAG}   "
+    )
+    line = "-" * len(info_msg)
+    print(line)
+    print(info_msg)
+    print(line)
 
     config_path = get_config_path(args.config_filename)
     context = Context(config_path, command_line_args=args_dict)
