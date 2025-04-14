@@ -51,16 +51,10 @@ def display_db_info(context: Context) -> None:
             + 2
         )
         logger.info("")
-        bold_ansi = "\033[1m"
-        reset_ansi = "\033[0m"
         for key, value in db_info.items():
-            label = f"{bold_ansi}{key}:{reset_ansi}"
+            label = f"{key}:"
             if value:
-                logger.info(
-                    "   "
-                    + label.ljust(label_width + len(bold_ansi) + len(reset_ansi))
-                    + str(value)
-                )
+                logger.info("   " + label.ljust(label_width) + str(value))
 
     except Exception:
         logger.info(
