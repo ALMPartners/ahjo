@@ -22,15 +22,9 @@ jobs:
         with:
           # Version range or exact version of a Python version to use, using SemVer's version range syntax.
           python-version: '3.12'
-          
-      - name: Install Ahjo
-        run: pip install .
-
-      - name: Create requirements.txt
-        run: pip freeze > requirements.txt
         
       - name: Install Safety
         run: pip install safety
 
       - name: Run vulnerability scan
-        run: safety check -r requirements.txt --key ${{secrets.PYUP_API_KEY}}
+        run: safety --stage cicd --key ${{secrets.PYUP_API_KEY}} scan
