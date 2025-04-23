@@ -18,10 +18,8 @@ pipelines:
           caches:
             - pip
           script:
-            - pip install .
-            - pip freeze >> installed-packages.txt
             - pip install safety
-            - safety check -r installed-packages.txt --key $PYUP_API_KEY $SAFETY_ARGS
+            - safety --stage cicd --key $PYUP_API_KEY scan
   custom:
     # Used to run scheduled checks
     safety:
@@ -29,7 +27,5 @@ pipelines:
           caches:
             - pip
           script:
-            - pip install .
-            - pip freeze >> installed-packages.txt
             - pip install safety
-            - safety check -r installed-packages.txt --key $PYUP_API_KEY $SAFETY_ARGS
+            - safety --stage cicd --key $PYUP_API_KEY scan
