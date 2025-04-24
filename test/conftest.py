@@ -66,6 +66,10 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "nopipeline: tests that cannot be run on CI pipeline"
     )
+    config.addinivalue_line(
+        "markers",
+        "mssql_init: mark tests that require SQL server connection without database creation setup",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -98,6 +102,9 @@ def pytest_collection_modifyitems(config, items):
                 fixtures = ["mssql_setup_and_teardown"] + item.fixturenames
                 item.fixturenames = fixtures
             else:
+                item.add_marker(skip_mssql)
+        if "mssql_init" in item.keywords:
+            if not execute_mssql_tests:
                 item.add_marker(skip_mssql)
         if "git" in item.keywords:
             if git_installed:
