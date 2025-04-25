@@ -19,7 +19,6 @@ class TestCreateDBWithSQLServer:
 
         yield
 
-    @pytest.mark.mssql_init
     def test_create_db(self):
         """Test creating a database."""
 
