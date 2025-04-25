@@ -4,7 +4,7 @@ from ahjo.operations.tsql.create_db import create_db
 from sqlalchemy import text
 
 
-@pytest.mark.mssql_init
+@pytest.mark.mssql
 class TestCreateDBWithSQLServer:
     """Test class for creating a database with SQL Server."""
 
@@ -18,14 +18,6 @@ class TestCreateDBWithSQLServer:
         self.context = ahjo_context(mssql_sample)
 
         yield
-
-        with self.engine.connect() as connection:
-            connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-                text(
-                    f"IF EXISTS (SELECT name FROM sys.databases WHERE name = '{self.db_name}') DROP DATABASE {self.db_name}"
-                )
-            )
-        self.engine.dispose()
 
     @pytest.mark.mssql_init
     def test_create_db(self):

@@ -103,9 +103,6 @@ def pytest_collection_modifyitems(config, items):
                 item.fixturenames = fixtures
             else:
                 item.add_marker(skip_mssql)
-        if "mssql_init" in item.keywords:
-            if not execute_mssql_tests:
-                item.add_marker(skip_mssql)
         if "git" in item.keywords:
             if git_installed:
                 fixtures = ["git_setup"] + item.fixturenames

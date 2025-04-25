@@ -9,10 +9,13 @@ Global variable QUERIES holds SQL select statements to
 retrieve session and database ids from database."""
 from os import path
 from typing import Union
+from logging import getLogger
 
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
 from sqlalchemy.engine import Engine
+
+logger = getLogger("ahjo")
 
 QUERIES = {
     "get_db_session": "SELECT session_id FROM sys.dm_exec_sessions WHERE database_id = :database_id",
@@ -67,7 +70,10 @@ def create_db(
             variables={"database_id": database_id},
         )
         for sid in session_ids:
-            execute_query(engine, f"KILL {sid.session_id}")
+            try:
+                execute_query(engine, f"KILL {sid.session_id}")
+            except Exception as e:
+                logger.debug(f"Failed to kill session {sid.session_id}: {e}")
         execute_query(engine, f"DROP DATABASE [{db_name}]")
 
     def create_database():
