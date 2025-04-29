@@ -123,7 +123,7 @@ def ensure_mssql_ready_for_tests(config):
             host=config.getoption("mssql_host"),
             port=config.getoption("mssql_port"),
             database="master",
-            query={"driver": "ODBC Driver 17 for SQL Server"},
+            query={"driver": "ODBC Driver 18 for SQL Server"},
         )
         engine = create_engine(connection_url)
         with engine.connect() as connection:
