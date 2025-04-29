@@ -1,4 +1,4 @@
-cx-Freeze >=6.15, < 7.3
+cx-Freeze ~= 8.0
 # Don't use editable installs here!
  # see setup.cfg for other available options
 .[mssql, azure]
