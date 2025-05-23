@@ -6,15 +6,6 @@ steps:
       targetPath: '$(Pipeline.Workspace)/msiupload'
     displayName: "Download build artefacts"
 
-  - task: powershell@2
-    inputs:
-      targetType: 'inline'
-      script: |
-        Invoke-WebRequest https://aka.ms/downloadazcopy-v10-windows -OutFile azcopy.zip
-        Expand-Archive azcopy.zip -DestinationPath D:/a/1/s/temp/azcopy
-        Move-Item -Path D:/a/1/s/temp/azcopy/azcopy*/*.exe -Destination D:/a/1/s/temp/azcopy/azcopy.exe
-    displayName: Install az copy
-
 # Use powershell to move msi-files from workspace/msiupload to workspace/msi
   - powershell: |
       $source1 = "$(Pipeline.Workspace)/msiupload/MSIBuild.BuildForSystem"
@@ -27,19 +18,17 @@ steps:
       ls
     displayName: Move MSI-files before upload
 
-  - task: AzureCLI@2
+
+# Copy the MSI files to Azure Storage
+  - task: AzureFileCopy@6
     inputs:
-      azureSubscription: Azure-Systest
-      scriptType: 'ps' 
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        $env:AZCOPY_AUTO_LOGIN_TYPE="SPN"
-        $env:AZCOPY_SPA_CLIENT_SECRET="$(TFTAClientSecret)"
-        $env:AZCOPY_SPA_APPLICATION_ID="$(TFTAApplicationId)"
-        $env:AZCOPY_TENANT_ID="$(TenantId)"
-        $env:AZCOPY_ACTIVE_DIRECTORY_ENDPOINT="https://login.microsoftonline.com/$(TenantId)/oauth2/v2.0/token"
-        D:/a/1/s/temp/azcopy/azcopy.exe copy '$(Pipeline.Workspace)/msi/*' "$(StorageAccountURL)" --recursive --preserve-smb-permissions=true --preserve-smb-info=true
-    displayName: Copy msi-files to Azure Storage
+      SourcePath: "$(Pipeline.Workspace)/msi"
+      azureSubscription: 'SC for storage - UAMI'
+      Destination: 'AzureBlob'
+      storage: 'stalmbanksystestdev001'
+      ContainerName: 'ahjo-msi'
+      CleanTargetBeforeCopy: true
+    displayName: "Copy MSI files to Azure Blob Storage"
 
   - task: powershell@2
     inputs:
