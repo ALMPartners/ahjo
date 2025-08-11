@@ -103,10 +103,18 @@ class ActionRegisteration:
         self.notify_dependencies()
         if self.affects_database is True:
             conn_info = context.get_conn_info()
-            warning_message = (
-                f"Warning! You are about to commit changes to server "
-                f"{conn_info.get('server')} database {conn_info.get('database')} \n"
-            )
+            db_name = conn_info.get("database")
+            server_name = conn_info.get("server")
+            if "init" in self.baseactions:
+                warning_message = (
+                    f"\nWarning! You are about to run an action that initializes the database.\n"
+                    f"This will delete the database {db_name} (if exists) and create a new database with the same name.\n"
+                )
+            else:
+                warning_message = (
+                    f"Warning! You are about to commit changes to server "
+                    f"{server_name} database {db_name} \n"
+                )
             if context.configuration.get("target_database_protected", False):
                 return verify_input(
                     message=warning_message,
