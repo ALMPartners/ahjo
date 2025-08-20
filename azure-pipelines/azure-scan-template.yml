@@ -1,0 +1,7 @@
+steps:
+  - task: MicrosoftSecurityDevOps@1
+    displayName: 'Microsoft Security DevOps'
+    inputs:
+      policy: 'azuredevops'
+      publish: true
+      artifactName: 'CodeAnalysisLogs'

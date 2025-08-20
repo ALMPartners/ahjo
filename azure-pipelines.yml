@@ -70,6 +70,19 @@ stages:
         parameters:
           buildJob: "BuildForSystem"
 
+- stage: Scans
+  displayName: Run scans
+  trigger: automatic
+  jobs:
+  - job: DevOpsScans
+    displayName: 'Run DevOps scans'
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    timeoutInMinutes: 25
+    steps:
+    - template: 'azure-pipelines/azure-scan-template.yml'
+
 - stage: Release
   displayName: Trigger MPA release flows
   trigger: manual
