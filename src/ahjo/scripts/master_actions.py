@@ -72,7 +72,7 @@ def init(context):
         db_path = context.configuration.get("database_data_path")
         log_path = context.configuration.get("database_log_path")
         init_size = context.configuration.get("database_init_size", 100)
-        max_size = context.configuration.get("database_max_size", 10000)
+        max_size = context.configuration.get("database_max_size", 100000)
         file_growth = context.configuration.get("database_file_growth", 500)
         compatibility_level = context.configuration.get("database_compatibility_level")
         collation = context.configuration.get(
