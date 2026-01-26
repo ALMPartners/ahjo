@@ -47,6 +47,7 @@ class Context:
     ):
         self.engine = None
         self.master_engine = master_engine
+        self.logger_engine = None
         self.connection = None
         self.transaction = None
         self.enable_transaction = None
@@ -88,6 +89,21 @@ class Context:
             )
         return self.engine
 
+    def get_logger_engine(self) -> Engine:
+        """Create a separate engine for database logging."""
+        if self.logger_engine is None:
+            conn_info = self.get_conn_info()
+            self.logger_engine = create_sqlalchemy_engine(
+                create_sqlalchemy_url(conn_info),
+                token=conn_info.get("token"),
+                **{
+                    "isolation_level": "AUTOCOMMIT",
+                    "pool_size": 2,
+                    "max_overflow": 0,
+                },
+            )
+        return self.logger_engine
+
     def get_master_engine(self) -> Engine:
         """Return engine to 'master' database."""
         if self.master_engine is None:
@@ -102,29 +118,7 @@ class Context:
     def get_connection(self) -> Connection:
         """Create connection when needed first time."""
         if self.connection is None:
-
             connection = self.get_engine().connect()
-
-            @event.listens_for(connection, "commit")
-            def receive_after_commit(conn):
-                for handler in logger.handlers:
-                    if handler.name == "handler_database":
-                        handler.set_lock(False)
-                        handler.flush()
-                        break
-
-            @event.listens_for(connection, "rollback")
-            def receive_after_rollback(conn):
-                for handler in logger.handlers:
-                    if handler.name == "handler_database":
-                        handler.buffer = [
-                            record
-                            for record in handler.buffer
-                            if record.levelname != "INFO"
-                        ]
-                        handler.set_lock(False)
-                        break
-
             self.connection = connection
 
         if self.enable_transaction is None:

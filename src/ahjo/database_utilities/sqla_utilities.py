@@ -144,54 +144,7 @@ def create_sqlalchemy_engine(
                 SQL_COPT_SS_ACCESS_TOKEN: token
             }  # apply it to keyword arguments
 
-    db_logger_handler = get_db_logger_handler()
-    if db_logger_handler is not None:
-        return add_db_logger_listeners_to_engine(engine, db_logger_handler)
-
     return engine
-
-
-def add_db_logger_listeners_to_engine(
-    engine: Engine, db_logger_handler: object
-) -> Engine:
-    """Add database logger listeners to engine.
-
-    Arguments
-    ---------
-    engine
-        SQL Alchemy engine.
-    """
-
-    @event.listens_for(engine, "commit")
-    def receive_commit(conn):
-        db_logger_handler.set_lock(False)
-
-    @event.listens_for(engine, "begin")
-    def receive_begin(conn):
-        db_logger_handler.set_lock(True)
-
-    @event.listens_for(engine, "connect")
-    def receive_connect(dbapi_connection, connection_record):
-        db_logger_handler.set_lock(True)
-
-    @event.listens_for(engine, "engine_disposed")
-    def receive_engine_disposed(engine):
-        db_logger_handler.set_lock(False)
-
-    return engine
-
-
-def get_db_logger_handler() -> object:
-    """Return database logger handler (if exists).
-
-    Returns
-    -------
-    ahjo.logging.db_handler.DatabaseHandler
-        Database logger handler.
-    """
-    for handler in logger.handlers:
-        if handler.name == "handler_database":
-            return handler
 
 
 def test_connection(
@@ -656,9 +609,10 @@ def _execute_batch(
     script_output: list,
     include_headers: bool = False,
 ):
+    result_set = None
     """Execute batch of SQL statements."""
     result_set = connectable.execute(text(batch))
-    if result_set.returns_rows:
+    if result_set and result_set.returns_rows:
         if script_output == [] and include_headers is True:
             script_output.append(list(result_set.keys()))
         script_output.extend([row for row in result_set])

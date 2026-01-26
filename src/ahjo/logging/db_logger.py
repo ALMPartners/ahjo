@@ -8,8 +8,6 @@ from datetime import datetime
 from sqlalchemy import Column, MetaData, String, Table, DateTime, func, Integer
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy import insert
-from sqlalchemy.orm import Session
-from sqlalchemy.engine import Engine
 
 try:
     from ahjo.version import version as AHJO_VERSION
@@ -44,11 +42,9 @@ class DatabaseLogger:
             return
 
         # Insert log records to the database
-        connectable = self.context.get_connectable()
-        with Session(connectable) as session:
-            session.execute(insert(self.log_table), log_rows)
-            if type(connectable) == Engine:
-                session.commit()
+        engine = self.context.get_logger_engine()
+        with engine.connect() as conn:
+            conn.execute(insert(self.log_table), log_rows)
 
     def parse_log_records(self, log_records):
         """Parse log records to a list of dictionaries.

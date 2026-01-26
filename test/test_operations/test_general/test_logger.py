@@ -6,7 +6,6 @@ from ahjo.interface_methods import display_message
 from ahjo.operations.general import sqlfiles
 from ahjo.operations.tsql import display_db_info
 from ahjo.operation_manager import OperationManager
-from ahjo.database_utilities.sqla_utilities import add_db_logger_listeners_to_engine
 from sqlalchemy.sql import text
 
 PRODUCTCATEGORY = "store.ProductCategory"
@@ -36,9 +35,7 @@ class TestDBLoggerWithSQLServer:
             + "."
             + self.config["alembic_version_table"]
         )
-        self.engine = add_db_logger_listeners_to_engine(
-            mssql_engine, self.get_db_logger_handler()
-        )
+        self.engine = mssql_engine
         old_cwd = getcwd()
         chdir(mssql_sample)
         run_alembic_action("upgrade", "head")
@@ -141,45 +138,19 @@ class TestDBLoggerWithSQLServer:
             ).fetchall()
             assert result[0][4] == "Test"
 
-    def test_db_handler_should_lock_within_transaction(self):
-        with self.engine.begin() as connection:
-            assert self.get_handler_lock_status() == True
+    def test_logger_engine_pool_size(self):
+        logger_engine = self.context.get_logger_engine()
+        assert logger_engine.pool.size() == 2
 
-    def test_db_handler_should_unlock_after_commit(self):
-        with self.engine.begin() as connection:
-            pass
-        assert self.get_handler_lock_status() == False
-
-    def test_db_handler_should_not_flush_when_locked(self):
-        self.empty_log_table()
-        with self.engine.begin() as connection:
-            for i in range(DB_HANDLER_BUFFER_SIZE + 1):
-                self.logger.info(f"Test row {i}")
-            log_records = connection.execute(
-                text(f"SELECT * FROM {AHJO_LOG_TABLE}")
-            ).fetchall()
-            assert (
-                len(self.get_db_logger_handler().buffer) == DB_HANDLER_BUFFER_SIZE + 1
-                and len(log_records) == 0
-            )
+    def test_logger_engine_max_overflow(self):
+        logger_engine = self.context.get_logger_engine()
+        assert logger_engine.pool._max_overflow == 0
 
     def empty_log_table(self):
         with self.engine.begin() as connection:
             connection.execute(text(f"DELETE FROM {AHJO_LOG_TABLE}"))
 
-    def get_db_logger_handler(self):
-        for handler in self.logger.handlers:
-            if handler.name == "handler_database":
-                return handler
-        return None
-
     def flush_handler(self):
         for handler in self.logger.handlers:
             if handler.name == "handler_database":
                 handler.flush()
-
-    def get_handler_lock_status(self):
-        for handler in self.logger.handlers:
-            if handler.name == "handler_database":
-                return handler.locked
-        return None

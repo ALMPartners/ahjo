@@ -33,7 +33,6 @@ class DatabaseHandler(logging.Handler):
         self.context = context
         self.capacity = capacity
         self.buffer = []
-        self.locked = True
         self.db_logger = DatabaseLogger(
             context=context, log_table=log_table, commit=self.get_git_commit()
         )
@@ -100,7 +99,7 @@ class DatabaseHandler(logging.Handler):
         bool:
             True if the buffer should be flushed, False otherwise.
         """
-        if len(self.buffer) >= self.capacity and not self.locked:
+        if len(self.buffer) >= self.capacity:
             return True
         if record is not None and hasattr(record, "flush") and record.flush:
             return True
@@ -113,10 +112,6 @@ class DatabaseHandler(logging.Handler):
         except:
             pass
         self.buffer = []
-
-    def set_lock(self, locked: bool):
-        """Set the lock status of the handler."""
-        self.locked = locked
 
     def get_git_commit(self):
         """Get the git commit info.
@@ -135,16 +130,3 @@ class DatabaseHandler(logging.Handler):
         except Exception as error:
             print(f"Failed to get git version. Error: {error}")
         return None
-
-
-def get_db_logger_handler(logger: logging.Logger):
-    """Return database logger handler (if exists).
-
-    Returns
-    -------
-    ahjo.logging.db_handler.DatabaseHandler
-        Database logger handler.
-    """
-    for handler in logger.handlers:
-        if handler.name == "handler_database":
-            return handler
