@@ -28,7 +28,7 @@ stages:
       steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
       - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
         parameters: # Parameters the job needs
-          pythonVersion: "3.12"
+          pythonVersion: "3.13"
           MsiTargetType: "user" # User or system
 
     - job: BuildForSystem # System name for job
@@ -40,16 +40,16 @@ stages:
       steps: # What steps the job includes. These are fetched from a job-template-file or can be defined on to the main file here (not recommended)
       - template: 'azure-pipelines/azure-build-template.yml' # Path to template file
         parameters: # Parameters the job needs
-          pythonVersion: "3.12"
+          pythonVersion: "3.13"
           MsiTargetType: "system" # User or system
 
 - stage: MSITest
   displayName: Test MSI installers
   dependsOn: MSIBuild
   trigger: automatic
-  jobs: 
+  jobs:
     - job: UserBuildTest
-      displayName: Build user test 
+      displayName: Build user test
       pool:
         name: Azure Pipelines
         vmImage: 'windows-latest'
@@ -60,7 +60,7 @@ stages:
           buildJob: "BuildForUser"
 
     - job: SystemBuildTest
-      displayName: Build system test 
+      displayName: Build system test
       pool:
         name: Azure Pipelines
         vmImage: 'windows-latest'
