@@ -10,7 +10,7 @@ from typing import Union
 
 
 def execute_queries(
-    connectable: Union[Engine, Connection], queries: list, commit: bool = False
+    connectable: Union[Engine, Connection], queries: list, commit: bool = True
 ):
     """Execute a list of queries with a cursor.
 
@@ -25,81 +25,35 @@ def execute_queries(
 
     Returns
     -------
-    tuple
-        Tuple of two lists: results and errors.
+    results: list
+        List of results for each query that returns results.
     """
     raw_connection = (
         connectable.raw_connection()
         if isinstance(connectable, Engine)
         else connectable.connection
     )
-    cursor = raw_connection.cursor()
-    results = []
-    errors = []
-
-    for i in range(len(queries)):
-        batch_results, batch_errors = execute_query(
-            cursor, queries[i][0], parameters=queries[i][1]
-        )
-        if batch_results:
-            results.extend(batch_results)
-        if batch_errors:
-            errors.extend(batch_errors)
-
-    if commit:
-        cursor.commit()
-        cursor.close()
-
-    return results, errors
-
-
-def execute_query(
-    cursor: object,
-    query: str,
-    parameters: list = None,
-    commit: bool = False,
-    close: bool = False,
-) -> tuple:
-    """Execute a query with a cursor.
-
-    Arguments
-    ---------
-    cursor
-        pyodbc cursor object.
-    query
-        SQL query to be executed.
-    parameters
-        List of parameters to be used in the query.
-    commit
-        If True, commit the transaction.
-    close
-        If True, close the cursor.
-
-    Returns
-    -------
-    tuple
-        Tuple of two lists: results and errors.
-    """
-    results = []
-    errors = []
-
     try:
-        cursor.execute(query, parameters) if parameters else cursor.execute(query)
-    except Exception as e:
-        errors.append(e)
+        cursor = raw_connection.cursor()
+        results = []
+        for sql, params in queries:
+            cursor.execute(sql, params or [])
 
-    while True:
-        try:
-            results.append(cursor.fetchall())
-            cursor.nextset()
-        except:
-            if cursor.nextset() is None:
-                errors.append(cursor.fetchall())
-            break
+            while True:
+                if cursor.description:
+                    results.append(cursor.fetchall())
+                if not cursor.nextset():
+                    break
 
-    if commit:
-        cursor.commit()
-    if close:
+            if commit:
+                raw_connection.commit()
+
         cursor.close()
 
-    return results, errors
+    except Exception:
+        raise
+
+    if commit:
+        raw_connection.close()
+
+    return results

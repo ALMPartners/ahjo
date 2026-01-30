@@ -194,12 +194,11 @@ def update_db_object_properties(
             )
         except Exception as err:
             logger.warning("Failed to update extended properties")
-            logger.debug(err, exc_info=1)
-        finally:
-            end_time = time.time()
-            logger.info(
-                f"Extended properties updated in {end_time - start_time:.2f} seconds"
-            )
+            raise err
+        end_time = time.time()
+        logger.info(
+            f"Extended properties updated in {end_time - start_time:.2f} seconds"
+        )
 
 
 def load_json_object_properties(file: str, object_type: str) -> Any:
