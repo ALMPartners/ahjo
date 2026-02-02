@@ -24,8 +24,6 @@ class OperationManager:
         logger.info(format_message(self.message))
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if traceback is not None:
-            logger.error("".join(format_exception(exc_type, exc_value, traceback)))
         logger.info("------", extra={"record_class": "line"})
 
 
