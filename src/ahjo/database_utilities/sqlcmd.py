@@ -1,6 +1,6 @@
 # Ahjo - Database deployment framework
 #
-# Copyright 2019 - 2025 ALM Partners Oy
+# Copyright 2019 - 2026 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
 """Utility functions for executing tsql using sqlcmd.exe"""
