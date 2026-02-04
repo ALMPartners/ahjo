@@ -183,8 +183,14 @@ def update_db_object_properties(
 
         # Add first batch if it's empty
         # or remaining procedure calls to last batch
-        if batch_indx < batch_size or batch_indx > len(batches) * batch_size:
+        if len(sql_query) > 0 and (
+            batch_indx < batch_size or batch_indx > len(batches) * batch_size
+        ):
             batches.append((sql_query, sql_params))
+
+        if len(batches) == 0:
+            logger.debug("No extended properties to update. Skipping update.")
+            return
 
         try:
             execute_pyodbc_queries(
