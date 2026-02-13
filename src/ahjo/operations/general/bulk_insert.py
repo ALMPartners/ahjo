@@ -19,7 +19,7 @@ def bulk_insert_into_database(
     engine: Engine,
     reflected_table: Table,
     records: list,
-    chunk_size: Optional[int] = 1000,
+    chunk_size: Optional[int] = 100000,
     connection: Optional[Connection] = None,
 ):
     """Insert multiple rows of data to target table.
@@ -36,17 +36,24 @@ def bulk_insert_into_database(
         List of dictionaries containing columns and values to insert.
     chunk_size : int
         Defines in how big chunks records are passed to insert.
+    connection : Optional[Connection]
+        Optional transaction connection. If not given, a new connection is created
+        and committed after each chunk.
     """
     table_name_with_schema = (
         reflected_table.schema + "." if reflected_table.schema else ""
     ) + reflected_table.name
     with BulkInsertContext(engine, table_name_with_schema):
         connection_obj = engine.connect() if connection is None else connection
-        for r in chunks(records, chunk_size):
-            connection_obj.execute(reflected_table.insert(), r)
-        if connection is None:
-            connection_obj.commit()
-            connection_obj.close()
+        try:
+            for r in chunks(records, chunk_size):
+                connection_obj.execute(reflected_table.insert(), r)
+                if connection is None:
+                    connection_obj.commit()
+        finally:
+            if connection is None:
+                connection_obj.close()
+            logger.info(f"Inserted {len(records)} rows to {table_name_with_schema}")
 
 
 class BulkInsertContext:
