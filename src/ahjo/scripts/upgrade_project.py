@@ -12,9 +12,9 @@ import sys
 from ahjo.operations.general.upgrade import AhjoUpgrade
 from ahjo.operations.tsql.db_info import display_db_info
 from ahjo.database_utilities.sqla_utilities import test_connection
-from ahjo.context import Context, config_is_valid
+from ahjo.context import Context
 from ahjo.logging import setup_ahjo_logger
-from ahjo.interface_methods import get_config_path, load_conf
+from ahjo.config import Config
 
 info_msg = "Ahjo upgrade-project"
 line = "-" * len(info_msg)
@@ -47,15 +47,15 @@ def main():
         default=False,
     )
     args = parser.parse_args()
+    args_dict = {k: v for k, v in args._get_kwargs()}
 
-    config_filename = get_config_path(args.config_filename)
-    config_dict = load_conf(config_filename)
-    non_interactive = args.non_interactive
-    if not config_is_valid(config_dict, non_interactive=non_interactive):
+    config_filename = Config.get_config_path(args.config_filename)
+    try:
+        context = Context(config_filename, command_line_args=args_dict)
+    except Exception as e:
+        print(str(e))
         sys.exit(1)
 
-    # Create context
-    context = Context(config_filename)
     context.set_enable_transaction(False)
 
     if context.configuration.get("connect_resiliently", True):
@@ -90,7 +90,7 @@ def main():
         config_filename=config_filename,
         context=context,
         version=args.version,
-        skip_confirmation=non_interactive,
+        skip_confirmation=args.non_interactive,
     )
     upgrade_succeeded = ahjo_upgrade.upgrade()
 

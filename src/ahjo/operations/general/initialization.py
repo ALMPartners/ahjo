@@ -16,8 +16,8 @@ from os import makedirs, path
 from pathlib import Path
 from shutil import copyfile
 
+from ahjo.config import Config
 from ahjo.context import AHJO_PATH, filter_nested_dict
-from ahjo.interface_methods import load_conf
 from ahjo.operation_manager import OperationManager
 
 PROJECT_STRUCTURE = {
@@ -68,7 +68,7 @@ def create_local_config_base(config_filename: str):
         if not Path(config_filename).is_file():
             print("File not found: " + config_filename)
             return
-        config_data = load_conf(config_filename, key="")
+        config_data = Config(config_filename=config_filename, key="").as_dict()
         local_path = config_data.get("LOCAL", None)
         if not local_path:
             print("Local config not defined in {}".format(config_filename))

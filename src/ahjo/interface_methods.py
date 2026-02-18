@@ -3,74 +3,48 @@
 # Copyright 2019 - 2026 ALM Partners Oy
 # SPDX-License-Identifier: Apache-2.0
 
-import ahjo.util.jsonc as json
-import yaml
-import os
 from logging import getLogger
-from pathlib import Path
 from re import sub
 from typing import Iterable, List, Union
+from ahjo.config import Config
 
 
 logger = getLogger("ahjo")
 
 
 def load_conf(conf_file: str, key: str = "BACKEND"):
-    """Read configuration from file (JSON, JSONC, YAML or YML)."""
-    if not isinstance(conf_file, str):
-        conf_file = str(conf_file)
-    if conf_file.endswith(".json") or conf_file.endswith(".jsonc"):
-        return load_json_conf(conf_file, key)
-    elif conf_file.endswith(".yaml") or conf_file.endswith(".yml"):
-        return load_yaml_conf(conf_file, key)
-    else:
-        logger.error(
-            "Error: Configuration file must be in JSON, JSONC, YAML or YML format."
-        )
-        return False
+    """Deprecated. Use Config class instead from ahjo.config.
+    Read configuration from file (JSON, JSONC, YAML or YML).
+    """
+    logger.debug(
+        "ahjo.interface_methods.load_conf is deprecated. Use Config class instead from ahjo.config."
+    )
+    config = Config(config_filename=conf_file, key=key)
+    return config.as_dict()
 
 
 def load_json_conf(conf_file: str, key: str = "BACKEND") -> dict:
-    """Read configuration from file (JSON or JSONC).
-
+    """Deprecated. Use Config class instead from ahjo.config.
+    Read configuration from file (JSON or JSONC).
     Return contents of 'key' block.
     """
-    f_path = Path(conf_file)
-    if not f_path.is_file():
-        logger.error("No such file: " + f_path.absolute().as_posix())
-        return None
-    with open(f_path, encoding="utf-8") as f:
-        raw_data = f.read()
-    data = json.loads(raw_data)
-    key_value = data.get(key, None)
-    if key_value:
-        return key_value
-    return data
+    logger.debug(
+        "ahjo.interface_methods.load_json_conf is deprecated. Use Config class instead from ahjo.config."
+    )
+    config = Config(config_filename=conf_file, key=key)
+    return config.as_dict()
 
 
 def load_yaml_conf(conf_file: str, key: str = "BACKEND") -> dict:
-    """Read configuration from file (YAML).
-
+    """Deprecated. Use Config class instead from ahjo.config.
+    Read configuration from file (YAML).
     Return contents of 'key' block.
     """
-    f_path = Path(conf_file)
-    if not f_path.is_file():
-        logger.error("No such file: " + f_path.absolute().as_posix())
-        return None
-    with open(f_path, encoding="utf-8") as f:
-        data = yaml.load(f, Loader=yaml.FullLoader)
-    if isinstance(data, dict):
-        key_value = data.get(key, None)
-        if key_value:
-            return key_value
-    return data
-
-
-def get_config_path(config_filename: str) -> str:
-    """Get configuration filename from environment variable if not given as argument."""
-    if config_filename is None and "AHJO_CONFIG_PATH" in os.environ:
-        return os.environ.get("AHJO_CONFIG_PATH")
-    return config_filename
+    logger.debug(
+        "ahjo.interface_methods.load_yaml_conf is deprecated. Use Config class instead from ahjo.config."
+    )
+    config = Config(config_filename=conf_file, key=key)
+    return config.as_dict()
 
 
 def are_you_sure(message: Union[str, list], use_logger: bool = True) -> bool:

@@ -5,8 +5,6 @@
 
 import os
 import sys
-import yaml
-import json
 from logging import getLogger
 from typing import Union, Any
 from sqlalchemy.engine import Engine, Connection
@@ -15,7 +13,7 @@ from ahjo.database_utilities import (
     create_sqlalchemy_engine,
     create_sqlalchemy_url,
 )
-from ahjo.interface_methods import load_conf, load_json_conf, load_yaml_conf
+from ahjo.config import Config
 from sqlalchemy import event
 
 logger = getLogger("ahjo")
@@ -53,7 +51,9 @@ class Context:
         self.enable_transaction = None
         self.connectivity_type = None
         self.config_filename = config_filename
-        self.configuration = load_conf(config_filename)
+        self.configuration = Config(
+            config_filename=config_filename, cli_args=command_line_args, validate=True
+        ).as_dict()
         self.command_line_args = command_line_args
         self.conn_info = None
         if self.configuration is None:
@@ -230,111 +230,12 @@ def filter_nested_dict(node, search_term: str) -> Union[dict, None]:
         return dupe_node or None
 
 
-def merge_nested_dicts(dict_a: dict, dict_b: dict, path: str = None) -> dict:
-    """Merge dictionary b to dictionary a.
-
-    If keys conflict, that is, the same key exists in both dictionaries,
-    overwrite the value of dictionary a with the value of dictionary b.
-    """
-    if path is None:
-        path = []
-    for key in dict_b:
-        if key in dict_a:
-            if isinstance(dict_a[key], dict) and isinstance(dict_b[key], dict):
-                merge_nested_dicts(dict_a[key], dict_b[key], path + [str(key)])
-            elif dict_a[key] == dict_b[key]:
-                pass  # same leaf value
-            else:
-                # replace dict_a value with dict_b value
-                dict_a[key] = dict_b[key]
-        else:
-            dict_a[key] = dict_b[key]
-    return dict_a
-
-
 def merge_config_files(config_filename: str) -> dict:
-    """Return the contents of config_filename or merged contents,
+    """Deprecated. Use Config.merge_config_files instead from ahjo.config.
+    Return the contents of config_filename or merged contents,
     if there exists a link to another config file in config_filename.
     """
-    config_data = load_conf(config_filename, key="")
-    local_path = config_data.get("LOCAL", None)
-    if local_path is not None:
-        try:
-            local_data = load_conf(local_path, key="")
-            if local_data is not None:
-                merged_configs = merge_nested_dicts(config_data, local_data)
-                return merged_configs
-        except Exception as err:
-            logger.error(f"Could not open file {local_path}: {err}")
-    return config_data
-
-
-def config_is_valid(config: Union[str, dict], non_interactive: bool = False) -> bool:
-    """Validate configuration file."""
-
-    config = config if isinstance(config, dict) else load_conf(config)
-
-    # Allow only non-interactive authentication methods in non-interactive mode.
-    if non_interactive:
-        azure_auth = config.get("azure_authentication")
-        if azure_auth is not None:
-            if azure_auth == "ActiveDirectoryInteractive":
-                logger.error(
-                    "Error: Azure authentication method ActiveDirectoryInteractive is not supported in non-interactive mode."
-                )
-                return False
-        else:
-            if config.get("username_file") is None:
-                logger.error(
-                    "Error: Username file is required in non-interactive mode."
-                )
-                return False
-            if config.get("password_file") is None:
-                logger.error(
-                    "Error: Password file is required in non-interactive mode."
-                )
-                return False
-
-    return True
-
-
-def convert_config_to_yaml(
-    config_path: str = "config_development.jsonc",
-    output_path: str = "config_development.yaml",
-) -> bool:
-    """Convert json/jsonc config file to YAML format."""
-    try:
-
-        # Check if config file is in json or jsonc format.
-        if not (config_path.endswith(".jsonc") or config_path.endswith(".json")):
-            logger.error(f"Error: Configuration file must be in JSON or JSONC format.")
-            return False
-
-        configuration = load_json_conf(config_path, key=None)
-        with open(output_path, "w+", encoding="utf-8") as file:
-            yaml.dump(configuration, file, default_flow_style=False)
-        return True
-    except Exception as err:
-        logger.error(f"Could not convert config file to YAML format: {err}")
-        return False
-
-
-def convert_config_to_json(
-    config_path: str = "config_development.yaml",
-    output_path: str = "config_development.json",
-) -> bool:
-    """Convert YAML config file to JSON format."""
-    try:
-
-        # Check if config file is in yaml or yml format.
-        if not (config_path.endswith(".yaml") or config_path.endswith(".yml")):
-            logger.error(f"Error: Configuration file must be in YAML or YML format.")
-            return False
-
-        configuration = load_yaml_conf(config_path, key=None)
-        with open(output_path, "w+", encoding="utf-8") as file:
-            json.dump(configuration, file, indent=4)
-        return True
-    except Exception as err:
-        logger.error(f"Could not convert config file to JSON format: {err}")
-        return False
+    logger.debug(
+        "merge_config_files is deprecated. Use Config.merge_config_files instead from ahjo.config."
+    )
+    return Config.merge_config_files(config_filename)

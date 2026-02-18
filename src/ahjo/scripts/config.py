@@ -7,7 +7,7 @@
 Ahjo config command entrypoint.
 """
 import argparse
-from ahjo.context import convert_config_to_yaml, convert_config_to_json
+from ahjo.config import Config
 from ahjo.logging import setup_ahjo_logger
 
 logger = setup_ahjo_logger(enable_database_log=False)
@@ -29,11 +29,13 @@ def main():
     parser.add_argument("--output", "-o", help="Path to output file.", required=True)
 
     args = parser.parse_args()
+    convert_to = args.convert_to.lower()
+    config = Config(config_filename=args.config, validate=False, key="")
 
     if args.convert_to in ["yaml", "yml"]:
-        convert_config_to_yaml(config_path=args.config, output_path=args.output)
+        config.save_config(output_path=args.output, format=convert_to)
     if args.convert_to in ["json", "jsonc"]:
-        convert_config_to_json(config_path=args.config, output_path=args.output)
+        config.save_config(output_path=args.output, format=convert_to)
 
 
 if __name__ == "__main__":

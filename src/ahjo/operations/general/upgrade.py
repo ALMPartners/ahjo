@@ -9,7 +9,8 @@ import os
 import ahjo.scripts.master_actions
 import networkx as nx
 import importlib
-from ahjo.interface_methods import load_conf, are_you_sure
+from ahjo.config import Config
+from ahjo.interface_methods import are_you_sure
 from ahjo.operations.general.git_version import (
     _get_all_tags,
     _get_git_version,
@@ -73,17 +74,29 @@ class AhjoUpgrade:
         bool
             True if upgrade was successful, otherwise False.
         """
+
+        connectable_type = None
+        updated_versions = []
+
         try:
-            # Load settings
-            config = load_conf(self.config_filename)
-            upgrade_actions = load_conf(
-                config.get("upgrade_actions_file", f"./upgrade_actions.jsonc")
-            )
+
+            # Load settings and upgrade actions from config files
+            try:
+                config = Config(
+                    config_filename=self.config_filename, validate=True
+                ).as_dict()
+                upgrade_actions = Config(
+                    config_filename=config.get(
+                        "upgrade_actions_file", f"./upgrade_actions.jsonc"
+                    )
+                ).as_dict()
+            except Exception:
+                raise
+
             config_versions = set(upgrade_actions.keys())
             git_table_schema = config.get("git_table_schema", "dbo")
             git_table = config.get("git_table", "git_version")
             connectable_type = config.get("context_connectable_type", "engine")
-            updated_versions = []
 
             # Get the current git commit from database
             _, _, current_db_version = _get_git_version(
@@ -161,7 +174,12 @@ class AhjoUpgrade:
 
                 # Checkout the next upgradable git version
                 _checkout_tag(git_version)
-                config = load_conf(self.config_filename)
+                try:
+                    config = Config(
+                        config_filename=self.config_filename, validate=True
+                    ).as_dict()
+                except Exception:
+                    raise
 
                 # Update version info in the database logger
                 if config.get("enable_database_logging", True):

@@ -8,8 +8,8 @@ Ahjo scan command entrypoint.
 """
 import argparse
 import sys
+from ahjo.config import Config
 from ahjo.operations.general.scan import AhjoScan
-from ahjo.interface_methods import load_yaml_conf
 from ahjo.logging import setup_ahjo_logger
 
 logger = setup_ahjo_logger(enable_database_log=False)
@@ -64,7 +64,8 @@ def main():
     quiet_mode = args.quiet
     ignore_config_path = args.ignore_config
     rules_config_path = args.search_rules
-    scan_config = load_yaml_conf(rules_config_path)
+    config = Config(config_filename=rules_config_path, key=None)
+    scan_config = config.as_dict()
 
     ahjo_scan = AhjoScan(
         scan_staging_area=True if args.stage else False,

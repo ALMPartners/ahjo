@@ -14,7 +14,7 @@ from ahjo.database_utilities import (
     create_sqlalchemy_url,
     create_sqlalchemy_engine,
 )
-from ahjo.interface_methods import load_conf
+from ahjo.config import Config
 
 # Import from project root
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -36,7 +36,7 @@ if main_config_path is None:
     main_config_path = input("Module configuration file path: ")
 logger.info(f"Main config file: {main_config_path}")
 
-main_config = load_conf(main_config_path)
+main_config = Config(config_filename=main_config_path, validate=True).as_dict()
 
 # Use Windows Event Logger if project config has specified setting windows_event_log = true
 if not main_config.get("windows_event_log", False):

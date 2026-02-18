@@ -15,9 +15,9 @@ from ahjo.action import (
     action_affects_db,
     DEFAULT_ACTIONS_SRC,
 )
-from ahjo.context import config_is_valid, Context
+from ahjo.context import Context
 from ahjo.database_utilities.sqla_utilities import test_connection
-from ahjo.interface_methods import get_config_path
+from ahjo.config import Config
 from ahjo.operations.tsql.db_info import display_db_info
 from ahjo.logging import setup_ahjo_logger
 
@@ -94,6 +94,7 @@ def main():
     known_args = parser.parse_known_args()
     args = known_args[0]
     ahjo_action = args.action
+    non_interactive = args.non_interactive
     rest_args = known_args[1]
     args_dict = {k: v for k, v in args._get_kwargs()}
     rest_args_dict = {}
@@ -122,8 +123,13 @@ def main():
     print(info_msg)
     print(line)
 
-    config_path = get_config_path(args.config_filename)
-    context = Context(config_path, command_line_args=args_dict)
+    config_path = Config.get_config_path(args.config_filename)
+    try:
+        context = Context(config_path, command_line_args=args_dict)
+    except Exception as e:
+        print(str(e))
+        sys.exit(1)
+
     sql_dialect = context.get_conn_info().get("dialect", "mssql+pyodbc")
 
     import_actions(
@@ -137,7 +143,6 @@ def main():
         sys.exit(0)
 
     action_succeeded = False
-    non_interactive = args.non_interactive
     enable_db_logging = context.configuration.get("enable_database_logging", False)
     registered_actions = importlib.import_module(
         "ahjo.scripts.master_actions"
@@ -171,9 +176,6 @@ def main():
         )
     except Exception as error:
         print(f"Error setting up logger: {str(error)}")
-        sys.exit(1)
-
-    if not config_is_valid(config_path, non_interactive=non_interactive):
         sys.exit(1)
 
     if (

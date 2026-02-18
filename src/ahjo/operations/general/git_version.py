@@ -13,7 +13,7 @@ from typing import Tuple, Union
 from ahjo.interface_methods import rearrange_params
 from ahjo.database_utilities import execute_query
 from ahjo.operation_manager import OperationManager
-from ahjo.interface_methods import load_conf
+from ahjo.config import Config
 from sqlalchemy import Column, MetaData, String, Table, DateTime, func
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.exc import NoSuchTableError
@@ -102,7 +102,7 @@ def _load_git_commit_info_json(git_version_info_path: str) -> Tuple[str, str, st
     """Retrieve git commit information from a JSON file.
     Fails if the file is not found or properly defined.
     """
-    git_version_info = load_conf(git_version_info_path)
+    git_version_info = Config(config_filename=git_version_info_path, key=None).as_dict()
     return (
         git_version_info["branch"],
         git_version_info["commit"],
