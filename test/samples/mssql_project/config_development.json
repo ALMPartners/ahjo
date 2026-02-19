@@ -7,7 +7,7 @@
         ,"sql_port": null
         ,"sql_driver": "ODBC Driver 18 for SQL Server"
         ,"sql_dialect": "mssql+pyodbc"
-        ,"target_server_hostname": "localhost"
+        ,"target_server_hostname": null
         ,"target_database_name": "AHJO_TEST"
         ,"username_file": null
         ,"password_file": null

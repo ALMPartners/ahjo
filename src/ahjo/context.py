@@ -42,6 +42,7 @@ class Context:
         config_filename: str,
         master_engine: Engine = None,
         command_line_args: dict = {},
+        validate_config=True,
     ):
         self.engine = None
         self.master_engine = master_engine
@@ -52,7 +53,9 @@ class Context:
         self.connectivity_type = None
         self.config_filename = config_filename
         self.configuration = Config(
-            config_filename=config_filename, cli_args=command_line_args, validate=True
+            config_filename=config_filename,
+            cli_args=command_line_args,
+            validate=validate_config,
         ).as_dict()
         self.command_line_args = command_line_args
         self.conn_info = None

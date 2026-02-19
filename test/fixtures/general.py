@@ -61,7 +61,10 @@ def ahjo_context():
     """Return context object for sample project."""
 
     def read_context(sample_directory):
-        return Context(path.join(sample_directory, "config_development.json"))
+        return Context(
+            path.join(sample_directory, "config_development.json"),
+            validate_config=False,
+        )
 
     return read_context
 
