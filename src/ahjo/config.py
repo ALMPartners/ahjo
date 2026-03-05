@@ -9,7 +9,7 @@ import ahjo.util.jsonc as json
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, FilePath
 from typing import Optional
 
 
@@ -114,6 +114,10 @@ class Config:
 
         config = self.as_dict()
 
+        class AhjoActionFile(BaseModel):
+            source_file: FilePath
+            name: str
+
         class AhjoConfig(BaseModel):
             model_config = ConfigDict(extra="allow")
 
@@ -142,22 +146,22 @@ class Config:
             git_table: Optional[str] = "git_version"
             git_table_schema: Optional[str] = "dbo"
             metadata_allowed_schemas: Optional[list[str]] = None
-            password_file: Optional[str] = None
+            password_file: Optional[FilePath] = None
             sql_dialect: Optional[str] = "mssql+pyodbc"
             sql_driver: Optional[str] = None
             target_database_protected: Optional[bool] = False
             url_of_remote_git_repository: Optional[str] = None
-            username_file: Optional[str] = None
+            username_file: Optional[FilePath] = None
             db_permissions: Optional[list[dict]] = None
             db_permission_invoke_method: Optional[str] = "sqlalchemy"
-            upgrade_actions_file: Optional[str] = "./upgrade_actions.jsonc"
+            upgrade_actions_file: Optional[FilePath] = "./upgrade_actions.jsonc"
             catalog_collation_type_desc: Optional[str] = "DATABASE_DEFAULT"
             display_db_info: Optional[bool] = True
             context_connectable_type: Optional[str] = "engine"
             transaction_mode: Optional[str] = "begin_once"
-            git_version_info_path: Optional[str] = None
+            git_version_info_path: Optional[FilePath] = None
             windows_event_log: Optional[bool] = False
-            ahjo_action_files: Optional[list[dict]] = None
+            ahjo_action_files: Optional[list[AhjoActionFile]] = None
             sqla_url_query_map: Optional[dict] = None
             enable_sqlalchemy_logging: Optional[bool] = False
             save_test_results_to_db: Optional[bool] = False
