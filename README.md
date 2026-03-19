@@ -453,7 +453,7 @@ BACKEND:
 | `metadata_allowed_schemas` | No | List of schemas that extended properties will be written to JSON files and updated to database. If list left empty, nothing is documented or updated. | list of str | |
 | `password_file` | No | Path of file where password will be stored. If no path given, credentials are asked everytime any database altering action is run. | `str` | |
 | `sql_dialect` | No | Dialect used by SQL Alchemy. | `str` | `"mssql+pyodbc"` |
-| `sql_driver` | No | Name of ODBC driver. | `str` | |
+| `sql_driver` | No | Name of ODBC driver. | `str` | `"ODBC Driver 18 for SQL Server"` |
 | `sql_port` | Yes | Port number of target database server. | `int` | |
 | `target_database_name` | Yes | Name of target database. | `str` | |
 | `target_server_hostname` | Yes | Host name of target database server. | `str` | |

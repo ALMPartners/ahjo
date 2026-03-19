@@ -32,7 +32,7 @@ def create_conn_info(conf: dict) -> dict:
     port = conf.get("sql_port")
     server = _create_server_string(host, port)
     database = conf.get("target_database_name")
-    driver = conf.get("sql_driver")
+    driver = conf.get("sql_driver", "ODBC Driver 18 for SQL Server")
     dialect = conf.get("sql_dialect", "mssql+pyodbc")
     azure_auth = conf.get("azure_authentication")
     username_file = conf.get("username_file")

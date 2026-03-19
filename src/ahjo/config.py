@@ -9,7 +9,7 @@ import ahjo.util.jsonc as json
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, FilePath
+from pydantic import BaseModel, ConfigDict, FilePath, model_validator
 from typing import Optional
 
 
@@ -148,7 +148,7 @@ class Config:
             metadata_allowed_schemas: Optional[list[str]] = None
             password_file: Optional[FilePath] = None
             sql_dialect: Optional[str] = "mssql+pyodbc"
-            sql_driver: Optional[str] = None
+            sql_driver: Optional[str] = "ODBC Driver 18 for SQL Server"
             target_database_protected: Optional[bool] = False
             url_of_remote_git_repository: Optional[str] = None
             username_file: Optional[FilePath] = None
