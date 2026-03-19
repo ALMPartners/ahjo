@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
+import json
 import sys
 import os
+import subprocess
 import ahjo.scripts.master_actions
 import networkx as nx
 import importlib
@@ -15,7 +17,6 @@ from ahjo.operations.general.git_version import (
     _get_all_tags,
     _get_git_version,
     _get_previous_tag,
-    _checkout_tag,
 )
 from ahjo.action import execute_action, import_actions, DEFAULT_ACTIONS_SRC
 from ahjo.context import Context
@@ -170,54 +171,44 @@ class AhjoUpgrade:
             ):
                 return False
 
+            enable_db_logging = config.get("enable_database_logging", False)
+
             for git_version in version_actions:
 
-                # Checkout the next upgradable git version
-                _checkout_tag(git_version)
-                try:
-                    config = Config(
-                        config_filename=self.config_filename, validate=True
-                    ).as_dict()
-                except Exception:
-                    raise
+                # Run upgrade actions in an isolated subprocess.
+                # This prevents self-modifying code issues: git checkout
+                # changes files on disk, so a fresh Python process ensures
+                # that modules are loaded from the checked-out version.
+                worker_args = [
+                    sys.executable,
+                    "-m",
+                    "ahjo.operations.general.upgrade_worker",
+                    "--config",
+                    self.config_filename,
+                    "--version",
+                    git_version,
+                    "--actions",
+                    json.dumps(version_actions[git_version]),
+                    "--git-table-schema",
+                    git_table_schema,
+                    "--git-table",
+                    git_table,
+                ]
+                if enable_db_logging:
+                    worker_args.append("--enable-db-logging")
 
-                # Update version info in the database logger
-                if config.get("enable_database_logging", True):
-                    for handler in logger.handlers:
-                        if handler.name == "handler_database":
-                            handler.flush()
-                            handler.db_logger.set_git_commit(git_version)
-                            break
+                logger.info(f"Starting upgrade worker for version {git_version}")
+                result = subprocess.run(worker_args)
 
-                # Reload ahjo actions
-                import_actions(
-                    ahjo_action_files=config.get(
-                        "ahjo_action_files", DEFAULT_ACTIONS_SRC
-                    ),
-                    reload_module=True,
-                )
-
-                # Deploy version upgrades
-                actions = version_actions[git_version]
-                for action in actions:
-
-                    # Add parameters
-                    kwargs = {}
-                    if isinstance(action, list):
-                        action_name = action[0]
-                        parameters = action[1]
-                        for arg in parameters:
-                            kwargs[arg] = parameters[arg]
-                    else:
-                        action_name = action
-
-                    # Run action
-                    execute_action(
-                        *[action_name, self.config_filename, None, True, self.context],
-                        **kwargs,
+                if result.returncode != 0:
+                    raise Exception(
+                        f"Upgrade worker for version {git_version} exited with code {result.returncode}"
                     )
 
-                # Check that the database version was updated
+                # Verify from the parent process that the DB version was updated
+                # (re-create engine to avoid stale connections)
+                self.context.engine = None
+                self.context.connection = None
                 _, _, db_version = _get_git_version(
                     self.context.get_connectable(), git_table_schema, git_table
                 )
@@ -227,11 +218,6 @@ class AhjoUpgrade:
                     )
 
                 updated_versions.append(db_version)
-
-            if connectable_type == "connection":
-                connection = self.context.get_connectable()
-                connection.commit()
-                connection.close()
 
         except Exception as error:
             logger.error("Ahjo project upgrade failed:")
