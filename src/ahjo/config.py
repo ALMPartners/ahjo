@@ -9,7 +9,7 @@ import ahjo.util.jsonc as json
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, FilePath, model_validator
+from pydantic import BaseModel, ConfigDict, FilePath, ValidationError
 from typing import Optional
 
 
@@ -177,8 +177,15 @@ class Config:
 
         try:
             AhjoConfig(**config)
-        except Exception:
-            raise
+        except ValidationError as e:
+            messages = []
+            for error in e.errors():
+                field = " -> ".join(str(loc) for loc in error["loc"])
+                msg = error["msg"]
+                messages.append(f"  - {field}: {msg}")
+            raise ValueError(
+                f"\nConfiguration validation failed with {e.error_count()} error(s):\n\n" + "\n".join(messages) + "\n"
+            ) from None
 
         non_interactive = self.cli_args.get("non_interactive", False)
 
