@@ -197,7 +197,7 @@ class AhjoUpgrade:
                 if enable_db_logging:
                     worker_args.append("--enable-db-logging")
 
-                logger.info(f"Starting upgrade worker for version {git_version}")
+                #logger.info(f"Starting upgrade worker for version {git_version}")
                 result = subprocess.run(worker_args)
 
                 if result.returncode != 0:

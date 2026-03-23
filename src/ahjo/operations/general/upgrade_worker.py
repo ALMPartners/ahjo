@@ -105,6 +105,8 @@ def main():
                     handler.db_logger.set_git_commit(git_version)
                     break
 
+        logger.info(f"Starting upgrade worker for version {git_version}")
+
         # Import actions from the checked-out version
         import_actions(
             ahjo_action_files=config.get("ahjo_action_files", DEFAULT_ACTIONS_SRC),
