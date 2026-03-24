@@ -107,7 +107,7 @@ class TestAhjoUpgrade:
     def test_validate_version_should_raise_error_if_version_is_not_next_upgrade(self):
         with pytest.raises(
             ValueError,
-            match=f"Version invalid_tag is not the next upgrade. Current database version is v3.1.2. Use version v3.1.3 instead.",
+            match=f"Version invalid_tag is not upgradable. Current database version is v3.1.2.",
         ):
             self.ahjo_upgrade.validate_version(
                 version="invalid_tag",
