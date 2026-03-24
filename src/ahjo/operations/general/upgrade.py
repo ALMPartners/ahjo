@@ -14,6 +14,7 @@ import importlib
 from ahjo.config import Config
 from ahjo.interface_methods import are_you_sure
 from ahjo.operations.general.git_version import (
+    _checkout_tag,
     _get_all_tags,
     _get_git_version,
     _get_previous_tag,
@@ -80,6 +81,10 @@ class AhjoUpgrade:
         updated_versions = []
 
         try:
+
+            # Checkout the target git version
+            if self.version is not None:
+                _checkout_tag(self.version, silent=True)
 
             # Load settings and upgrade actions from config files
             try:
@@ -197,7 +202,6 @@ class AhjoUpgrade:
                 if enable_db_logging:
                     worker_args.append("--enable-db-logging")
 
-                #logger.info(f"Starting upgrade worker for version {git_version}")
                 result = subprocess.run(worker_args)
 
                 if result.returncode != 0:
@@ -218,6 +222,14 @@ class AhjoUpgrade:
                     )
 
                 updated_versions.append(db_version)
+
+                # Update version info in the database logger
+                if enable_db_logging:
+                    for handler in logger.handlers:
+                        if handler.name == "handler_database":
+                            handler.flush()
+                            handler.db_logger.set_git_commit(git_version)
+                            break
 
         except Exception as error:
             logger.error("Ahjo project upgrade failed:")
@@ -522,7 +534,7 @@ class AhjoUpgrade:
         Parameters
         ----------
         version
-            Version to be upgraded.
+            Version to be upgraded to.
         upgrade_actions
             Dictionary of upgrade actions.
         current_db_version
@@ -531,11 +543,16 @@ class AhjoUpgrade:
         Returns
         -------
         dict
-            Dictionary of upgradable version and their actions
+            Dictionary of upgradable version(s) and their actions
         """
-        valid_upgradable_version = list(upgrade_actions.keys())[0]
-        if version != valid_upgradable_version:
+        valid_upgradable_versions = list(upgrade_actions.keys())
+        if version not in valid_upgradable_versions:
             raise ValueError(
-                f"Version {version} is not the next upgrade. Current database version is {current_db_version}. Use version {valid_upgradable_version} instead."
+                f"Version {version} is not upgradable. Current database version is {current_db_version}. \n"
+                f"Upgradable versions are: {', '.join(valid_upgradable_versions)}."
             )
-        return {version: upgrade_actions[version]}
+
+        # Omit versions that are newer than the specified version
+        version_index = valid_upgradable_versions.index(version)
+        versions_to_upgrade = valid_upgradable_versions[0 : version_index + 1]
+        return {v: upgrade_actions[v] for v in versions_to_upgrade}

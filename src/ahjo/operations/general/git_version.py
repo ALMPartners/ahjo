@@ -148,11 +148,18 @@ def _get_all_tags() -> list:
     )
 
 
-def _checkout_tag(tag: str):
+def _checkout_tag(tag: str, silent: bool = False):
     """Checkout a tag with 'git checkout' command.
     Can fail if tag is not found.
+
+    Arguments:
+    ----------
+    tag: str
+        Git tag to checkout.
+    silent: bool, optional
+        If True, suppress output. Default is False.
     """
-    run(["git", "checkout", "tags/" + tag])
+    run(["git", "checkout", "tags/" + tag], capture_output=silent)
     _, checkout_version = _get_git_commit_info()
     if checkout_version != tag:
         raise Exception(f"Failed to checkout git version: {tag}")
