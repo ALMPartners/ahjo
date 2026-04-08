@@ -143,22 +143,54 @@ def update_db_object_properties(
                     existing_metadata, documented_properties
                 )
 
-            for object_name, extended_properties in documented_properties.items():
-                schema_name = object_name.split(".")[0]
-                if schema_name in schema_list:
-                    object_metadata = existing_metadata.get(object_name)
-                    for property_name, property_value in extended_properties.items():
 
-                        if isinstance(
-                            object_metadata, dict
-                        ) and property_value == object_metadata.get(property_name):
+            # Remove extended properties that are in database but missing from JSON file
+            for object_name, extended_properties in documented_properties.items():
+
+                schema_name = object_name.split(".")[0]
+
+                if schema_name in schema_list:
+
+                    existing_object_metadata = existing_metadata.get(object_name)
+                    existing_property_names = set(existing_object_metadata.keys()) if isinstance(existing_object_metadata, dict) else set()
+                    existing_property_names = existing_property_names - {"schema_name", "object_name", "object_type", "parent_type", "column_name"}
+                    property_names_only_in_db = existing_property_names - set(extended_properties.keys())
+
+                    for prop_name in property_names_only_in_db:
+                        try:
+                            procedure_call, params = (
+                                get_drop_extended_properties_sql_query(
+                                    object_name,
+                                    existing_object_metadata,
+                                    prop_name,
+                                )
+                            )
+                        except Exception as err:
+                            logger.debug(err, exc_info=1)
                             continue
+
+                        sql_query = sql_query + procedure_call + "; "
+                        sql_params.extend(params)
+                        batch_indx += 1
+
+                        if batch_indx > 0 and batch_indx % batch_size == 0:
+                            batches.append((sql_query, sql_params))
+                            sql_query = ""
+                            sql_params = []
+
+                    for property_name, property_value in extended_properties.items():
+                        if isinstance(
+                            existing_object_metadata, dict
+                        ):
+                            existing_property_value = existing_object_metadata.get(property_name)
+                            if property_value == existing_property_value:
+                                continue
 
                         try:
                             procedure_call, params = (
                                 get_update_extended_properties_sql_query(
                                     object_name,
-                                    object_metadata,
+                                    existing_object_metadata,
                                     property_name,
                                     property_value,
                                     object_type=object_type,
@@ -330,6 +362,64 @@ def get_update_extended_properties_sql_query(
             f"Failed to update extended property '{extended_property_name}' for {object_type} '{object_name}': {err}"
         )
         logger.debug(f"Extended property value: {extended_property_value}")
+        raise err
+
+    return procedure_call, params
+
+
+def get_drop_extended_properties_sql_query(
+    object_name: str,
+    object_metadata: dict,
+    extended_property_name: str,
+):
+    """Return SQL query and parameters for dropping an extended property
+    using sp_dropextendedproperty.
+    If object_metadata is None, object does not exist in database.
+
+    Arguments
+    ---------
+    object_name : str
+        Name of the object.
+    object_metadata : dict
+        Metadata of the object fetched from database. If None, object does not exist in database.
+    extended_property_name : str
+        Name of the extended property to be dropped.
+    
+    Returns
+    -------
+    tuple
+        SQL query and parameters for dropping the extended property.
+    """
+    procedure_call = ""
+    params = []
+    try:
+        if object_metadata is None:
+            raise Exception("Object not found in database.")
+
+        procedure_call = "EXEC sp_dropextendedproperty @name=?, @level0type=?, @level0name=?"
+        params = [
+            extended_property_name,
+            "schema",
+            object_metadata.get("schema_name"),
+        ]
+        object_type = object_metadata.get("object_type")
+        parent_type = object_metadata.get("parent_type")
+
+        if object_type in ("view", "table", "function", "procedure", "column"):
+            level1type = parent_type if parent_type is not None else object_type
+            procedure_call += ", @level1type=?, @level1name=?"
+            params.append(level1type)
+            params.append(object_metadata.get("object_name"))
+
+            if object_type == "column":
+                procedure_call += ", @level2type=?, @level2name=?"
+                params.append("column")
+                params.append(object_metadata.get("column_name"))
+
+    except Exception as err:
+        logger.warning(
+            f"Failed to drop extended property '{extended_property_name}' for '{object_name}': {err}"
+        )
         raise err
 
     return procedure_call, params
