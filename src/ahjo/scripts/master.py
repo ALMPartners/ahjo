@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import os
 import sys
 import importlib
 import traceback
@@ -90,6 +91,18 @@ def main():
         help="Skip running alembic migrations.",
         required=False,
     )
+    parser.add_argument(
+        "-d",
+        "--project-dir",
+        help=(
+            "Path to the project directory. Ahjo will change its working "
+            "directory to this path before running the action. If omitted, "
+            "the project directory is inferred from the config file location."
+        ),
+        type=str,
+        default=None,
+        required=False,
+    )
 
     known_args = parser.parse_known_args()
     args = known_args[0]
@@ -124,6 +137,24 @@ def main():
     print(line)
 
     config_path = Config.get_config_path(args.config_filename)
+
+    # Resolve the config file path against the original working directory
+    # and optionally change into the project directory, so that actions can
+    # use relative paths like "./database/..." regardless of where ahjo was
+    # invoked from
+    if config_path is not None and not os.path.isabs(config_path):
+        config_path = os.path.abspath(config_path)
+
+    project_dir = args.project_dir
+    if project_dir is None and config_path is not None:
+        project_dir = os.path.dirname(config_path)
+
+    if project_dir:
+        if not os.path.isdir(project_dir):
+            print(f"Project directory not found: {project_dir}")
+            sys.exit(1)
+        os.chdir(project_dir)
+
     try:
         context = Context(config_path, command_line_args=args_dict)
     except Exception as e:

@@ -7,12 +7,11 @@
 Ahjo scan command entrypoint.
 """
 import argparse
+import os
 import sys
 from ahjo.config import Config
 from ahjo.operations.general.scan import AhjoScan
 from ahjo.logging import setup_ahjo_logger
-
-logger = setup_ahjo_logger(enable_database_log=False)
 
 
 def main():
@@ -60,7 +59,29 @@ def main():
         help="Add found scan results to ignore config file.",
         default=False,
     )
+    parser.add_argument(
+        "-d",
+        "--project-dir",
+        required=False,
+        default=None,
+        help=(
+            "Path to the project directory. Ahjo will change its working "
+            "directory to this path before scanning, so the scan operates "
+            "on the project files regardless of where ahjo-scan was invoked from."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.project_dir:
+        if not os.path.isdir(args.project_dir):
+            print(f"Project directory not found: {args.project_dir}")
+            sys.exit(1)
+        os.chdir(args.project_dir)
+
+    # Set up the logger after chdir so any file-based log handlers resolve
+    # their paths relative to the project directory.
+    logger = setup_ahjo_logger(enable_database_log=False)
+
     quiet_mode = args.quiet
     ignore_config_path = args.ignore_config
     rules_config_path = args.search_rules
