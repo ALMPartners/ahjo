@@ -91,6 +91,16 @@ ahjo_upgrade_exe = Executable(
     icon=icon,
 )
 
+# Internal worker executable invoked as a subprocess by ahjo-upgrade.exe
+# (see ahjo.operations.general.upgrade.AhjoUpgrade). Required because
+# frozen builds cannot use ``python -m`` to launch the worker module.
+ahjo_upgrade_worker_exe = Executable(
+    "src/ahjo/scripts/upgrade_worker.py",
+    target_name=f"{ahjo_exe_prefix}-upgrade-worker.exe",
+    base=None,
+    icon=icon,
+)
+
 ahjo_scan_exe = Executable(
     "src/ahjo/scripts/scan_project.py",
     target_name=f"{ahjo_exe_prefix}-scan.exe",
@@ -132,6 +142,7 @@ setup(
         ahjo_init_project_exe,
         ahjo_multi_project_build_exe,
         ahjo_upgrade_exe,
+        ahjo_upgrade_worker_exe,
         ahjo_scan_exe,
         ahjo_install_git_hook_exe,
         ahjo_config_exe,

@@ -184,10 +184,26 @@ class AhjoUpgrade:
                 # This prevents self-modifying code issues: git checkout
                 # changes files on disk, so a fresh Python process ensures
                 # that modules are loaded from the checked-out version.
-                worker_args = [
-                    sys.executable,
-                    "-m",
-                    "ahjo.operations.general.upgrade_worker",
+                #
+                # When running from a venv / source install, ``sys.executable``
+                # is a real Python interpreter, so we can launch the worker
+                # module with ``-m``. When running from a frozen cx_Freeze
+                # build (MSI installer), ``sys.executable`` is an Ahjo .exe
+                # that cannot interpret ``-m``; in that case we invoke the
+                # sibling ``ahjo-upgrade-worker.exe`` instead.
+                if getattr(sys, "frozen", False):
+                    worker_exe = os.path.join(
+                        os.path.dirname(sys.executable),
+                        "ahjo-upgrade-worker.exe",
+                    )
+                    worker_args = [worker_exe]
+                else:
+                    worker_args = [
+                        sys.executable,
+                        "-m",
+                        "ahjo.operations.general.upgrade_worker",
+                    ]
+                worker_args += [
                     "--config",
                     self.config_filename,
                     "--version",

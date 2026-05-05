@@ -1,4 +1,5 @@
 cx-Freeze ~= 8.5.0
+setuptools_scm[toml] ~= 9.2.0
 # Don't use editable installs here!
  # see setup.cfg for other available options
 .[mssql, azure]
