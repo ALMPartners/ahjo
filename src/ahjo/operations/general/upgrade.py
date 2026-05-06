@@ -77,8 +77,8 @@ class AhjoUpgrade:
             True if upgrade was successful, otherwise False.
         """
 
-        connectable_type = None
         updated_versions = []
+        self.context.set_connectable("engine") # Force engine connectivity for the upgrade process
 
         try:
 
@@ -102,11 +102,11 @@ class AhjoUpgrade:
             config_versions = set(upgrade_actions.keys())
             git_table_schema = config.get("git_table_schema", "dbo")
             git_table = config.get("git_table", "git_version")
-            connectable_type = config.get("context_connectable_type", "engine")
+            #connectable_type = config.get("context_connectable_type", "engine")
 
             # Get the current git commit from database
             _, _, current_db_version = _get_git_version(
-                self.context.get_connectable(), git_table_schema, git_table
+                self.context.get_engine(), git_table_schema, git_table
             )
 
             # Get all tags from the git repository
@@ -230,7 +230,7 @@ class AhjoUpgrade:
                 self.context.engine = None
                 self.context.connection = None
                 _, _, db_version = _get_git_version(
-                    self.context.get_connectable(), git_table_schema, git_table
+                    self.context.get_engine(), git_table_schema, git_table
                 )
                 if db_version != git_version:
                     raise Exception(
@@ -250,10 +250,10 @@ class AhjoUpgrade:
         except Exception as error:
             logger.error("Ahjo project upgrade failed:")
             logger.error(error)
-            if connectable_type == "connection":
-                logger.error(
-                    "Aborted upgrade. Changes were not committed to the database."
-                )
+            #if connectable_type == "connection":
+            #    logger.error(
+            #        "Aborted upgrade. Changes were not committed to the database."
+            #    )
             return False
 
         else:

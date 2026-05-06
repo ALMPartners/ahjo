@@ -83,7 +83,7 @@ def main():
 
         # Create a fresh context (new DB connection)
         context = Context(config_filename)
-        context.set_enable_transaction(False)
+        context.set_connectable("engine") # Force engine connectivity for the upgrade process
 
         # Setup logger
         try:
@@ -131,7 +131,7 @@ def main():
 
         # Verify that the database version was updated
         _, _, db_version = _get_git_version(
-            context.get_connectable(), git_table_schema, git_table
+            context.get_engine(), git_table_schema, git_table
         )
         if db_version != git_version:
             raise Exception(
