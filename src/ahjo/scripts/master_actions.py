@@ -738,13 +738,13 @@ def compare(context, **kwargs):
     
     # Load source B
     if file_b:
-        logger.info("Reading file B...")
+        logger.info("\nReading file B...")
         logger.info("-" * 50)
         b = csv_to_pl_df(file_b, separator=separator)
     elif query_b:
         if connectable is None:
             connectable = context.get_connectable()
-        logger.info("Executing query B...")
+        logger.info("\nExecuting query B...")
         logger.info("-" * 50)
         b_result = du.execute_query(connectable, query_b, include_headers=False)
         b = pl.DataFrame(b_result)
