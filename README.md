@@ -27,6 +27,9 @@ Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Suppo
 ### azure
 * [azure-identity](https://pypi.org/project/azure-identity/)
 
+### comparison
+* [polars](https://pypi.org/project/polars/)
+
 ### visualizations
 * [plotly](https://pypi.org/project/plotly/)
 
@@ -66,8 +69,9 @@ pip install [-e] .[mssql,azure]
 ## Available platform tags
 - `mssql` - Microsoft SQL Server
 - `azure` - Microsoft Azure SQL Database
-- `visualizations` - Database object dependency visualization
 - `dev` - Development dependencies
+- `comparison` - Data comparison dependencies
+- `visualizations` - Database object dependency visualization
 
 ## Development tooling
 Install development dependencies (e.g. automatic code formatting with `black`) with the following command:
@@ -369,6 +373,51 @@ Runs sql query from a file or command line argument and saves the results to a C
 Use `--query` to pass the query as a command line argument or `--filepath` to pass the path to a file containing the query or `--table` and `--schema` to pass the name of the table/view to fetch data from.
 Use `--output` to define the path where the CSV file is saved. If the path is not defined, the file is saved to the working directory with the name `query_result_<timestamp>.csv`.
 
+## compare
+Compares data from two sources and reports the differences. Each source can be either a CSV file or an SQL query, and the two source types can be mixed (for example, compare a CSV export against a live query). This action requires the optional `polars` dependency, installable with `pip install ahjo[comparison]`.
+
+Sources are defined with the following arguments (exactly one of file/query must be given per side):
+
+| Argument | Config key | Description |
+| --- | --- | --- |
+| `--file-a` | `file_a` | Path to the CSV file used as source A. |
+| `--file-b` | `file_b` | Path to the CSV file used as source B. |
+| `--query-a` | `query_a` | SQL query used as source A. |
+| `--query-b` | `query_b` | SQL query used as source B. |
+| `--keys` | `key_cols` | Key columns used to match rows between the two sources. If omitted, rows are compared positionally (row 1 vs row 1, etc.). |
+| `--columns` | `compare_cols` | Columns to compare. If omitted, all columns common to both sources (excluding keys) are compared. |
+| `--filter-column` | `filter_column` | Column used to filter both sources before comparison. |
+| `--filter-value` | `filter_value` | Value the filter column must equal for a row to be included. |
+| `--separator` | `separator` | CSV column separator. Defaults to `;`. |
+| `--output` | `output_file` | Path of the output CSV file. Defaults to `differences.csv`. |
+
+Command-line arguments take precedence over values defined in the config file. To avoid long commands, the parameters can be defined in the config file under a `compare` block, allowing the action to be run with just `ahjo compare <config_filename>`.
+
+When types differ between the two sources (for example, a CSV column read as text versus a numeric database column), values are coerced before comparison so that equivalent values such as `1.0` and `1.00` are not reported as differences.
+
+The differences are written to the output CSV with the key columns first, followed by a `_source` column and, for each compared column, the value from A, the value from B and a comparison status:
+- `OK` &ndash; the values are equal.
+- `Different` &ndash; both rows exist but the values differ.
+- `Missing` &ndash; the row is present in only one source.
+
+Example usage with command-line arguments:
+```bash
+ahjo compare .\config_development.jsonc --query-a "SELECT * FROM [test].[Cashflows_A]" --query-b "SELECT * FROM [test].[Cashflows_B]" --keys leg_id contract_number --columns amount_cashflow cashflow cashflow_due_date currency_code_iso --filter-column datadate --filter-value 20190228
+```
+
+Example `compare` block in a config file:
+```jsonc
+"compare": {
+    "query_a": "SELECT * FROM [test].[Cashflows_A]",
+    "query_b": "SELECT * FROM [test].[Cashflows_B]",
+    "key_cols": ["leg_id", "contract_number"],
+    "compare_cols": ["amount_cashflow", "cashflow", "cashflow_due_date", "currency_code_iso"],
+    "filter_column": "datadate",
+    "filter_value": "20190228",
+    "output_file": "./cashflow_diffs.csv"
+}
+```
+
 ## list
 You can view all available actions and their descriptions with command `ahjo list`.
 ```
@@ -485,6 +534,7 @@ BACKEND:
 | `connect_resiliently` | No | Test database connection before running actions. If connection fails, retry connection for `connect_retry_count` times with `connect_retry_interval` seconds interval. | `boolean` | `true` |
 | `connect_retry_count` | No | Number of retries for database connection. | `int` | `20` |
 | `connect_retry_interval` | No | Interval between connection retries in seconds. | `int` | `10` |
+| `compare` | No | A dictionary containing parameters for compare action. See [compare action](#compare) for details. | `dict` | |
 
 ## Config conversion
 Config file can be converted from JSON/JSONC to YAML or vice versa with `ahjo-config` command:
@@ -741,7 +791,7 @@ create_multiaction("complete-build", ["init", "structure", "deploy", "data", "te
 ```
 
 # <u>License</u>
-Copyright 2019 - 2025 ALM Partners Oy
+Copyright 2019 - 2026 ALM Partners Oy
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

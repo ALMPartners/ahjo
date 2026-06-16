@@ -20,6 +20,7 @@ from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.interface_methods import format_to_table
 from ahjo.operations.tsql.sqlfiles import deploy_mssql_sqlfiles
 from ahjo.operations.general.db_tester import DatabaseTester
+from ahjo.operations.general.compare import csv_to_pl_df, compare_columns, print_diffs, format_results, filter_rows
 from ahjo.logging import setup_db_logger
 from sqlalchemy import (
     Column,
@@ -671,6 +672,122 @@ def plot_dependencies(context, **kwargs):
     layout = cl_layout[0].lower() if cl_layout is not None else "spring_layout"
 
     op.plot_dependency_graph(G, layout=layout)
+
+
+@action()
+def compare(context, **kwargs):
+    """Compare two data sources for differences. The sources can be either csv files or database queries. """
+    try:
+        import polars as pl
+    except:
+        logger.error(
+            "Polars library is required for this action. Install it with 'pip install ahjo[comparison]' or 'pip install polars'."
+        )
+        return 1
+
+    # Read defaults from "compare" config block; CLI args override.
+    compare_config = context.configuration.get("compare", {}) or {}
+
+    def _opt(cli_key: str, config_key: str | None = None, default=None):
+        config_key = config_key or cli_key.replace("-", "_")
+        cli_val = context.get_cli_arg(cli_key)
+        if cli_val is not None and cli_val != []:
+            return cli_val
+        return compare_config.get(config_key, default)
+
+    file_a = _opt("file-a")
+    file_b = _opt("file-b")
+    query_a = _opt("query-a")
+    query_b = _opt("query-b")
+    separator = _opt("separator", default=";")
+    filter_column = _opt("filter-column")
+    filter_value = _opt("filter-value")
+    key_cols = _opt("keys", "key_cols")
+    compare_cols = _opt("columns", "compare_cols")
+    output_file = _opt("output", "output_file", default="differences.csv")
+    a = b = None
+    
+    # Validation: cannot specify both file and query for the same source
+    if (file_a and query_a) or (file_b and query_b):
+        logger.error(
+            """Cannot specify both file and query for the same source. Use either --file-a or --query-a, and either --file-b or --query-b."""
+        )
+        return
+
+    # Check that at least one source A and one source B are provided
+    if not ((file_a or query_a) and (file_b or query_b)):
+        logger.error(
+            """Must provide both sources. Specify --file-a or --query-a, and --file-b or --query-b."""
+        )
+        return
+
+    connectable = None
+    
+    # Load source A
+    if file_a:
+        logger.info("Reading file A...")
+        logger.info("-" * 50)
+        a = csv_to_pl_df(file_a, separator=separator)
+    elif query_a:
+        if connectable is None:
+            connectable = context.get_connectable()
+        logger.info("Executing query A...")
+        logger.info("-" * 50)
+        a_result = du.execute_query(connectable, query_a, include_headers=False)
+        a = pl.DataFrame(a_result)
+    
+    # Load source B
+    if file_b:
+        logger.info("Reading file B...")
+        logger.info("-" * 50)
+        b = csv_to_pl_df(file_b, separator=separator)
+    elif query_b:
+        if connectable is None:
+            connectable = context.get_connectable()
+        logger.info("Executing query B...")
+        logger.info("-" * 50)
+        b_result = du.execute_query(connectable, query_b, include_headers=False)
+        b = pl.DataFrame(b_result)
+
+    # Apply row filter if specified
+    if filter_column and filter_value is not None:
+        logger.info("\nFiltering rows...")
+        logger.info("-" * 50)
+        try:
+            a, b = filter_rows(a, b, filter_column, filter_value)
+        except KeyError as error:
+            logger.error(f" {error}")
+            return 1
+        logger.info(f"  Filtered on {filter_column} = '{filter_value}'")
+        logger.info(f"  A: {a.height} rows")
+        logger.info(f"  B: {b.height} rows")
+
+    logger.info("\nStarting comparison...")
+    logger.info("-" * 50)
+    results = compare_columns(
+        a, b,
+        key_cols=key_cols,
+        compare_cols=compare_cols,
+    )
+
+    # Determine value cols for output
+    key_cols = key_cols or []
+    common_cols = sorted(set(a.columns) & set(b.columns))
+    if compare_cols:
+        value_cols = [c for c in compare_cols if c in common_cols and c not in key_cols]
+    else:
+        value_cols = [c for c in common_cols if c not in key_cols]
+
+    # Print results only if the number of differing rows is reasonable
+    if results.height < 50:
+        print_diffs(results, key_cols, value_cols)
+
+    if results.height > 0:
+        formatted = format_results(results, key_cols, value_cols)
+        formatted.write_csv(output_file, separator=separator)
+        logger.info(f"  Results saved to {output_file}\n")
+
+    return 0
 
 
 create_multiaction(
