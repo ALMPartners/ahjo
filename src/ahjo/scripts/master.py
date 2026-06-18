@@ -136,6 +136,10 @@ def main():
     print(info_msg)
     print(line)
 
+    if ahjo_action == "list":
+        list_actions()
+        sys.exit(0)
+
     config_path = Config.get_config_path(args.config_filename)
 
     # Resolve the config file path against the original working directory
@@ -168,10 +172,6 @@ def main():
             "ahjo_action_files", DEFAULT_ACTIONS_SRC
         )
     )
-
-    if ahjo_action == "list":
-        list_actions()
-        sys.exit(0)
 
     action_succeeded = False
     enable_db_logging = context.configuration.get("enable_database_logging", False)
