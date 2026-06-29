@@ -137,6 +137,15 @@ def compare_columns(
     a_sel = a.select(select_cols)
     b_sel = b.select(select_cols)
 
+    # Cast mismatched key columns to string on both sides so types match when
+    # joining (e.g. a varchar key read as i64 from a CSV). Keys that already
+    # share a type are left untouched.
+    if key_cols:
+        mismatched_keys = [c for c in key_cols if a_sel.schema[c] != b_sel.schema[c]]
+        if mismatched_keys:
+            a_sel = a_sel.with_columns([pl.col(c).cast(pl.Utf8) for c in mismatched_keys])
+            b_sel = b_sel.with_columns([pl.col(c).cast(pl.Utf8) for c in mismatched_keys])
+
     # Join
     if key_cols:
         # joined contains all rows from both sources, 
@@ -181,9 +190,23 @@ def compare_columns(
             a_is_numeric = isinstance(type_a, _NUMERIC_TYPES)
             b_is_numeric = isinstance(type_b, _NUMERIC_TYPES)
             if a_is_numeric or b_is_numeric:
-                # Cast both to Float64 so "1.0" == "1.00"
-                col_a_expr = col_a_expr.cast(pl.Float64)
-                col_b_expr = col_b_expr.cast(pl.Float64)
+                # Cast both to Float64 so "1.0" == "1.00". Use non-strict cast so
+                # non-numeric values (e.g. a "D" in a mostly-numeric varchar column)
+                # become null instead of raising. Rows differ when their string
+                # values differ, unless they are numerically equal.
+                num_a = pl.col(col).cast(pl.Float64, strict=False)
+                num_b = pl.col(col_b).cast(pl.Float64, strict=False)
+                str_a = pl.col(col).cast(pl.Utf8)
+                str_b = pl.col(col_b).cast(pl.Utf8)
+                numerically_equal = num_a.is_not_null() & num_b.is_not_null() & num_a.eq(num_b)
+                diff_exprs.append(
+                    (
+                        (str_a.ne(str_b) & ~numerically_equal)
+                        | (str_a.is_null() & str_b.is_not_null())
+                        | (str_a.is_not_null() & str_b.is_null())
+                    ).alias(f"{col}_diff")
+                )
+                continue
             else:
                 # Both non-numeric but different types: compare as strings
                 col_a_expr = col_a_expr.cast(pl.Utf8)
@@ -234,7 +257,12 @@ def _compare_positional(a, b):
     return joined
 
 
-def print_diffs(results, key_cols: list[str] | None, value_cols: list[str]) -> None:
+def print_diffs(
+    results,
+    key_cols: list[str] | None,
+    value_cols: list[str],
+    source_a: str = "A",
+    source_b: str = "B") -> None:
     """Print differing rows to console.
 
     Parameters
@@ -245,6 +273,10 @@ def print_diffs(results, key_cols: list[str] | None, value_cols: list[str]) -> N
         List of key columns used for comparison.
     value_cols : list[str]
         List of value columns compared.
+    source_a : str
+        Label for the first source (e.g. file name or db object).
+    source_b : str
+        Label for the second source.
     """
     logger.info("\nResults")
     logger.info("-" * 50)
@@ -259,9 +291,9 @@ def print_diffs(results, key_cols: list[str] | None, value_cols: list[str]) -> N
     both = results.filter(results["_source"] == "both") if "_source" in results.columns else results
 
     if a_only.height > 0:
-        logger.info(f"  Rows only in A: {a_only.height}")
+        logger.info(f"  Rows only in {source_a}: {a_only.height}")
     if b_only.height > 0:
-        logger.info(f"  Rows only in B: {b_only.height}")
+        logger.info(f"  Rows only in {source_b}: {b_only.height}")
     if key_cols:
         logger.info(f"  Rows with differences: {both.height}")
         diff_cols = [f"{c}_diff" for c in value_cols if f"{c}_diff" in both.columns]
@@ -286,7 +318,7 @@ def print_diffs(results, key_cols: list[str] | None, value_cols: list[str]) -> N
                 for col in changed:
                     val_a = row.get(col)
                     val_b = row.get(f"{col}_B")
-                    logger.info(f"      {col}: {val_a} -> {val_b}")
+                    logger.info(f"      {col}: {source_a} = {val_a} -> {source_b} = {val_b}")
                 print()
     else:
         # Positional comparison output
@@ -298,7 +330,7 @@ def print_diffs(results, key_cols: list[str] | None, value_cols: list[str]) -> N
                 for col in changed:
                     val_a = row.get(col)
                     val_b = row.get(f"{col}_B")
-                    logger.info(f"      {col}: {val_a} -> {val_b}")
+                    logger.info(f"      {col}: {source_a} = {val_a} -> {source_b} = {val_b}")
                 print()
 
 

@@ -159,6 +159,32 @@ def test_compare_columns_int_vs_string_real_difference():
     assert result.row(0, named=True)["amount_diff"] is True
 
 
+def test_compare_columns_numeric_column_with_nonnumeric_values_no_crash():
+    # Source A is varchar with a non-numeric value ("D"), source B is numeric.
+    # Mixed types must not raise during numeric coercion.
+    a = pl.DataFrame({"id": [1, 2, 3], "vaade": ["21", "891", "D"]})
+    b = pl.DataFrame({"id": [1, 2, 3], "vaade": [21, 891, 814]})
+
+    result = compare.compare_columns(a, b, key_cols=["id"])
+
+    # Only id=3 differs ("D" vs 814); numeric values 21/891 match
+    assert result.height == 1
+    assert result.row(0, named=True)["id"] == 3
+    assert result.row(0, named=True)["vaade_diff"] is True
+
+
+def test_compare_columns_mismatched_key_types_no_crash():
+    # Key column is str on one side, int on the other (CSV inferred numeric).
+    a = pl.DataFrame({"id": ["1010", "1800"], "val": ["x", "y"]})
+    b = pl.DataFrame({"id": [1010, 1800], "val": ["x", "z"]})
+
+    result = compare.compare_columns(a, b, key_cols=["id"])
+
+    # Keys match after string coercion; only id=1800 value differs
+    assert result.height == 1
+    assert result.row(0, named=True)["id"] == "1800"
+
+
 # ---------------------------------------------------------------------------
 # compare_columns - positional (no keys)
 # ---------------------------------------------------------------------------
@@ -269,6 +295,18 @@ def test_print_diffs_reports_keys_and_values(simple_frames, caplog):
 
     assert "id = 2" in caplog.text
     assert "amount" in caplog.text
+
+
+def test_print_diffs_uses_source_labels(caplog):
+    caplog.set_level(logging.INFO, logger="ahjo")
+    a = pl.DataFrame({"id": [1, 2], "val": ["x", "y"]})
+    b = pl.DataFrame({"id": [1, 3], "val": ["x", "z"]})
+    results = compare.compare_columns(a, b, key_cols=["id"])
+
+    compare.print_diffs(results, ["id"], ["val"], "left.csv", "RECON.dbo.t")
+
+    assert "Rows only in left.csv" in caplog.text
+    assert "Rows only in RECON.dbo.t" in caplog.text
 
 
 # ---------------------------------------------------------------------------

@@ -15,6 +15,8 @@ import ahjo.operations as op
 import ahjo.database_utilities as du
 import csv
 import datetime
+import os
+import re
 import networkx as nx
 from ahjo.action import action, create_multiaction, registered_actions
 from ahjo.interface_methods import format_to_table
@@ -722,7 +724,17 @@ def compare(context, **kwargs):
         return
 
     connectable = None
-    
+
+    def _source_label(file, query, default):
+        """Derive a readable source label: file name or db object name."""
+        if file:
+            return os.path.basename(file)
+        if query:
+            match = re.search(r"\bFROM\s+([\[\]\w.]+)", query, re.IGNORECASE)
+            if match:
+                return match.group(1).replace("[", "").replace("]", "")
+        return default
+
     # Load source A
     if file_a:
         logger.info("Reading file A...")
@@ -748,6 +760,9 @@ def compare(context, **kwargs):
         logger.info("-" * 50)
         b_result = du.execute_query(connectable, query_b, include_headers=False)
         b = pl.DataFrame(b_result)
+
+    source_a = _source_label(file_a, query_a, "A")
+    source_b = _source_label(file_b, query_b, "B")
 
     # Apply row filter if specified
     if filter_column and filter_value is not None:
@@ -780,7 +795,7 @@ def compare(context, **kwargs):
 
     # Print results only if the number of differing rows is reasonable
     if results.height < 50:
-        print_diffs(results, key_cols, value_cols)
+        print_diffs(results, key_cols, value_cols, source_a, source_b)
 
     if results.height > 0:
         formatted = format_results(results, key_cols, value_cols)
