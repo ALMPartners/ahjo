@@ -47,7 +47,9 @@ def mssql_master_engine(request, ahjo_config, mssql_sample):
         database="master",
         query=query,
     )
-    return create_sqlalchemy_engine(connection_url)
+    engine = create_sqlalchemy_engine(connection_url)
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture(scope="session")
@@ -73,11 +75,13 @@ def mssql_engine(request, ahjo_config, mssql_sample):
         database=config["target_database_name"],
         query=query,
     )
-    return create_sqlalchemy_engine(connection_url)
+    engine = create_sqlalchemy_engine(connection_url)
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture(scope="session")
-def mssql_setup_and_teardown(mssql_master_engine, test_db_name):
+def mssql_setup_and_teardown(mssql_master_engine, mssql_engine, test_db_name):
     """
     What this fixture does:
         - Init database for testing.
@@ -89,6 +93,8 @@ def mssql_setup_and_teardown(mssql_master_engine, test_db_name):
         with connection.begin():
             connection.execute(text(f"CREATE DATABASE {test_db_name}"))
     yield
+    # Dispose pooled connections to the test database before killing sessions
+    mssql_engine.dispose()
     with mssql_master_engine.connect() as connection:
         connection.execution_options(isolation_level="AUTOCOMMIT")
         with connection.begin():

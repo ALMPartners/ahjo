@@ -665,9 +665,9 @@ def _split_to_batches(dialect_patterns: dict, sql: str) -> List[str]:
         sql_batch.ignore(quote_str)
 
     # Override default behavior of converting tabs to spaces before parsing the input string
-    sql_batch.parseWithTabs()
+    sql_batch.parse_with_tabs()
 
-    scan_matches = list(sql_batch.scanString(sql))
+    scan_matches = list(sql_batch.scan_string(sql))
     # if no batch separator instance found in SQL, return
     if not scan_matches:
         return [sql]
@@ -737,8 +737,8 @@ def get_dialect_patterns(dialect_name: str) -> dict:
     DIALECT_PATTERNS = {
         "mssql": {
             "quoted_strings": [  # depends on how QUOTED_IDENTIFIER is set
-                QuotedString("'", escQuote="''", multiline=True),
-                QuotedString('"', escQuote='""', multiline=True),
+                QuotedString("'", esc_quote="''", multiline=True),
+                QuotedString('"', esc_quote='""', multiline=True),
             ],
             "one_line_comment": Combine("--" + restOfLine),
             "multiline_comment": Regex(r"/\*.+?\*/", flags=DOTALL),
@@ -753,7 +753,7 @@ def get_dialect_patterns(dialect_name: str) -> dict:
         },
         "postgresql": {  # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
             "quoted_strings": [
-                QuotedString("'", escQuote="''", multiline=True),
+                QuotedString("'", esc_quote="''", multiline=True),
                 QuotedString("$$", multiline=True),  # TODO: dollar quote with tag
             ],
             "one_line_comment": Combine("--" + restOfLine),
@@ -762,7 +762,7 @@ def get_dialect_patterns(dialect_name: str) -> dict:
             "script_variable_pattern": ":{}",
         },
         "sqlite": {  # https://sqlite.org/lang.html
-            "quoted_strings": [QuotedString("'", escQuote="''", multiline=True)],
+            "quoted_strings": [QuotedString("'", esc_quote="''", multiline=True)],
             "one_line_comment": Combine("--" + restOfLine),
             "multiline_comment": Regex(r"/\*.+?\*/", flags=DOTALL),
             "batch_separator": Literal(";"),

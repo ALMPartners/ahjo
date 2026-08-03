@@ -15,6 +15,15 @@ pipelines:
             - pip install tox
             - tox -e py313 -- --pipeline
       - step:
+          # Experimental: Python 3.14 relies on the SQLAlchemy 2.1 beta, so this job must not block the pipeline
+          image: python:3.14
+          caches:
+            - pip
+          script:
+            - apt-get update && apt-get -y install unixodbc-dev
+            - pip install tox
+            - tox -e py314 -- --pipeline || true
+      - step:
           caches:
             - pip
           script:

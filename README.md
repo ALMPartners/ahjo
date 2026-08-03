@@ -11,6 +11,9 @@ Ahjo provides a base scripts for database deployment with simple commands ("acti
 
 Database tooling is currently based on sqlalchemy/alembic and SQL scripts. Support for other backends than Microsoft SQL Server is currently limited.
 
+## Python Version Support
+Ahjo officially supports Python 3.13. Python 3.14 support is currently **experimental**: SQLAlchemy 2.0.x does not officially support Python 3.14 yet, so on 3.14 Ahjo installs a SQLAlchemy 2.1 beta release instead. Once SQLAlchemy 2.1 is generally available, Python 3.14 will be promoted to fully supported.
+
 # <u>Dependencies</u>
 ## Common
 * [alembic](https://pypi.org/project/alembic/)
@@ -89,7 +92,7 @@ This assumes you have cloned the source code repository and have it open in a sh
 Create a new, empty build venv and install build requirements into it.
 
 ```
-python -m venv venv_msi_build
+py -3.13 -m venv venv_msi_build
 .\venv_msi_build\Scripts\Activate.ps1
 pip install -r .\msi_build_requirements.txt
 ```
