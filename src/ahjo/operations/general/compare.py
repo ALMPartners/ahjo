@@ -227,7 +227,7 @@ def compare_columns(
     differing_rows = result.filter(any_diff | is_missing)
 
     elapsed = time.time() - start_time
-    logger.info(f"  Comparison completed in {elapsed:.2f}s")
+    logger.info(f"  Comparison completed in {elapsed:.2f}s", extra={"info_type": "success"})
 
     return differing_rows
 
@@ -278,7 +278,7 @@ def print_diffs(
     source_b : str
         Label for the second source.
     """
-    logger.info("\nResults")
+    logger.info("\nResults", extra={"info_type": "header"})
     logger.info("-" * 50)
 
     if results.height == 0:
@@ -334,11 +334,16 @@ def print_diffs(
                 print()
 
 
-def format_results(results, key_cols: list[str] | None, value_cols: list[str]):
+def format_results(
+    results,
+    key_cols: list[str] | None,
+    value_cols: list[str],
+    source_a: str = "A",
+    source_b: str = "B"):
     """Reshape comparison results into a user-friendly table.
 
     Output column order:
-        <key_cols> | _source | A_<col1> | B_<col1> | <col1>_comp | ...
+        <key_cols> | _source | <source_a>_<col1> | <source_b>_<col1> | <col1>_comp | ...
 
     For each value column, ``<col>_comp`` is:
         - ``"OK"``        if the values are equal
@@ -356,6 +361,10 @@ def format_results(results, key_cols: list[str] | None, value_cols: list[str]):
         ``_row`` column is present, ``_row`` is used as the leftmost column.
     value_cols : list[str]
         Value columns that were compared.
+    source_a : str
+        Label used as the prefix for the first source's value columns.
+    source_b : str
+        Label used as the prefix for the second source's value columns.
 
     Returns
     -------
@@ -375,8 +384,8 @@ def format_results(results, key_cols: list[str] | None, value_cols: list[str]):
     for col in value_cols:
         col_b = f"{col}_B"
         diff_col = f"{col}_diff"
-        rename_map[col] = f"A_{col}"
-        rename_map[col_b] = f"B_{col}"
+        rename_map[col] = f"{source_a}_{col}"
+        rename_map[col_b] = f"{source_b}_{col}"
         comp_exprs.append(
             pl.when(pl.col("_source") != "both").then(pl.lit("Missing"))
               .when(pl.col(diff_col)).then(pl.lit("Different"))
@@ -391,7 +400,7 @@ def format_results(results, key_cols: list[str] | None, value_cols: list[str]):
     if "_source" in formatted.columns:
         ordered.append("_source")
     for col in value_cols:
-        ordered.extend([f"A_{col}", f"B_{col}", f"{col}_comp"])
+        ordered.extend([f"{source_a}_{col}", f"{source_b}_{col}", f"{col}_comp"])
 
     # Drop *_diff and any unexpected leftovers, keep only ordered columns that exist
     ordered = [c for c in ordered if c in formatted.columns]

@@ -275,6 +275,18 @@ def test_format_results_positional_uses_row_column():
     assert formatted.columns[0] == "_row"
 
 
+def test_format_results_uses_source_labels(simple_frames):
+    a, b = simple_frames
+    results = compare.compare_columns(a, b, key_cols=["id"])
+
+    formatted = compare.format_results(
+        results, ["id"], ["name", "amount"], "left.csv", "right.csv"
+    )
+
+    assert "left.csv_name" in formatted.columns
+    assert "right.csv_amount" in formatted.columns
+
+
 # ---------------------------------------------------------------------------
 # print_diffs
 # ---------------------------------------------------------------------------

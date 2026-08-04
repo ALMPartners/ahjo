@@ -390,6 +390,7 @@ Sources are defined with the following arguments (exactly one of file/query must
 | `--filter-value` | `filter_value` | Value the filter column must equal for a row to be included. |
 | `--separator` | `separator` | CSV column separator. Defaults to `;`. |
 | `--output` | `output_file` | Path of the output CSV file. Defaults to `differences.csv`. |
+| `--name` | | When multiple named comparisons are defined in the config, run only the comparison with this name. |
 
 Command-line arguments take precedence over values defined in the config file. To avoid long commands, the parameters can be defined in the config file under a `compare` block, allowing the action to be run with just `ahjo compare <config_filename>`.
 
@@ -416,6 +417,30 @@ Example `compare` block in a config file:
     "filter_value": "20190228",
     "output_file": "./cashflow_diffs.csv"
 }
+```
+
+To run several comparisons in a single command, nest named comparison blocks under `compare`. Each named block accepts the same parameters as a single comparison, and the comparisons run in order. Note that command-line arguments are ignored when named comparisons are used.
+```jsonc
+"compare": {
+    "cashflows": {
+        "query_a": "SELECT * FROM [test].[Cashflows_A]",
+        "query_b": "SELECT * FROM [test].[Cashflows_B]",
+        "key_cols": ["leg_id", "contract_number"],
+        "compare_cols": ["amount_cashflow", "cashflow"],
+        "output_file": "./cashflow_diffs.csv"
+    },
+    "trades": {
+        "file_a": "./exports/trades_old.csv",
+        "file_b": "./exports/trades_new.csv",
+        "key_cols": ["trade_id"],
+        "output_file": "./trade_diffs.csv"
+    }
+}
+```
+
+To run only one of the named comparisons, select it by name with the `--name` argument:
+```
+ahjo compare .\config_development.jsonc --name trades
 ```
 
 ## list

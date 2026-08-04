@@ -634,7 +634,7 @@ def to_csv(context):
             f"query_result_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"
         )
 
-    with open(output_path, "w", newline="") as file:
+    with open(output_path, "w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file, delimiter=";")
         writer.writerows(result)
 
@@ -678,7 +678,17 @@ def plot_dependencies(context, **kwargs):
 
 @action()
 def compare(context, **kwargs):
-    """Compare two data sources for differences. The sources can be either csv files or database queries. """
+    """Compare two data sources for differences. The sources can be either csv files or database queries.
+
+    A single comparison can be configured under the ``compare`` config block (or
+    via CLI arguments). To run multiple comparisons in one command, nest named
+    comparison blocks under ``compare``::
+
+        "compare": {
+            "first_compare": { ... },
+            "second_compare": { ... }
+        }
+    """
     try:
         import polars as pl
     except:
@@ -687,122 +697,182 @@ def compare(context, **kwargs):
         )
         return 1
 
-    # Read defaults from "compare" config block; CLI args override.
+
+    def _run_comparison(context, pl, config, use_cli=True):
+        """Run a single comparison defined by ``config``.
+
+        When ``use_cli`` is True, CLI arguments override the corresponding config
+        values. For named comparisons (config-only), ``use_cli`` is False.
+        """
+
+        def _source_label(file, query, default):
+            """Derive a readable source label: file name or db object name."""
+            if file:
+                return os.path.basename(file)
+            if query:
+                match = re.search(r"\bFROM\s+([\[\]\w.]+)", query, re.IGNORECASE)
+                if match:
+                    return match.group(1).replace("[", "").replace("]", "")
+            return default
+
+        def _opt(cli_key: str, config_key: str | None = None, default=None):
+            config_key = config_key or cli_key.replace("-", "_")
+            if use_cli:
+                cli_val = context.get_cli_arg(cli_key)
+                if cli_val is not None and cli_val != []:
+                    return cli_val
+            return config.get(config_key, default)
+
+        def _resolve_source(side: str):
+            """Resolve the (file, query) source for a side ('a' or 'b').
+
+            A source given on the command line overrides the config source for
+            that side, regardless of whether the type (file vs query) differs.
+            """
+            if use_cli:
+                cli_file = context.get_cli_arg(f"file-{side}")
+                cli_query = context.get_cli_arg(f"query-{side}")
+                cli_file = None if cli_file in (None, []) else cli_file
+                cli_query = None if cli_query in (None, []) else cli_query
+                if cli_file is not None or cli_query is not None:
+                    return cli_file, cli_query
+            return config.get(f"file_{side}"), config.get(f"query_{side}")
+
+        config = config or {}
+
+        file_a, query_a = _resolve_source("a")
+        file_b, query_b = _resolve_source("b")
+        separator = _opt("separator", default=";")
+        filter_column = _opt("filter-column")
+        filter_value = _opt("filter-value")
+        key_cols = _opt("keys", "key_cols")
+        key_cols = [key_cols] if isinstance(key_cols, str) else key_cols
+        compare_cols = _opt("columns", "compare_cols")
+        compare_cols = [compare_cols] if isinstance(compare_cols, str) else compare_cols
+        output_file = _opt("output", "output_file", default="differences.csv")
+        a = b = None
+  
+        # Validation: cannot specify both file and query for the same source
+        if (file_a and query_a) or (file_b and query_b):
+            logger.error(
+                """Cannot specify both file and query for the same source. Use either --file-a or --query-a, and either --file-b or --query-b."""
+            )
+            return 1
+
+        # Check that at least one source A and one source B are provided
+        if not ((file_a or query_a) and (file_b or query_b)):
+            logger.error(
+                """Must provide both sources. Specify --file-a or --query-a, and --file-b or --query-b."""
+            )
+            return 1
+
+        connectable = None
+
+        # Load source A
+        if file_a:
+            logger.info("Reading file A...", extra={"info_type": "header"})
+            logger.info("-" * 50)
+            a = csv_to_pl_df(file_a, separator=separator)
+        elif query_a:
+            if connectable is None:
+                connectable = context.get_connectable()
+            logger.info("Executing query A...", extra={"info_type": "header"})
+            logger.info("-" * 50)
+            a_result = du.execute_query(connectable, query_a, include_headers=False)
+            logger.info(f"  Query A returned {len(a_result)} rows")
+            a = pl.DataFrame(a_result)
+
+        # Load source B
+        if file_b:
+            logger.info("\nReading file B...", extra={"info_type": "header"})
+            logger.info("-" * 50)
+            b = csv_to_pl_df(file_b, separator=separator)
+        elif query_b:
+            if connectable is None:
+                connectable = context.get_connectable()
+            logger.info("\nExecuting query B...", extra={"info_type": "header"})
+            logger.info("-" * 50)
+            b_result = du.execute_query(connectable, query_b, include_headers=False)
+            logger.info(f"  Query B returned {len(b_result)} rows")
+            b = pl.DataFrame(b_result)
+
+        source_a = _source_label(file_a, query_a, "A")
+        source_b = _source_label(file_b, query_b, "B")
+
+        # Apply row filter if specified
+        if filter_column and filter_value is not None:
+            logger.info("\nFiltering rows...", extra={"info_type": "header"})
+            logger.info("-" * 50)
+            try:
+                a, b = filter_rows(a, b, filter_column, filter_value)
+            except KeyError as error:
+                logger.error(f" {error}")
+                return 1
+            logger.info(f"  Filtered on {filter_column} = '{filter_value}'")
+            logger.info(f"  A: {a.height} rows")
+            logger.info(f"  B: {b.height} rows")
+
+        logger.info("\nStarting comparison...", extra={"info_type": "header"})
+        logger.info("-" * 50)
+        results = compare_columns(
+            a, b,
+            key_cols=key_cols,
+            compare_cols=compare_cols,
+        )
+
+        # Determine value cols for output
+        key_cols = key_cols or []
+        common_cols = sorted(set(a.columns) & set(b.columns))
+        if compare_cols:
+            value_cols = [c for c in compare_cols if c in common_cols and c not in key_cols]
+        else:
+            value_cols = [c for c in common_cols if c not in key_cols]
+
+        # Print results only if the number of differing rows is reasonable
+        if results.height < 50:
+            print_diffs(results, key_cols, value_cols, source_a, source_b)
+
+        if results.height > 0:
+            formatted = format_results(results, key_cols, value_cols, source_a, source_b)
+            formatted.write_csv(output_file, separator=separator)
+            logger.info(f"  Results saved to {output_file}\n", extra={"info_type": "success"})
+
+        return 0
+
     compare_config = context.configuration.get("compare", {}) or {}
 
-    def _opt(cli_key: str, config_key: str | None = None, default=None):
-        config_key = config_key or cli_key.replace("-", "_")
-        cli_val = context.get_cli_arg(cli_key)
-        if cli_val is not None and cli_val != []:
-            return cli_val
-        return compare_config.get(config_key, default)
+    # Named comparisons: nested dict values under "compare".
+    named_comparisons = {
+        name: settings
+        for name, settings in compare_config.items()
+        if isinstance(settings, dict)
+    }
 
-    file_a = _opt("file-a")
-    file_b = _opt("file-b")
-    query_a = _opt("query-a")
-    query_b = _opt("query-b")
-    separator = _opt("separator", default=";")
-    filter_column = _opt("filter-column")
-    filter_value = _opt("filter-value")
-    key_cols = _opt("keys", "key_cols")
-    compare_cols = _opt("columns", "compare_cols")
-    output_file = _opt("output", "output_file", default="differences.csv")
-    a = b = None
-    
-    # Validation: cannot specify both file and query for the same source
-    if (file_a and query_a) or (file_b and query_b):
-        logger.error(
-            """Cannot specify both file and query for the same source. Use either --file-a or --query-a, and either --file-b or --query-b."""
-        )
-        return
+    if named_comparisons:
+        selected = context.get_cli_arg("name")
+        if isinstance(selected, list):
+            selected = selected[0] if selected else None
+        if isinstance(selected, str):
+            if selected not in named_comparisons:
+                logger.error(
+                    f"Comparison '{selected}' not found in config. "
+                    f"Available comparisons: {', '.join(named_comparisons)}."
+                )
+                return 1
+            named_comparisons = {selected: named_comparisons[selected]}
 
-    # Check that at least one source A and one source B are provided
-    if not ((file_a or query_a) and (file_b or query_b)):
-        logger.error(
-            """Must provide both sources. Specify --file-a or --query-a, and --file-b or --query-b."""
-        )
-        return
+        exit_code = 0
+        for name, settings in named_comparisons.items():
+            logger.info("Comparison", extra={"info_type": "header"})
+            logger.info("-" * 50)
+            logger.info(f"  {name}\n")
+            rc = _run_comparison(context, pl, settings, use_cli=False)
+            logger.info(f"{'=' * 50}\n")
+            if rc:
+                exit_code = rc
+        return exit_code
 
-    connectable = None
-
-    def _source_label(file, query, default):
-        """Derive a readable source label: file name or db object name."""
-        if file:
-            return os.path.basename(file)
-        if query:
-            match = re.search(r"\bFROM\s+([\[\]\w.]+)", query, re.IGNORECASE)
-            if match:
-                return match.group(1).replace("[", "").replace("]", "")
-        return default
-
-    # Load source A
-    if file_a:
-        logger.info("Reading file A...")
-        logger.info("-" * 50)
-        a = csv_to_pl_df(file_a, separator=separator)
-    elif query_a:
-        if connectable is None:
-            connectable = context.get_connectable()
-        logger.info("Executing query A...")
-        logger.info("-" * 50)
-        a_result = du.execute_query(connectable, query_a, include_headers=False)
-        a = pl.DataFrame(a_result)
-    
-    # Load source B
-    if file_b:
-        logger.info("\nReading file B...")
-        logger.info("-" * 50)
-        b = csv_to_pl_df(file_b, separator=separator)
-    elif query_b:
-        if connectable is None:
-            connectable = context.get_connectable()
-        logger.info("\nExecuting query B...")
-        logger.info("-" * 50)
-        b_result = du.execute_query(connectable, query_b, include_headers=False)
-        b = pl.DataFrame(b_result)
-
-    source_a = _source_label(file_a, query_a, "A")
-    source_b = _source_label(file_b, query_b, "B")
-
-    # Apply row filter if specified
-    if filter_column and filter_value is not None:
-        logger.info("\nFiltering rows...")
-        logger.info("-" * 50)
-        try:
-            a, b = filter_rows(a, b, filter_column, filter_value)
-        except KeyError as error:
-            logger.error(f" {error}")
-            return 1
-        logger.info(f"  Filtered on {filter_column} = '{filter_value}'")
-        logger.info(f"  A: {a.height} rows")
-        logger.info(f"  B: {b.height} rows")
-
-    logger.info("\nStarting comparison...")
-    logger.info("-" * 50)
-    results = compare_columns(
-        a, b,
-        key_cols=key_cols,
-        compare_cols=compare_cols,
-    )
-
-    # Determine value cols for output
-    key_cols = key_cols or []
-    common_cols = sorted(set(a.columns) & set(b.columns))
-    if compare_cols:
-        value_cols = [c for c in compare_cols if c in common_cols and c not in key_cols]
-    else:
-        value_cols = [c for c in common_cols if c not in key_cols]
-
-    # Print results only if the number of differing rows is reasonable
-    if results.height < 50:
-        print_diffs(results, key_cols, value_cols, source_a, source_b)
-
-    if results.height > 0:
-        formatted = format_results(results, key_cols, value_cols)
-        formatted.write_csv(output_file, separator=separator)
-        logger.info(f"  Results saved to {output_file}\n")
-
-    return 0
+    return _run_comparison(context, pl, compare_config, use_cli=True)
 
 
 create_multiaction(
