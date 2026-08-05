@@ -77,13 +77,6 @@ ahjo_init_project_exe = Executable(
     icon=icon,
 )
 
-ahjo_multi_project_build_exe = Executable(
-    "src/ahjo/scripts/multi_project_build.py",
-    target_name=f"{ahjo_exe_prefix}-multi-project-build.exe",
-    base=None,
-    icon=icon,
-)
-
 ahjo_upgrade_exe = Executable(
     "src/ahjo/scripts/upgrade_project.py",
     target_name=f"{ahjo_exe_prefix}-upgrade.exe",
@@ -140,7 +133,6 @@ setup(
     executables=[
         ahjo_main_exe,
         ahjo_init_project_exe,
-        ahjo_multi_project_build_exe,
         ahjo_upgrade_exe,
         ahjo_upgrade_worker_exe,
         ahjo_scan_exe,

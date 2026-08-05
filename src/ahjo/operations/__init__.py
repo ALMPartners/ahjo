@@ -20,7 +20,6 @@ from ahjo.operations.general import (
     upgrade,
     alembic_command,
     create_dependency_graph,
-    plot_dependency_graph,
 )
 
 from ahjo.operations.tsql import (

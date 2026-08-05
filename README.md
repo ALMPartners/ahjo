@@ -33,9 +33,6 @@ Ahjo officially supports Python 3.13. Python 3.14 support is currently **experim
 ### comparison
 * [polars](https://pypi.org/project/polars/)
 
-### visualizations
-* [plotly](https://pypi.org/project/plotly/)
-
 ### dev
 * [black](https://pypi.org/project/black/)
 * [pre-commit](https://pypi.org/project/pre-commit/)
@@ -118,7 +115,6 @@ MSI installation package installs everything that is needed to execute ahjo shel
 3. After a successful installation the following CLI commands are available in the shell:
     - ahjo
     - ahjo-init-project
-    - ahjo-multi-project-build
     - ahjo-upgrade
     - ahjo-scan
     - ahjo-install-git-hook
@@ -213,7 +209,6 @@ Below is a list of available scripts and their descriptions.
 | --- | --- |
 | `ahjo` | Main script for running Ahjo actions. |
 | `ahjo-init-project` | Script for initializing new Ahjo project. |
-| `ahjo-multi-project-build` | Script for running actions from multiple projects at once. |
 | `ahjo-upgrade` | Script for running version upgrades. |
 | `ahjo-scan` | Script for searching matches with defined search rules from files in the working directory or git staging area. |
 | `ahjo-install-git-hook` | Script for installing Ahjo scan command as a pre-commit hook. |
@@ -367,10 +362,6 @@ The name and schema of the table are defined in *test_table_name* and *test_tabl
 Creates a view for displaying test action results. The columns of the view are the same as the columns of the table where the results are saved.
 The name and schema of the view are defined in *test_view_name* and *test_view_schema*.
 
-## plot-dependencies
-Parse the SQL files in the project and create a dependency graph of the database objects.
-Plots the graph with plotly. Optionally, use `--files` to parameter define which files are used in the action.
-
 ## to-csv
 Runs sql query from a file or command line argument and saves the results to a CSV file. Can also be used to fetch data from a given table/view and save it to a CSV file.
 Use `--query` to pass the query as a command line argument or `--filepath` to pass the path to a file containing the query or `--table` and `--schema` to pass the name of the table/view to fetch data from.
@@ -464,7 +455,6 @@ List of available actions
 Ahjo requires config file to be JSON, JSONC (JSON with comments) or YAML format. Ahjo configs are located in *BACKEND* section of file.
 Below is an example of config file (in both JSONC and YAML format) and a cheat sheet for config file parameters.
 
-## JSONC config file
 ```jsonc
 {
     "BACKEND": {
@@ -487,23 +477,6 @@ Below is an example of config file (in both JSONC and YAML format) and a cheat s
         "alembic_version_table_schema": "dbo",
     }
 }
-```
-
-## YAML config file
-```yaml
-BACKEND:
-  ## List of allowed Ahjo actions. If all actions are allowed use "ALL" option.
-  allowed_actions: ALL
-  ## Git repository url and git version table information.
-  url_of_remote_git_repository: ''
-  git_table: git_version
-  git_table_schema: dbo
-  ## Database connection information.
-  sql_port: 14330
-  sql_driver: ODBC Driver 18 for SQL Server
-  sql_dialect: mssql+pyodbc
-  target_server_hostname: localhost
-  target_database_name: DB_NAME
 ```
 
 ## Config file cheat sheet
@@ -610,56 +583,6 @@ Instructions for enabling azure identity authentication in ahjo:
 
 Sign in interactively through your browser with the `az login` command.
 If the login is successful, ahjo will use Azure credentials for creating an engine that connects to an Azure SQL database.
-
-
-# <u>Running actions from multiple projects</u>
-To run all selected actions from different projects at once, a single command "ahjo-multi-project-build" can be used:
-
-```
-ahjo-multi-project-build path/to/config_file.jsonc
-```
-
-Use `-c` or `--confirm` flag to enable confirmation messages for ahjo actions.
-Below is an example of JSONC config file. With the following definition, multi-project-build command executes complete-build actions of three ahjo projects:
-
-```json
-{
-    "projects_path": "path/to/projects_folder",
-    "connection_info": {
-        "sql_port": 14330,
-        "sql_driver": "ODBC Driver 18 for SQL Server",
-        "target_server_hostname": "localhost"
-    },
-    "projects": {
-        "ahjo_project_1_name": {
-            "config": "path/to/projects_folder/ahjo_project_1_name/config_development.jsonc",
-            "actions": [
-                "complete-build"
-            ]
-        },
-        "ahjo_project_2_name": {
-            "config": "path/to/projects_folder/ahjo_project_2_name/config_development.jsonc",
-            "actions": [
-                "complete-build"
-            ]
-        },
-        "ahjo_project_3_name": {
-            "config": "path/to/projects_folder/ahjo_project_3_name/config_development.jsonc",
-            "actions": [
-                "complete-build"
-            ]
-        }
-    }
-}
-```
-
-Settings under `connection_info` contains database server definitions in the same format as in ahjo project config file (excluding `target_database_name` parameter, which is not used here).
-Currently in this version ahjo projects should be located under the folder specified in `projects_path` setting.
-Ahjo project names are listed under `projects` section in run order. In this example, the actions of project `ahjo_project_1_name` are executed first and the actions of project `ahjo_project_3_name` are executed last.
-The following settings are defined under the name of the ahjo project(s):
-
-`config` - File path to the project-specific config file
-`actions` - List of project actions to be executed
 
 
 # <u>Ahjo project upgrade</u>

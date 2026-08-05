@@ -35,6 +35,4 @@ from ahjo.operations.general.scan import AhjoScan
 
 from ahjo.operations.general.db_tester import DatabaseTester
 
-from ahjo.operations.general.visualization import plot_dependency_graph
-
 from ahjo.operations.general.compare import compare_columns, csv_to_pl_df, print_diffs
